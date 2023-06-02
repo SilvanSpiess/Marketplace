@@ -1,0 +1,67 @@
+#config version check
+version: 2
+
+#custom colors for shop details [description,location,owner name]
+# should be in the format §[0-9a-fk-or]
+default-shop-name-color: §6§l
+default-shop-desc-color: §1
+default-shop-owner-color: §d
+default-shop-loc-color: §e
+default-shop-dynmap-color: §a
+
+#sets a character limit for shop name + description
+#set to -1 for no limit
+shop-details-length-limit: -1
+
+#activates moderation functionality
+moderate-directory: true
+
+#links to to the tutorial video and the moderator tutorial video, put n/a if there is no moderator tutorial video
+tutorial-link: https://www.youtube.com/watch?v=PWbqJ8S9MRU
+tutorial-moderator-link: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+#enables and sets the custom message to be sent to the player to notify moderators for shop approval
+#only works then moderate-directory is true
+enable-custom-approval-message: false
+custom-approval-message: §eBruh get your shop approved from moderators
+
+#allows multi-player ownership of shops, side effect: allows players to make shops for others, but makes them co-owners too
+multi-owner: true
+
+#allows adding offline players as owners
+#only works when multi-player is true
+allow-add-offline-players: false
+
+#this filtering will work in two ways
+#while searching for alternatives to potions the results will only show potions with similar effects
+#while searching for alternatives to enchanted books the results will only show books with at least one type of enchant in common
+filter-alternatives-list: false
+
+#set this true if you have a db configured. if not, this plugin will store all details in a json file
+use-db: false
+
+#choose which db to use,currently only supports 'mysql' and 'mariadb', only relevant when use-db is true
+db:
+  type: mariadb
+  host: localhost
+  port: 3306
+  username: root
+  password: root
+
+#fill your mysql db details
+mysql-host: 127.0.0.1
+mysql-port: 3306
+mysql-database: SERVERNAME
+mysql-username: root
+mysql-password: root
+table-prefix: guimd_
+
+#to use with coreprotect, returns last n interactions
+use-coreprotect: false
+default-lookup-radius: 20
+#in the format
+lookup-time: 7d
+
+#enables bstats
+#It is recommended that you keep this on so that I can get a rough estimate of how my plugin is performing
+enable-bstats: true
