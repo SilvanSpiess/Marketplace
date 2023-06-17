@@ -11,6 +11,7 @@ import me.PSK1103.GUIMarketplaceDirectory.utils.CoreProtectLookup;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+
 import org.bukkit.*;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.block.banner.Pattern;
@@ -24,6 +25,9 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.meta.trim.ArmorTrim;
+import org.bukkit.inventory.meta.trim.TrimPattern;
+import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -248,6 +252,109 @@ class ItemList {
                 LeatherArmorMeta LeatherArmorMeta = (LeatherArmorMeta) item.getItemMeta();
                 LeatherArmorMeta.setColor(Color.fromRGB(Integer.valueOf(extraInfo.get("color").toString())));
                 item.setItemMeta(LeatherArmorMeta);
+            }
+            case "armor" -> {
+                ArmorMeta armorMeta = (ArmorMeta) item.getItemMeta();
+                if(extraInfo.containsKey("trimPattern") && extraInfo.containsKey("trimMaterial")) {
+                    TrimPattern trimPattern;
+                    switch (extraInfo.get("trimPattern").toString()) {
+                        case "minecraft:coast":
+                            trimPattern = TrimPattern.COAST;
+                            break;
+                        case "minecraft:dune":
+                            trimPattern = TrimPattern.DUNE;
+                            break;
+                        case "minecraft:eye":
+                            trimPattern = TrimPattern.EYE;
+                            break;
+                        case "minecraft:host":
+                            trimPattern = TrimPattern.HOST;
+                            break;
+                        case "minecraft:raiser":
+                            trimPattern = TrimPattern.RAISER;
+                            break;
+                        case "minecraft:rib":
+                            trimPattern = TrimPattern.RIB;
+                            break;
+                        case "minecraft:sentry":
+                            trimPattern = TrimPattern.SENTRY;
+                            break;
+                        case "minecraft:shaper":
+                            trimPattern = TrimPattern.SHAPER;
+                            break;
+                        case "minecraft:silence":
+                            trimPattern = TrimPattern.SILENCE;
+                            break;
+                        case "minecraft:snout":
+                            trimPattern = TrimPattern.SNOUT;
+                            break;
+                        case "minecraft:spire":
+                            trimPattern = TrimPattern.SPIRE;
+                            break;
+                        case "minecraft:tide":
+                            trimPattern = TrimPattern.TIDE;
+                            break;
+                        case "minecraft:vex":
+                            trimPattern = TrimPattern.VEX;
+                            break;
+                        case "minecraft:ward":
+                            trimPattern = TrimPattern.WARD;
+                            break;
+                        case "minecraft:wayfinder":
+                            trimPattern = TrimPattern.WAYFINDER;
+                            break;
+                        case "minecraft:wild":
+                            trimPattern = TrimPattern.WILD;
+                            break;
+                        default:
+                            trimPattern = TrimPattern.COAST;
+                            break;
+                    }
+                    TrimMaterial trimMaterial;
+                    switch (extraInfo.get("trimMaterial").toString()) {
+                        case "minecraft:amethyst":
+                            trimMaterial = TrimMaterial.AMETHYST;
+                            break;
+                        case "minecraft:copper":
+                            trimMaterial = TrimMaterial.COPPER;
+                            break;
+                        case "minecraft:diamond":
+                            trimMaterial = TrimMaterial.DIAMOND;
+                            break;
+                        case "minecraft:emerald":
+                            trimMaterial = TrimMaterial.EMERALD;
+                            break;
+                        case "minecraft:gold":
+                            trimMaterial = TrimMaterial.GOLD;
+                            break;
+                        case "minecraft:iron":
+                            trimMaterial = TrimMaterial.IRON;
+                            break;
+                        case "minecraft:lapis":
+                            trimMaterial = TrimMaterial.LAPIS;
+                            break;
+                        case "minecraft:netherite":
+                            trimMaterial = TrimMaterial.NETHERITE;
+                            break;
+                        case "minecraft:quartz":
+                            trimMaterial = TrimMaterial.QUARTZ;
+                            break;
+                        case "minecraft:redstone":
+                            trimMaterial = TrimMaterial.REDSTONE;
+                            break;
+                        default:
+                            trimMaterial = TrimMaterial.AMETHYST;
+                            break;
+                    }
+                    armorMeta.setTrim(new ArmorTrim(trimMaterial, trimPattern));
+                    item.setItemMeta(armorMeta);
+                }
+                if(extraInfo.containsKey("color")) {
+                    ColorableArmorMeta colorableArmorMeta = (ColorableArmorMeta) item.getItemMeta();
+                    colorableArmorMeta.setColor(Color.fromRGB(Integer.valueOf(extraInfo.get("color").toString())));
+                    item.setItemMeta(colorableArmorMeta);
+                }
+                
             }
             case "filledMap" -> {
                 MapMeta mapMeta = (MapMeta) item.getItemMeta();
@@ -997,13 +1104,19 @@ public class JSONShopRepo implements ShopRepo {
                             }
                             content.put("extraInfo", extraInfo);
                             content.put("customType", "crossbow");
-                        } else if(itemStack1.getType() == Material.LEATHER_BOOTS || itemStack1.getType() == Material.LEATHER_LEGGINGS || 
-                                   itemStack1.getType() == Material.LEATHER_CHESTPLATE || itemStack1.getType() == Material.LEATHER_HELMET) {
-                            LeatherArmorMeta LeatherArmorMeta = (LeatherArmorMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("color", LeatherArmorMeta.getColor().asRGB());
+                        } else if(n.contains("BOOTS") || n.contains("LEGGINGS") || n.contains("CHESTPLATE") || n.contains("HELMET")) {
+                            ArmorMeta armorMeta = (ArmorMeta) itemStack1.getItemMeta();
+                            Map<String, Object> extraInfo = new HashMap<>();               
+                                
+                            if(armorMeta.getTrim() != null) {
+                                extraInfo.put("trimMaterial", armorMeta.getTrim().getMaterial().getKey().toString());
+                                extraInfo.put("trimPattern", armorMeta.getTrim().getPattern().getKey().toString());
+                            }
+                            if(n.contains("LEATHER")) {
+                                extraInfo.put("color", Integer.toString(((ColorableArmorMeta) itemStack1.getItemMeta()).getColor().asRGB()));
+                            }
                             content.put("extraInfo", extraInfo);
-                            content.put("customType", "leatherArmor");
+                            content.put("customType", "armour");
                         } else if(itemStack1.getType() == Material.FILLED_MAP) {
                             MapMeta mapMeta = (MapMeta) itemStack1.getItemMeta();
                             Map<String, Object> extraInfo = new HashMap<>();
@@ -1137,12 +1250,18 @@ public class JSONShopRepo implements ShopRepo {
                 item.extraInfo.put("tipped", Integer.toString(((PotionMeta) crossbowMeta.getChargedProjectiles().get(0)).getColor().asRGB()));
             }
             item.customType = "crossbow";
-        } else if(itemStack.getType() == Material.LEATHER_BOOTS || itemStack.getType() == Material.LEATHER_LEGGINGS || 
-                  itemStack.getType() == Material.LEATHER_CHESTPLATE || itemStack.getType() == Material.LEATHER_HELMET) {
-            LeatherArmorMeta LeatherArmorMeta = (LeatherArmorMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("color", LeatherArmorMeta.getColor().asRGB());
-            item.customType = "leatherArmor";
+        } else if(name.contains("BOOTS") || name.contains("LEGGINGS") || name.contains("CHESTPLATE") || name.contains("HELMET")) {
+            ArmorMeta armorMeta = (ArmorMeta) itemStack.getItemMeta();
+                item.extraInfo = new HashMap<>();               
+                
+            if(armorMeta.getTrim() != null) {
+                item.extraInfo.put("trimMaterial", armorMeta.getTrim().getMaterial().getKey().toString());
+                item.extraInfo.put("trimPattern", armorMeta.getTrim().getPattern().getKey().toString());
+            }
+            if(name.contains("LEATHER")) {
+                item.extraInfo.put("color", Integer.toString(((ColorableArmorMeta) itemStack.getItemMeta()).getColor().asRGB()));
+            }
+            item.customType = "armor";
         } else if(itemStack.getType() == Material.FILLED_MAP) {
             MapMeta mapMeta = (MapMeta) itemStack.getItemMeta();
             item.extraInfo = new HashMap<>();
