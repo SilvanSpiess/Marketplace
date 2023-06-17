@@ -17,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import org.bukkit.craftbukkit.v1_20_R1.CraftServer;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

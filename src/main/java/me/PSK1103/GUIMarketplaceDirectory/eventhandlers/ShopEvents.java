@@ -1,6 +1,5 @@
 package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 
-import io.netty.channel.*;
 import me.PSK1103.GUIMarketplaceDirectory.database.SQLDatabase;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
@@ -8,17 +7,15 @@ import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.*;
-import net.minecraft.network.protocol.game.PacketPlayOutOpenBook;
 import org.bukkit.*;
-import org.bukkit.craftbukkit.v1_19_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerEditBookEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
@@ -27,85 +24,52 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class ShopEvents implements Listener {
+public class ShopEvents implements Listener { 
 
-    class PacketHandler {
-
-        public void removePLayer(Player player) {
-            Channel channel = ((CraftPlayer) player).getHandle().b.b.m;
-            channel.eventLoop().submit(() -> {
-                channel.pipeline().remove(player.getName());
-            });
-        }
-
-        public void injectPlayer (Player player) throws Exception {
-            ChannelDuplexHandler channelDuplexHandler = new ChannelDuplexHandler() {
-                @Override
-                public void write(ChannelHandlerContext ctx, Object packet, ChannelPromise promise) throws Exception {
-                    if(packet instanceof PacketPlayOutOpenBook) {
-                        ItemStack itemInHand = player.getInventory().getItemInMainHand();
-                        if(itemInHand.getType() != Material.WRITTEN_BOOK) {
-                            super.write(ctx, packet, promise);
-                            return;
-                        }
-                        BookMeta bookMeta = (BookMeta) itemInHand.getItemMeta();
-                        if(bookMeta.getTitle() != null && (bookMeta.getTitle().equalsIgnoreCase("[marketplace]") || bookMeta.getTitle().equalsIgnoreCase("[shop init]") || bookMeta.getTitle().equalsIgnoreCase("[init shop]"))) {
-                            if (bookMeta.getTitle().equalsIgnoreCase("[Marketplace]")) {
-                                Bukkit.getScheduler().runTask(plugin,()-> ShopEvents.this.plugin.gui.openShopDirectory(player));
-                            }
-                            else if (bookMeta.getTitle().equalsIgnoreCase("[shop init]") || bookMeta.getTitle().equalsIgnoreCase("[init shop]")) {
-                                if (!ShopEvents.this.plugin.getCustomConfig().multiOwnerEnabled()) {
-                                    return;                                }
-                                if (ShopEvents.this.plugin.getShopRepo().isShopOwner(player.getUniqueId().toString(), bookMeta.getPage(bookMeta.getPageCount()))) {
-                                    if (ShopEvents.this.plugin.getShopRepo().isAddingItem(player.getUniqueId().toString())) {
-                                        player.sendMessage(ChatColor.RED + "Finish adding item first");
-                                        return;                                    }
-                                    if (ShopEvents.this.plugin.getShopRepo().getIsUserAddingOwner(player.getUniqueId().toString()) && !ShopEvents.this.plugin.getShopRepo().getIsAddingOwner(bookMeta.getPage(bookMeta.getPageCount()))) {
-                                        player.sendMessage(ChatColor.RED + "Finish adding owner to other shop first");
-                                        return;                                    }
-                                    if (ShopEvents.this.plugin.getShopRepo().isShopUnderEditOrAdd(bookMeta.getPage(bookMeta.getPageCount()))) {
-                                        player.sendMessage(ChatColor.RED + "This shop is currently under some other operation, try again later");
-                                        return;
-                                    }
-                                    Bukkit.getScheduler().runTask(plugin,()->plugin.gui.openShopEditMenu(player,bookMeta.getPage(bookMeta.getPageCount())));
-                                }
-
-                            }
-                            return;
-                        }
-                    }
-                    super.write(ctx, packet, promise);
-                }
-            };
-
-            ChannelPipeline pipeline = ((CraftPlayer) player).getHandle().b.b.m.pipeline();
-            if(pipeline.get(player.getName()) == null)
-                pipeline.addBefore("packet_handler",player.getName(),channelDuplexHandler);
-        }
-
-    }
-
-    private final GUIMarketplaceDirectory plugin;
-
-    private final PacketHandler handler;
+    private final GUIMarketplaceDirectory plugin;   
 
     public ShopEvents(GUIMarketplaceDirectory plugin) {
         this.plugin = plugin;
-        handler = new PacketHandler();
+    }
 
-        Bukkit.getOnlinePlayers().forEach(player -> {
-            try {
-                handler.injectPlayer(player);
-            } catch (Exception e) {
-                e.printStackTrace();
+    @EventHandler
+    public final void openShopBook(PlayerInteractEvent playerInteractEvent) {
+        Player player = playerInteractEvent.getPlayer();
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        if(itemInHand.getType() != Material.WRITTEN_BOOK) 
+            return;
+        
+        BookMeta bookMeta = (BookMeta) itemInHand.getItemMeta();
+        if(bookMeta.getTitle() != null && (bookMeta.getTitle().equalsIgnoreCase("[marketplace]") || bookMeta.getTitle().equalsIgnoreCase("[shop init]") || bookMeta.getTitle().equalsIgnoreCase("[init shop]"))) {
+            if (bookMeta.getTitle().equalsIgnoreCase("[Marketplace]")) {
+                Bukkit.getScheduler().runTask(plugin,()-> ShopEvents.this.plugin.gui.openShopDirectory(player));
             }
-        });
+            else if (bookMeta.getTitle().equalsIgnoreCase("[shop init]") || bookMeta.getTitle().equalsIgnoreCase("[init shop]")) {
+                if (!ShopEvents.this.plugin.getCustomConfig().multiOwnerEnabled()) {
+                    return;                                }
+                if (ShopEvents.this.plugin.getShopRepo().isShopOwner(player.getUniqueId().toString(), bookMeta.getPage(bookMeta.getPageCount()))) {
+                    if (ShopEvents.this.plugin.getShopRepo().isAddingItem(player.getUniqueId().toString())) {
+                        player.sendMessage(ChatColor.RED + "Finish adding item first");
+                        return;                                    }
+                    if (ShopEvents.this.plugin.getShopRepo().getIsUserAddingOwner(player.getUniqueId().toString()) && !ShopEvents.this.plugin.getShopRepo().getIsAddingOwner(bookMeta.getPage(bookMeta.getPageCount()))) {
+                        player.sendMessage(ChatColor.RED + "Finish adding owner to other shop first");
+                        return;                                    }
+                    if (ShopEvents.this.plugin.getShopRepo().isShopUnderEditOrAdd(bookMeta.getPage(bookMeta.getPageCount()))) {
+                        player.sendMessage(ChatColor.RED + "This shop is currently under some other operation, try again later");
+                        return;
+                    }
+                    Bukkit.getScheduler().runTask(plugin,()->plugin.gui.openShopEditMenu(player,bookMeta.getPage(bookMeta.getPageCount())));
+                }
+            }
+            return;
+        }
     }
 
     @EventHandler
     public final void onShopAdd(PlayerEditBookEvent editBookEvent) {
         if(!editBookEvent.isSigning())
             return;
+        
         /* this function executes when you sign a book with [init shop], [shop init] or [marketplace]*/
         BookMeta meta = editBookEvent.getNewBookMeta();
         assert meta.getTitle()!=null;
@@ -211,18 +175,12 @@ public class ShopEvents implements Listener {
     @EventHandler
     public final void onJoin(PlayerJoinEvent e){
         try {
-            handler.injectPlayer(e.getPlayer());
             if(this.plugin.getCustomConfig().usingDB()){
                 SQLDatabase.addPlayer(e.getPlayer().getUniqueId().toString(), e.getPlayer().getName());
             }
         } catch (Exception exception) {
             exception.printStackTrace();
         }
-    }
-
-    @EventHandler
-    public final void onLeave(PlayerQuitEvent e) {
-        handler.removePLayer(e.getPlayer());
     }
 
     @EventHandler
