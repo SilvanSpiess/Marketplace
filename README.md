@@ -1,6 +1,6 @@
 # GUIMarketplaceDirectory
 
-#### An easy to use GUI based marketplace directory by Sil and CodingLonne
+#### An easy to use GUI based marketplace directory created by PSK and updated by Sil and CodingLonne
 
 Do you ever play in a large co-op SMP and spend hours searching for the perfect deals on an item you need in the marketplace? Do you have to spend ages finding what you actually need? GUIMD provides a 
 simple easy to use solution to find what you want without the need to traverse around the marketplace.
