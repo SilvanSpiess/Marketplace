@@ -10,21 +10,21 @@ import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.JSONShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList.BlockBuilder;
 
 import org.bukkit.Server;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
-import org.bukkit.craftbukkit.v1_20_R1.CraftServer;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-public class GUIMarketplaceDirectory extends JavaPlugin {
+public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder {
 
     File shops = null;
     private ShopRepo shopRepo;
@@ -106,4 +106,8 @@ public class GUIMarketplaceDirectory extends JavaPlugin {
         return server;
     }
 
+    @Override
+    public BlockData getBlockData(String string) {
+        return this.getServer().createBlockData(string);
+    }
 }
