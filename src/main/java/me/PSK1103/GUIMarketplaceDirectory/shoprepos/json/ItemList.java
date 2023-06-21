@@ -30,7 +30,8 @@ import java.util.*;
 public class ItemList {
 
     public interface BlockBuilder {
-        BlockData getBlockData(String string);   
+        BlockData getBlockData(String string);
+        PlayerProfile createPlayerProfile(UUID uniqueId, String name);  
     }
 
     ItemStack item;
@@ -103,11 +104,15 @@ public class ItemList {
         switch (customType) {
             case "head" -> {
                 SkullMeta skullmeta = (SkullMeta) item.getItemMeta();
-                if(extraInfo.containsKey("name") && !(extraInfo.get("name").toString().equals("null"))){
+                if(extraInfo.containsKey("name") && !(extraInfo.get("name").toString().equals("null")) && extraInfo.containsKey("profileId")){
+                    skullmeta.setOwnerProfile(blockBuilder.createPlayerProfile(UUID.fromString(extraInfo.get("profileId").toString()), extraInfo.get("name").toString()));
+                }
+                else if(extraInfo.containsKey("name") && !(extraInfo.get("name").toString().equals("null"))) {
                     skullmeta.setOwner(extraInfo.get("name").toString());
                 }
+                
                 PlayerProfile playerProfile = skullmeta.getOwnerProfile();
-                if(extraInfo.containsKey("skin") && !(extraInfo.get("skin").toString().equals("null"))){
+                if(extraInfo.containsKey("skin") && !(extraInfo.get("skin").toString().equals("null"))) {
                     try {
                         PlayerTextures playerTextures = playerProfile.getTextures();
                         URL skinUrl = new URL(extraInfo.get("skin").toString());
@@ -115,16 +120,8 @@ public class ItemList {
                         playerProfile.setTextures(playerTextures);
                         
                     } catch (MalformedURLException e) {
-                        // TODO Auto-generated catch block
                         //e.printStackTrace();
                     }
-                }
-                if(extraInfo.containsKey("profileId")){
-                    //nothing yet
-                    /*
-                     * look at https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Server.html#createPlayerProfile(java.util.UUID,java.lang.String)
-                     * under createPlayerProfile to find out intended future implementation
-                     */
                 }
                 skullmeta.setOwnerProfile(playerProfile);
                 item.setItemMeta(skullmeta);
@@ -184,8 +181,6 @@ public class ItemList {
                     ItemStack itemStack = new ItemStack(Material.valueOf(content.get("name").toString()), Double.valueOf(content.get("quantity").toString()).intValue());
                     if (content.containsKey("customName")) {
                         ItemMeta meta = itemStack.getItemMeta();
-                        //meta.displayName(Component.text(content.get("customName").toString()));
-                        //meta.setDisplayName(content.get("customName").toString());
                         meta.setDisplayName(String.valueOf(content.get("customName")));
                     }
                     if (content.containsKey("customType")) {
@@ -193,7 +188,6 @@ public class ItemList {
                     }
 
                     items.add(itemStack);
-
                 });
                 BlockStateMeta blockStateMeta = (BlockStateMeta) item.getItemMeta();
                 ShulkerBox shulkerBox = (ShulkerBox) blockStateMeta.getBlockState();

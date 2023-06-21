@@ -13,6 +13,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
 import org.bukkit.*;
+import org.bukkit.block.DecoratedPot;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -20,6 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionData;
+import org.hibernate.mapping.OneToMany;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -583,7 +585,7 @@ public class JSONShopRepo implements ShopRepo {
                             SkullMeta skullMeta = (SkullMeta) itemStack1.getItemMeta();
                             Map<String, Object> extraInfo = new HashMap<>();
                             OfflinePlayer whoSkull = skullMeta.getOwningPlayer();
-                            if(whoSkull != null){
+                            if(whoSkull != null) {
                                 extraInfo.put("name", skullMeta.getOwningPlayer().getName());
                             }
                             if (skullMeta.getOwnerProfile() != null && 
@@ -594,17 +596,6 @@ public class JSONShopRepo implements ShopRepo {
                             }
                             item.extraInfo = extraInfo;
                             item.customType = "head";
-                            /*
-                             *  if(whoSkull != null){
-                                    skullData.put("name", skullMeta.getOwningPlayer().getName());
-                                }
-                                if(skullMeta.getOwnerProfile() != null && 
-                                skullMeta.getOwnerProfile().getTextures() != null && 
-                                skullMeta.getOwnerProfile().getTextures().getSkin() != null){
-                                    skullData.put("skin", skullMeta.getOwnerProfile().getTextures().getSkin().toString());
-                                    skullData.put("profileId", skullMeta.getOwnerProfile().getUniqueId().toString());
-                                }
-                             */
                         } else if (n.contains("POTION")) {
                             PotionMeta potionMeta = (PotionMeta) itemStack1.getItemMeta();
                             Map<String, Object> data = new HashMap<>();
@@ -875,6 +866,19 @@ public class JSONShopRepo implements ShopRepo {
             item.extraInfo.put("patternColor", tropicalFishBucketMeta.getPatternColor().toString());
             item.customType = "tropicalFishBucket";
         } else if(itemStack.getType() == Material.DECORATED_POT) {
+            /*
+            DecoratedPot decoratedPot = (DecoratedPot) ((BlockStateMeta) itemStack.getItemMeta()).getBlockState();
+            item.extraInfo = new HashMap<>();
+            Iterator<NamespacedKey> it = decoratedPot.getPersistentDataContainer().getKeys().iterator();
+            while (it.hasNext()) {
+                NamespacedKey currKey = it.next();
+                item.extraInfo.put("shards" + currKey.getKey(), currKey.getKey());
+                item.extraInfo.put("exists", "found smth");
+            }
+            //item.extraInfo.put("shards", decoratedPot.getPersistentDataContainer().isEmpty() ? "has keys" : "no keys");
+            //decoratedPot.getPersistentDataContainer().getKeys().toString()
+            item.customType = "decoratedPot";
+            */
             /* failed getMetadata approach
             DecoratedPot decoratedPot = (DecoratedPot) ((BlockStateMeta) itemStack.getItemMeta()).getBlockState();
             item.extraInfo = new HashMap<>();

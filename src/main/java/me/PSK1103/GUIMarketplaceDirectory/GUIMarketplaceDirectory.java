@@ -15,6 +15,7 @@ import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList.BlockBuilder;
 import org.bukkit.Server;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.profile.PlayerProfile;
 import org.jetbrains.annotations.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -22,6 +23,7 @@ import org.json.simple.JSONObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder {
@@ -109,5 +111,10 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
     @Override
     public BlockData getBlockData(String string) {
         return this.getServer().createBlockData(string);
+    }
+
+    @Override
+    public PlayerProfile createPlayerProfile(UUID uniqueId, String name) {
+        return this.getServer().createPlayerProfile(uniqueId, name);
     }
 }
