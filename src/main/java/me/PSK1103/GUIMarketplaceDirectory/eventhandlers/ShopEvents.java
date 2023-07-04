@@ -3,7 +3,8 @@ package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 import me.PSK1103.GUIMarketplaceDirectory.database.SQLDatabase;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo.EditType;
+//import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.*;
@@ -327,13 +328,13 @@ public class ShopEvents implements Listener {
                         shopSelectEvent.getWhoClicked().closeInventory();
                         return;
                     }
-                    if(plugin.getShopRepo() instanceof MySQLShopRepo) {
+                    /*if(false) {
                         shopSelectEvent.getWhoClicked().sendMessage(ChatColor.GREEN + "Enter new lookup radius");
                         ((MySQLShopRepo) plugin.getShopRepo()).startSettingLookupRadius(uuid, holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage - 1)).get("key"));
                     }
-                    else {
-                        shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "This feature only works when using a db and CoreProtect integration is on");
-                    }
+                    else {*/
+                    shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "This feature only works when using a db and CoreProtect integration is on");
+                    
 
                     shopSelectEvent.getWhoClicked().closeInventory();
                 }
@@ -353,13 +354,13 @@ public class ShopEvents implements Listener {
             chatEvent.setCancelled(true);
 
             String uuid = chatEvent.getPlayer().getUniqueId().toString();
-            if (plugin.getShopRepo().getEditType(uuid) <= 0) {
+            if (plugin.getShopRepo().getEditType(uuid) == EditType.NOT_UNDER_ADD || plugin.getShopRepo().getEditType(uuid) == EditType.NOT_UNDER_EDIT) {
                 return;
             }
 
-            int editType = plugin.getShopRepo().getEditType(uuid);
+            EditType editType = plugin.getShopRepo().getEditType(uuid);
 
-            if (editType == 2) {
+            if (editType == EditType.ADD_SHOP) {
                 if (chatEvent.getMessage().equalsIgnoreCase("Y") || chatEvent.getMessage().equalsIgnoreCase("yes")) {
                     plugin.getShopRepo().addOwner(uuid, chatEvent.getPlayer());
                     chatEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop initialised successfully!");
@@ -371,7 +372,7 @@ public class ShopEvents implements Listener {
                     plugin.gui.sendConfirmationMessage(chatEvent.getPlayer(),"Are you the owner of this shop?");
                 }
             }
-            else if (editType == 1 || editType == 5) {
+            else if (editType == EditType.ADD_OWNER || editType == EditType.SHOP_OWNER_ADDITION) {
 
                 if (chatEvent.getMessage().equalsIgnoreCase("nil")) {
                     plugin.getShopRepo().stopInitOwner(uuid);
@@ -401,7 +402,7 @@ public class ShopEvents implements Listener {
                     chatEvent.getPlayer().sendMessage(ChatColor.GOLD + players.get(0).getName() + " successfully added as owner");
                 }
             }
-            else if(editType == 3) {
+            else if(editType == EditType.SET_DISPLAY_ITEM) {
                 if (chatEvent.getMessage().equalsIgnoreCase("nil")) {
                     plugin.getShopRepo().stopInitOwner(uuid);
                     chatEvent.getPlayer().sendMessage(ChatColor.GRAY + "Cancelled setting display item");
@@ -420,7 +421,7 @@ public class ShopEvents implements Listener {
                     return;
                 }
             }
-            else if (editType == 7) {
+            else if (editType == EditType.COREPROTECT_RADIUS) {
                 String rad = chatEvent.getMessage();
                 int radius;
                 try {
@@ -436,12 +437,14 @@ public class ShopEvents implements Listener {
                     chatEvent.getPlayer().sendMessage(ChatColor.RED + "Enter a positive number");
                     return;
                 }
+                //MySQL currently disabled
+                /* 
                 if (!(plugin.getShopRepo() instanceof MySQLShopRepo)) {
                     chatEvent.getPlayer().sendMessage(ChatColor.RED + "Cannot do this operation with JSON shop repo");
                     return;
                 }
                 chatEvent.getPlayer().sendMessage("Setting lookup radius to " + ChatColor.AQUA + radius);
-                ((MySQLShopRepo) plugin.getShopRepo()).setLookupRadius(uuid, radius);
+                ((MySQLShopRepo) plugin.getShopRepo()).setLookupRadius(uuid, radius);*/
 
             }
             return;

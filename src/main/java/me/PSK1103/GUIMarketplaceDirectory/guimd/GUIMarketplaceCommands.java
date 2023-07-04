@@ -1,7 +1,7 @@
 package me.PSK1103.GUIMarketplaceDirectory.guimd;
 
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
+//import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
 import net.kyori.adventure.text.Component;
@@ -115,10 +115,13 @@ public class GUIMarketplaceCommands implements TabExecutor {
 
                             case "migrate":
                             case "m":
+                                /* 
                                 if(plugin.getShopRepo() instanceof MySQLShopRepo) {
                                     ((MySQLShopRepo) plugin.getShopRepo()).migrateJSONShops();
                                 }
                                 else commandSender.sendMessage(Component.text(ChatColor.RED + "Currenty using JSON shop repo, cannot migrate"));
+                                */
+                                commandSender.sendMessage(ChatColor.RED + "Migration is currently disabled");
                                 return true;
                         }
                         break;
@@ -159,7 +162,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                                 player.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                                 return true;
                             }
-                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "give " + player.getDisplayName() + " written_book{display:{Name:'{\"text\":\"Marketplace Directory\",\"color\":\"gold\",\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false}'},title:\"[Marketplace]\",author:\"PSK1103\"} 1");
+                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "give " + player.getDisplayName() + " written_book{display:{Name:'{\"text\":\"Marketplace Directory\",\"color\":\"gold\",\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false}'},title:\"[Marketplace]\",author:\"Sil and Lonne\"} 1");
                             return true;
                         }
                         commandSender.sendMessage("Use this command as player");

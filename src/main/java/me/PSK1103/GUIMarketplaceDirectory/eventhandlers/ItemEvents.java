@@ -103,7 +103,7 @@ public class ItemEvents implements Listener {
                 } else if (res == 0) {
                     player.sendMessage(ChatColor.GRAY + "Cancelling addition of previous item");
                 } else if (res == 2) {
-                    player.sendMessage(new String[]{ChatColor.YELLOW + "The head item you're trying to add has no proper skullOwner nbt tags", ChatColor.YELLOW + "place it on the ground and pick it up and then try to add", ChatColor.YELLOW + "Continue adding if this isn't a mistake"});
+                    player.sendMessage(new String[]{ChatColor.YELLOW + "The enchanted item you're trying to add has ilegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});
                 }
             }
             else { //if shop owner has the item in shop already it opens a window displaying those items and giving multiple options to perceed. 

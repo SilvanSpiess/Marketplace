@@ -13,7 +13,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
 import org.bukkit.*;
-import org.bukkit.block.DecoratedPot;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -21,7 +20,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionData;
-import org.hibernate.mapping.OneToMany;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -145,7 +143,7 @@ public class JSONShopRepo implements ShopRepo {
     private final Map<String, Shop> waitingShops;
     private final GUIMarketplaceDirectory plugin;
     private final HashMap<String, String> shopsUnderAdd;
-    private final HashMap<String, Integer> shopsUnderEdit;
+    private final HashMap<String, EditType> shopsUnderEdit;
     private final HashMap<String, ItemList> itemToAdd;
     private final HashMap<String, String> shopsUnderReject;
     private final HashMap<String, String> shopsUnderRemove;
@@ -208,7 +206,7 @@ public class JSONShopRepo implements ShopRepo {
         }
         else shop.setDisplayItem("WRITTEN_BOOK");
         waitingShops.put(uuid, shop);
-        shopsUnderEdit.put(key, 2);
+        shopsUnderEdit.put(key, EditType.ADD_SHOP);
         shopsUnderAdd.put(uuid, key);
         return key;
     }
@@ -239,7 +237,7 @@ public class JSONShopRepo implements ShopRepo {
         if (!shops.containsKey(key) && !pendingShops.containsKey(key))
             return -1;
         shopsUnderAdd.put(uuid, key);
-        shopsUnderEdit.put(key, 1);
+        shopsUnderEdit.put(key, EditType.ADD_OWNER);
         return 1;
     }
 
@@ -250,7 +248,7 @@ public class JSONShopRepo implements ShopRepo {
         if (!shops.containsKey(key) && !pendingShops.containsKey(key))
             return -1;
         shopsUnderAdd.put(uuid, key);
-        shopsUnderEdit.put(key, 3);
+        shopsUnderEdit.put(key, EditType.SET_DISPLAY_ITEM);
         return 1;
     }
 
@@ -903,9 +901,15 @@ public class JSONShopRepo implements ShopRepo {
         if(!enchants.isEmpty()) {
             if(item.extraInfo==null)
                 item.extraInfo = new HashMap<>();
-                Map<String,String> codedEnchants = new HashMap<>();
-                enchants.forEach((enchantment, integer) -> codedEnchants.put(enchantment.getKey().getKey(),integer.toString()));
-                item.extraInfo.put("enchants",codedEnchants);
+            Map<String,String> codedEnchants = new HashMap<>();
+            Iterator<Map.Entry<Enchantment,Integer>> enchantIterator = enchants.entrySet().iterator();
+            while (enchantIterator.hasNext()) {
+                Map.Entry<Enchantment,Integer> enchant = enchantIterator.next();
+                if (enchant.getValue().intValue() >= enchant.getKey().getStartLevel() && enchant.getValue().intValue() <= enchant.getKey().getMaxLevel() && enchant.getKey().canEnchantItem(itemStack)) {
+                    codedEnchants.put(enchant.getKey().getKey().getKey() , enchant.getValue().toString());
+                } else res = 2;
+            }
+            item.extraInfo.put("enchants", codedEnchants);
         } 
 
         shopsUnderAdd.put(uuid, key);
@@ -915,15 +919,15 @@ public class JSONShopRepo implements ShopRepo {
 
     @Override
     public void initShopOwnerAddition(String uuid) {
-        shopsUnderEdit.put(shopsUnderAdd.get(uuid), 5);
+        shopsUnderEdit.put(shopsUnderAdd.get(uuid), EditType.SHOP_OWNER_ADDITION);
     }
 
     @Override
-    public int getEditType(String uuid) {
+    public EditType getEditType(String uuid) {
         if (!shopsUnderAdd.containsKey(uuid))
-            return -1;
+            return EditType.NOT_UNDER_ADD;
 
-        return shopsUnderEdit.getOrDefault(shopsUnderAdd.get(uuid), 0);
+        return shopsUnderEdit.getOrDefault(shopsUnderAdd.get(uuid), EditType.NOT_UNDER_EDIT);
     }
 
     @Override

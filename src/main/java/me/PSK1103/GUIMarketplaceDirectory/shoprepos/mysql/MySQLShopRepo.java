@@ -1,4 +1,4 @@
-package me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql;
+/*package me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -79,7 +79,7 @@ class ItemList {
         }
 
         meta.lore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, /*ItemFlag.HIDE_ENCHANTS,*/ ItemFlag.HIDE_UNBREAKABLE);
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, /*ItemFlag.HIDE_ENCHANTS,*//*  ItemFlag.HIDE_UNBREAKABLE);
         item.setItemMeta(meta);
     }
 
@@ -238,11 +238,11 @@ class ItemList {
         }
         /*List<String> oldLore = meta.getLore();
         if(oldLore!=null)
-            l.addAll(oldLore);*/
+            l.addAll(oldLore);*//* 
         List<Component> lore = new ArrayList<>();
         l.forEach(s -> lore.add(Component.text(s)));
         meta.lore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, /*ItemFlag.HIDE_ENCHANTS,*/ ItemFlag.HIDE_UNBREAKABLE);
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, /*ItemFlag.HIDE_ENCHANTS,*//* ItemFlag.HIDE_UNBREAKABLE);
         item.setItemMeta(meta);
     }
 
@@ -583,9 +583,9 @@ public class MySQLShopRepo implements ShopRepo {
     }
 
     @Override
-    public int getEditType(String uuid) {
+    public EditType getEditType(String uuid) {
         if (!shopOperatingUsers.containsKey(uuid))
-            return -1;
+            return EditType.NOT_UNDER_ADD;
         return SQLDatabase.getEditType(uuid);
     }
 
@@ -1003,3 +1003,4 @@ public class MySQLShopRepo implements ShopRepo {
         executorService.shutdown();
     }
 }
+*/

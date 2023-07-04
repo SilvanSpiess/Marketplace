@@ -5,7 +5,7 @@ import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ItemEvents;
 import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ShopEvents;
 import me.PSK1103.GUIMarketplaceDirectory.guimd.GUIMarketplaceCommands;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
+//import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
@@ -47,11 +47,11 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
         if(config.bstatsEnabled())
             metrics = new Metrics(this, pluginId);
         SQLDatabase.initiateConnection(this);
-        if(config.usingDB()) {
+        /*if(config.usingDB()) {
             shopRepo = new MySQLShopRepo(this);
         }
-        else
-            shopRepo = new JSONShopRepo(this);
+        else*/
+        shopRepo = new JSONShopRepo(this);
         this.gui = new GUI(this);
 
         getServer().getPluginManager().registerEvents(new ShopEvents(this),this);

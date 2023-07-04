@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 public interface ShopRepo {
+    public enum EditType{
+        NOT_UNDER_ADD, NOT_UNDER_EDIT, ADD_OWNER, ADD_SHOP, SET_DISPLAY_ITEM, SET_DESCRIPTION, SHOP_OWNER_ADDITION, COREPROTECT_RADIUS;
+    }
     String addShopAsOwner(String name, String desc, String owner, String uuid, String loc, String displayItem);
 
     String addShop(String name, String desc, String owner, String uuid, String loc, String displayItem);
@@ -42,7 +45,7 @@ public interface ShopRepo {
 
     void initShopOwnerAddition(String uuid);
 
-    int getEditType(String uuid);
+    EditType getEditType(String uuid);
 
     void setQty(String qty, String uuid);
 
