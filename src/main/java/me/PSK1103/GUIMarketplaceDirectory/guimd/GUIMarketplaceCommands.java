@@ -1,6 +1,7 @@
 package me.PSK1103.GUIMarketplaceDirectory.guimd;
 
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 //import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
@@ -75,7 +76,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                 else if((args[0].equals("moderate") || args[0].equals("m")) && (args[1].equals("lookup") || args[1].equals("l"))) {
                     if((args[2].equals("set") || args[2].equals("s"))) {
                         if (plugin.getCustomConfig().useCoreProtect())
-                            plugin.gui.openShopDirectoryModerator(((Player) commandSender), 5);
+                            plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.ADD_ITEM);
                     }
                     else if((args[2].equals("all") || args[2].equals("a")))
                         plugin.getShopRepo().lookupAllShops(((Player) commandSender));
@@ -97,20 +98,20 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         switch (args[1]) {
                             case "pending":
                             case "p":
-                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), 1);
+                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.PENDING);
                                 return true;
 
                             case "review":
-                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), 2);
+                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.REVIEW);
                                 return true;
 
                             case "recover":
-                                plugin.gui.openShopDirectoryModerator((Player) commandSender, 3);
+                                plugin.gui.openShopDirectoryModerator((Player) commandSender, InvType.RECOVER);
                                 return true;
 
                             case "lookup": //very interesting can't find explanation about this on github and it doesn't really make sense to be the 'edit your shop' menu
                                 if(plugin.getCustomConfig().useCoreProtect())
-                                    plugin.gui.openShopDirectoryModerator((Player) commandSender, 4);
+                                    plugin.gui.openShopDirectoryModerator((Player) commandSender, InvType.LOOKUP);
                                 return true;
 
                             case "migrate":

@@ -1,6 +1,8 @@
 package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -147,34 +149,26 @@ public class ItemEvents implements Listener {
 
             ShopInvHolder holder = (ShopInvHolder)itemCheckEvent.getInventory().getHolder();
 
-            if(holder.getKey().length() == 0 && holder.getType() < 6) {
-                return;
-            }
+            if(holder.getKey().length() == 0 && holder.getType() != InvType.SEARCH) {return;}
 
-            if(itemCheckEvent.getRawSlot() > itemCheckEvent.getInventory().getSize()) {
-                return;
-            }
-
-
-            int type = holder.getType();
+            if(itemCheckEvent.getRawSlot() > itemCheckEvent.getInventory().getSize()) {return;}
+            InvType type = holder.getType();
             Player player = ((Player) itemCheckEvent.getWhoClicked());
 
-            if(type < 4) { 
-
+            if(type == InvType.SEARCH) { 
                 int currPage = 1;
-
                 //if clicks in bottom 9 slots of the inventory AND the inventory size is 54 (double chest).
                 if(itemCheckEvent.getRawSlot() >= (itemCheckEvent.getInventory().getSize() - 9) && itemCheckEvent.getInventory().getSize() == 54) {
                     //has multiple pages
                     if(holder.isPaged()) {
                         //clicks on next page
                         if (itemCheckEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(45).getItemMeta().getDisplayName().substring(5));
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
                             plugin.gui.nextInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
                         }
                         //clicks on previous page
                         if (itemCheckEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(45).getItemMeta().getDisplayName().substring(5));
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
                             plugin.gui.prevInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
                         }
                     }
@@ -183,11 +177,36 @@ public class ItemEvents implements Listener {
                     it will put you back to that shop menu with that mode you were in */
                     if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
                         player.closeInventory();
-                        if (type == 0) {
+                    }
+                    return;
+                }
+            }
+            if(type == InvType.NORMAL || type == InvType.PENDING || type == InvType.REVIEW || type == InvType.RECOVER) { 
+                int currPage = 1;
+                //if clicks in bottom 9 slots of the inventory AND the inventory size is 54 (double chest).
+                if(itemCheckEvent.getRawSlot() >= (itemCheckEvent.getInventory().getSize() - 9) && itemCheckEvent.getInventory().getSize() == 54) {
+                    //has multiple pages
+                    if(holder.isPaged()) {
+                        //clicks on next page
+                        if (itemCheckEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
+                            plugin.gui.nextInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
+                        }
+                        //clicks on previous page
+                        if (itemCheckEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
+                            plugin.gui.prevInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
+                        }
+                    }
+                    /* clicks on bottom right slot, which is going to open the normal shop directory if you're in normal view(0)? 
+                    if you were a moderator in mode (pending/review/recover) looking at a shops content, 
+                    it will put you back to that shop menu with that mode you were in */
+                    if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
+                        player.closeInventory();
+                        if (type == InvType.NORMAL) {
                             plugin.gui.openShopDirectory(player);
                         } else
                             plugin.gui.openShopDirectoryModerator(player, type);
-
                         return;
                     }
                     return;
@@ -202,14 +221,14 @@ public class ItemEvents implements Listener {
                     it will put you back to that shop menu with that mode you were in */
                     if (itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
                         player.closeInventory();
-                        if (type == 0) { 
+                        if (type == InvType.NORMAL) { 
                             plugin.gui.openShopDirectory(player);
                         } else
                             plugin.gui.openShopDirectoryModerator(player, type);
                     }
                     //if fails, then currPage=1
                     try {
-                        currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(45).getItemMeta().getDisplayName().substring(5));
+                        currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
                     }
                     catch (Exception ignored) {}
                     plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), holder.getItemId((currPage-1)*45 + itemCheckEvent.getRawSlot()));
@@ -219,14 +238,14 @@ public class ItemEvents implements Listener {
                     it will put you back to that shop menu with that mode you were in */
                 if (itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
                     player.closeInventory();
-                    if (type == 0) {
+                    if (type == InvType.NORMAL) {
                         plugin.gui.openShopDirectory(player);
                     } else
                         plugin.gui.openShopDirectoryModerator(player, type);
                 }
             }
             else {
-                if(type == 4) {
+                if(type == InvType.LOOKUP) {
                     /* this is your shop edit menu, where you can:
                      * add an owner to your shop
                      * change the display name of your shop
@@ -257,7 +276,7 @@ public class ItemEvents implements Listener {
                             plugin.gui.sendConfirmationMessage(player,"Do you wish to remove this shop?");
                     }
                 }
-                else if(type == 5) {
+                else if(type == InvType.ADD_ITEM) {
                     /* this is the menu that opens when you wanna add an item that you already sell in your shop.
                      * it gives you the options to:
                      * continue adding the item
@@ -293,10 +312,10 @@ public class ItemEvents implements Listener {
 
                         plugin.gui.openItemAddMenu(player, holder.getKey(), matchingItems, itemCheckEvent.getCurrentItem());
                     }
-                } else if(type == 6 && itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() < Math.min(itemCheckEvent.getInventory().getSize(),holder.getShops().size())) {
+                } else if(type == InvType.SEARCH && itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() < Math.min(itemCheckEvent.getInventory().getSize(),holder.getShops().size())) {
                     /* this is the menu that opens when you search for items */
                     player.closeInventory();
-                    plugin.gui.openShopInventory(player,holder.getShops().get(itemCheckEvent.getRawSlot()).get("id"),holder.getShops().get(itemCheckEvent.getRawSlot()).get("name"),0);
+                    plugin.gui.openShopInventory(player,holder.getShops().get(itemCheckEvent.getRawSlot()).get("id"),holder.getShops().get(itemCheckEvent.getRawSlot()).get("name"),InvType.NORMAL);
                 }
             }
         }

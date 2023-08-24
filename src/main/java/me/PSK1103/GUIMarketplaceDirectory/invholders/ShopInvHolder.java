@@ -14,8 +14,10 @@ public class ShopInvHolder implements InventoryHolder {
     List<Map<String,String>> shops;
     List<ItemStack> items;
     List<Integer> itemIds;
-    final int type;
+    final InvType type;
     boolean paged;
+    boolean filtered;
+    String searchKey;
     @Override
     public @NotNull Inventory getInventory() {
         return null;
@@ -31,13 +33,14 @@ public class ShopInvHolder implements InventoryHolder {
     public ShopInvHolder(String key) {
         super();
         this.key = key;
-        this.type = 0;
+        this.type = InvType.NORMAL;
         this.item = null;
         shops = null;
         paged = false;
+        filtered = false;        
     }
 
-    public ShopInvHolder(String key,int type,List<ItemStack> items, List<Integer> itemIds) {
+    public ShopInvHolder(String key, InvType type, List<ItemStack> items, List<Integer> itemIds, String searchKey) {
         super();
         this.key = key;
         this.type = type;
@@ -46,14 +49,29 @@ public class ShopInvHolder implements InventoryHolder {
         this.item = null;
         shops = null;
         paged = false;
+        filtered = true;  
+        this.searchKey = searchKey;
     }
 
-    public ShopInvHolder(String key, ItemStack item, int type) {
+    public ShopInvHolder(String key, InvType type, List<ItemStack> items, List<Integer> itemIds) {
+        super();
+        this.key = key;
+        this.type = type;
+        this.items = items;
+        this.itemIds = itemIds;
+        this.item = null;
+        shops = null;
+        paged = false;
+        filtered = false;  
+    }
+
+    public ShopInvHolder(String key, ItemStack item, InvType type) {
         this.key = key;
         this.item = item;
         this.type = type;
         shops = null;
         paged = false;
+        filtered = false;  
     }
 
     public ShopInvHolder setShops(List<Map<String,String>> shops) {
@@ -65,7 +83,7 @@ public class ShopInvHolder implements InventoryHolder {
         return shops;
     }
 
-    public int getType() {
+    public InvType getType() {
         return type;
     }
 
@@ -83,5 +101,13 @@ public class ShopInvHolder implements InventoryHolder {
 
     public boolean isPaged() {
         return paged;
+    }
+    
+    public boolean getFiltered() {
+        return filtered;
+    }
+
+    public String getSearchKey() {
+        return searchKey;
     }
 }

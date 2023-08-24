@@ -10,16 +10,16 @@ import java.util.Map;
 
 public class MarketplaceBookHolder implements InventoryHolder {
     final List<Map<String,String>> shops;
-    final int type;
+    final InvType type;
     boolean paged;
 
     public MarketplaceBookHolder(List<Map<String, String>> shops) {
         this.shops = shops!=null ? shops : new ArrayList<>();
-        this.type = 0;
+        this.type = InvType.NORMAL;
         paged = false;
     }
 
-    public MarketplaceBookHolder(List<Map<String, String>> shops,int type) {
+    public MarketplaceBookHolder(List<Map<String, String>> shops, InvType type) {
         this.shops = shops;
         this.type = type;
         this.paged = false;
@@ -34,7 +34,7 @@ public class MarketplaceBookHolder implements InventoryHolder {
         return shops;
     }
 
-    public int getType() {
+    public InvType getType() {
         return type;
     }
 

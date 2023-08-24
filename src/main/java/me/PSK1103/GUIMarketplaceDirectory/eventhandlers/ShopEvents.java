@@ -2,6 +2,7 @@ package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 
 import me.PSK1103.GUIMarketplaceDirectory.database.SQLDatabase;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo.EditType;
 //import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
@@ -198,30 +199,30 @@ public class ShopEvents implements Listener {
             int currPage = 1;
 
             if(shopSelectEvent.getRawSlot() > 44 && holder.isPaged()) {
-                if(shopSelectEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
-                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(45).getItemMeta().displayName()).content().substring(5));
+                if(shopSelectEvent.getCurrentItem() != null && shopSelectEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
+                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5));
                     plugin.gui.nextPage(((Player) shopSelectEvent.getWhoClicked()),currPage);
                 }
-                if(shopSelectEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
-                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(45).getItemMeta().displayName()).content().substring(5));
+                if(shopSelectEvent.getCurrentItem() != null && shopSelectEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
+                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5));
                     plugin.gui.prevPage(((Player) shopSelectEvent.getWhoClicked()),currPage);
                 }
                 return;
             }
 
             if(shopSelectEvent.getInventory().getSize() == 54) {
-                if(shopSelectEvent.getInventory().getItem(45).getType() == Material.LIGHT_GRAY_STAINED_GLASS_PANE && (shopSelectEvent.getInventory().getItem(46) == null || shopSelectEvent.getInventory().getItem(46).getType() == Material.AIR)) {
-                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(45).getItemMeta().displayName()).content().substring(5));
+                if(shopSelectEvent.getInventory().getItem(49) != null && shopSelectEvent.getInventory().getItem(49).getType() == Material.LIGHT_GRAY_STAINED_GLASS_PANE) {
+                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5));
                 }
             }
             
-            if(holder.getType() == 0) {
-                if(shopSelectEvent.isLeftClick()) {
+            if(holder.getType() == InvType.NORMAL) {
+                if(shopSelectEvent.isLeftClick() && shopSelectEvent.getRawSlot() + 45*(currPage - 1) < holder.getShops().size()) {
                     shopSelectEvent.getWhoClicked().closeInventory();
                     plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
                     return;
                 }
-                else if(shopSelectEvent.isRightClick()) {
+                else if(shopSelectEvent.isRightClick() && shopSelectEvent.getRawSlot() + 45*(currPage - 1) < holder.getShops().size()) {
                     //sends the link of the Dynmap with the location of the selected shop to the player
                     String input = holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("loc");
                     String[] parts = input.split(",");
@@ -234,12 +235,12 @@ public class ShopEvents implements Listener {
                 }
             }            
 
-            else if (holder.getType() == 1) {
-                if(shopSelectEvent.isShiftClick()){
+            else if (holder.getType() == InvType.PENDING) {
+                if(shopSelectEvent.isShiftClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()){
                     shopSelectEvent.getWhoClicked().closeInventory();
                     plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
                 }
-                else if(shopSelectEvent.isRightClick()) {
+                else if(shopSelectEvent.isRightClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
                     if(plugin.getShopRepo().isUserRejectingShop(shopSelectEvent.getWhoClicked().getUniqueId().toString()) || plugin.getShopRepo().isUserRemovingShop(shopSelectEvent.getWhoClicked().getUniqueId().toString())) {
                         shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Confirm rejection of previous shop first!");
                         return;
@@ -247,10 +248,10 @@ public class ShopEvents implements Listener {
                     plugin.getShopRepo().approveShop(holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"));
                     shopSelectEvent.getWhoClicked().sendMessage(ChatColor.GREEN + "Shop approved");
                     shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopDirectoryModerator(((Player) shopSelectEvent.getWhoClicked()),1);
+                    plugin.gui.openShopDirectoryModerator(((Player) shopSelectEvent.getWhoClicked()),InvType.PENDING);
                     return;
                 }
-                else if(shopSelectEvent.isLeftClick()) {
+                else if(shopSelectEvent.isLeftClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
                     if(plugin.getShopRepo().isUserRejectingShop(shopSelectEvent.getWhoClicked().getUniqueId().toString()) || plugin.getShopRepo().isUserRemovingShop(shopSelectEvent.getWhoClicked().getUniqueId().toString())) {
                         shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Confirm rejection of previous shop first!");
                         return;
@@ -261,8 +262,8 @@ public class ShopEvents implements Listener {
                     return;
                 }
             }
-            else if(holder.getType() == 2) {
-                if(shopSelectEvent.isRightClick()) {
+            else if(holder.getType() == InvType.REVIEW) {
+                if(shopSelectEvent.isRightClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
                     if(plugin.getShopRepo().isUserRemovingShop(shopSelectEvent.getWhoClicked().getUniqueId().toString())) {
                         shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Confirm removal of previous shop first!");
                         return;
@@ -272,15 +273,15 @@ public class ShopEvents implements Listener {
                     shopSelectEvent.getWhoClicked().closeInventory();
                     return;
                 }
-                else {
+                else if(shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
                     shopSelectEvent.getWhoClicked().closeInventory();
                     plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
                 }
                 return;
             }
-            else if(holder.getType() == 3) {
+            else if(holder.getType() == InvType.RECOVER) {
 
-                if(shopSelectEvent.getCursor().getType() == Material.AIR && shopSelectEvent.isRightClick()) {
+                if(shopSelectEvent.isRightClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
                     ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
                     BookMeta meta = (BookMeta) book.getItemMeta();
                     Map<String,String> shopDetails = holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage-1));
@@ -297,13 +298,13 @@ public class ShopEvents implements Listener {
                         shopSelectEvent.setCursor(book);
                 }
 
-                else {
+                else if(shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
                     shopSelectEvent.getWhoClicked().closeInventory();
                     plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
                 }
 
             }
-            else if (holder.getType() == 4) {
+            else if (holder.getType() == InvType.LOOKUP) {
                 if(shopSelectEvent.isRightClick()) {
                     int finalCurrPage = currPage;
                     class LookupThread implements Runnable {
@@ -320,7 +321,7 @@ public class ShopEvents implements Listener {
                     plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
                 }
             }
-            else if (holder.getType() == 5) {
+            else if (holder.getType() == InvType.ADD_ITEM) {
                 if(shopSelectEvent.isRightClick()) {
                     String uuid = shopSelectEvent.getWhoClicked().getUniqueId().toString();
                     if(plugin.getShopRepo().isUserRejectingShop(uuid) || plugin.getShopRepo().isUserRemovingShop(uuid)) {

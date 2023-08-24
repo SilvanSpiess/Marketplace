@@ -1,6 +1,7 @@
 package me.PSK1103.GUIMarketplaceDirectory.utils;
 
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
 import net.kyori.adventure.text.Component;
@@ -91,7 +92,7 @@ public class GUI {
             shopDirectory.setItem(48,prevPage);
             //namPage display
             ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
-            shopDirectory.setItem(45,pageNum);
+            shopDirectory.setItem(49,pageNum);
         }
         player.openInventory(shopDirectory);
     }
@@ -99,7 +100,7 @@ public class GUI {
     /*
      * Opens the inventory of the selected shop
      */
-    public void openShopInventory(Player player, String key,String name,int type) {
+    public void openShopInventory(Player player, String key,String name,InvType type) {
 
         List<Object> res = plugin.getShopRepo().getShopInv(key);
         List<ItemStack> inv = (List<ItemStack>) res.get(0);
@@ -128,11 +129,11 @@ public class GUI {
             shopInventory.setItem(48,prevPage);
             //numPage display
             ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
-            shopInventory.setItem(45,pageNum);
+            shopInventory.setItem(49,pageNum);
         }
         player.openInventory(shopInventory);
     }
-
+    
     //calls updateInvPage to load next inventory page
     public void nextInvPage(Player player, int currPage) {
         updateInvPage(player, currPage);
@@ -145,14 +146,16 @@ public class GUI {
     }
 
     /*
-     * loads the next AND previous page of the inventory of a shop
+     * loads the next OR previous page of the inventory of a shop
      */
     public void updateInvPage(Player player, int currPage) {
+        
         //Creates the inventory of a shop with the items listed (any page)
         Inventory pageInv = player.getOpenInventory().getTopInventory();
         ShopInvHolder holder = (ShopInvHolder) pageInv.getHolder();
         List<ItemStack> inv = holder.getInv();
-        int type = holder.getType();
+        
+        //int type = holder.getType();
         pageInv.clear();
         for(int i=0;i<Math.min(inv.size(),(currPage+1)*45)-currPage*45;i++) {
             pageInv.setItem(i,inv.get(i+currPage*45));
@@ -167,7 +170,7 @@ public class GUI {
         pageInv.setItem(48,prevPage);
         //currPage display
         ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (currPage+1)));
-        pageInv.setItem(45,pageNum);
+        pageInv.setItem(49,pageNum);
         //goBack Button
         ItemStack back = makeDisplayItem(Material.ARROW, Component.text(ChatColor.YELLOW + "Go Back"));
         pageInv.setItem(53,back);
@@ -194,7 +197,7 @@ public class GUI {
         Inventory nextPageInv = player.getOpenInventory().getTopInventory();
         MarketplaceBookHolder holder = (MarketplaceBookHolder) nextPageInv.getHolder();
         List<Map<String,String>> shops = holder.getShops();
-        int type = holder.getType();
+        InvType type = holder.getType();
         nextPageInv.clear();
         for(int i=0;i<Math.min(shops.size(),(currPage+1)*45)-currPage*45;i++) {
             ItemStack shopItem;
@@ -217,14 +220,14 @@ public class GUI {
             // - (type 1) pending -> shows all pending shops
             // - (type 2) review -> removes shops
             // - (type 3) recover -> recovers shopOwner book
-            if(type == 0) {
+            if(type == InvType.NORMAL) {
                 lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            }else if(type == 1) {
+            }else if(type == InvType.PENDING) {
                 lore.add(Component.text(ChatColor.GREEN + "Right click to approve"));
                 lore.add(Component.text(ChatColor.RED + "Left click to reject"));
-            } else if (type == 2) {
+            } else if (type == InvType.REVIEW) {
                 lore.add(Component.text(ChatColor.RED + "Right click to delete"));
-            } else if(type == 3) {
+            } else if(type == InvType.RECOVER) {
                 lore.add(Component.text(ChatColor.AQUA + "Right click to recover"));
             }
             shopMeta.lore(lore);
@@ -240,7 +243,7 @@ public class GUI {
         nextPageInv.setItem(48,prevPage);
         //currPage display
         ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (currPage+1)));
-        nextPageInv.setItem(45,pageNum);
+        nextPageInv.setItem(49,pageNum);
         player.updateInventory();
     }
 
@@ -253,7 +256,7 @@ public class GUI {
         Inventory prevPageInv = player.getOpenInventory().getTopInventory();
         MarketplaceBookHolder holder = (MarketplaceBookHolder) prevPageInv.getHolder();
         List<Map<String,String>> shops = holder.getShops();
-        int type = holder.getType();
+        InvType type = holder.getType();
         prevPageInv.clear();
         for(int i=0;i < 45;i++) {
             ItemStack shopItem;
@@ -276,14 +279,14 @@ public class GUI {
             // - (type 1) pending -> shows all pending shops
             // - (type 2) review -> removes shops
             // - (type 3) recover -> recovers shopOwner book
-            if(type == 0) {
+            if(type == InvType.NORMAL) {
                 lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            }else if(type == 1) {
+            }else if(type == InvType.PENDING) {
                 lore.add(Component.text(ChatColor.GREEN + "Right click to approve"));
                 lore.add(Component.text(ChatColor.RED + "Left click to reject"));
-            } else if(type == 2) {
+            } else if(type == InvType.REVIEW) {
                 lore.add(Component.text(ChatColor.RED + "Right click to delete"));
-            } else if(type == 3) {
+            } else if(type == InvType.RECOVER) {
                 lore.add(Component.text(ChatColor.AQUA + "Right click to recover"));
             }
             shopMeta.lore(lore);
@@ -299,7 +302,7 @@ public class GUI {
         prevPageInv.setItem(48,prevPage);
         //currPage display
         ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (currPage+1)));
-        prevPageInv.setItem(45,pageNum);
+        prevPageInv.setItem(49,pageNum);
         player.updateInventory();
     }
 
@@ -389,9 +392,21 @@ public class GUI {
             player.sendMessage(ChatColor.RED + "No items with matching name found");
             return;
         }
-        Inventory refinedItemInv = Bukkit.createInventory(new ShopInvHolder("",6,null, null).setShops(shops),Math.min(9*(refinedItems.size()/9 + ((refinedItems.size()%9) == 0 ? 0 : 1)),54), Component.text("Search results"));
-        for(int i=0;i<Math.min(refinedItems.size(),54);i++) {
+        Inventory refinedItemInv = Bukkit.createInventory(new ShopInvHolder("", InvType.SEARCH, refinedItems,null, searchKey).setShops(shops),Math.min(9*(refinedItems.size()/9 + ((refinedItems.size()%9) == 0 ? 0 : 1)),54), Component.text("Search results"));
+        for(int i=0;i<Math.min(refinedItems.size(),45);i++) {
             refinedItemInv.setItem(i,refinedItems.get(i));
+        }
+        if(refinedItems.size()>45) {
+            ((ShopInvHolder) refinedItemInv.getHolder()).setPaged();
+            //nextPage button
+            ItemStack nextPage = makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page"));
+            refinedItemInv.setItem(50,nextPage);
+            //prevPage button
+            ItemStack prevPage = makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
+            refinedItemInv.setItem(48,prevPage);
+            //numPage display
+            ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
+            refinedItemInv.setItem(49,pageNum);
         }
         player.openInventory(refinedItemInv);
     }
@@ -404,9 +419,9 @@ public class GUI {
      * - (type 4) lookup -> coreprotect -> ShopEvents.java ln 348
      * - (type 5) seems to be inactive -> ShopEvents.java ln 365
      */
-    public void openShopDirectoryModerator(Player moderator,int type) {
-        List<Map<String,String>> shops = type == 1 ? plugin.getShopRepo().getPendingShopDetails() : plugin.getShopRepo().getShopDetails();
-        Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops,type), Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), Component.text("Marketplace Directory"));
+    public void openShopDirectoryModerator(Player moderator,InvType type) {
+        List<Map<String,String>> shops = type == InvType.PENDING ? plugin.getShopRepo().getPendingShopDetails() : plugin.getShopRepo().getShopDetails();
+        Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops, type), Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), Component.text("Marketplace Directory"));
         for(int i=0;i<(shops.size() > 54 ? 45 : shops.size());i++) {
             ItemStack shopItem;
             try {
@@ -422,21 +437,21 @@ public class GUI {
             l.forEach(s -> lore.add(Component.text(s)));
             lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
             lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shops.get(i).get("owners"))));
-            if(type == 1) {
+            if(type == InvType.PENDING) {
                 lore.add(Component.text(ChatColor.AQUA + "Shift click to view"));
                 lore.add(Component.text(ChatColor.GREEN + "Right click to approve"));
                 lore.add(Component.text(ChatColor.RED + "Left click to reject"));
             }
-            else if (type == 2) {
+            else if (type == InvType.REVIEW) {
                 lore.add(Component.text(ChatColor.RED + "Right click to remove"));
             }
-            else if(type == 3) {
+            else if(type == InvType.RECOVER) {
                 lore.add(Component.text(ChatColor.AQUA + "Right click to recover")); //Maybe send recovering message in chat, to notify player
             }
-            else if(type == 4) {
+            else if(type == InvType.LOOKUP) {
                 lore.add(Component.text(ChatColor.AQUA + "Right click to check activity")); //confusing, todo later
             }
-            else if(type == 5) {
+            else if(type == InvType.ADD_ITEM) {
                 lore.add(Component.text(ChatColor.AQUA + "Right click to set lookup radius")); //confusing, todo later
             }
             shopMeta.lore(lore);
@@ -456,7 +471,7 @@ public class GUI {
             shopDirectory.setItem(48,prevPage);
             //currPage display
             ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
-            shopDirectory.setItem(45,pageNum);
+            shopDirectory.setItem(49,pageNum);
         }
 
         if(shops.size() == 0) {
@@ -474,7 +489,7 @@ public class GUI {
     public void openShopEditMenu(Player player, String key) {
         String name = plugin.getShopRepo().getShopName(key);
         //creates the inventory for this menu
-        Inventory shopEditMenuInv = Bukkit.createInventory(new ShopInvHolder(key,4,null, null),9, Component.text(name));
+        Inventory shopEditMenuInv = Bukkit.createInventory(new ShopInvHolder(key, InvType.LOOKUP, null, null),9, Component.text(name));
         //addOwner button
         ItemStack addOwner = makeDisplayItem(Material.BEACON, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Add owner"));
         shopEditMenuInv.setItem(1,addOwner);
@@ -492,7 +507,7 @@ public class GUI {
      */
     public void openItemAddMenu(Player player, String key, List<ItemStack> matchingItems, ItemStack itemToAdd) {
         //creates the inventory for this menu, adjustable to the amount of same items in the shop
-        Inventory itemAddMenuInv = Bukkit.createInventory(new ShopInvHolder(key,itemToAdd.clone(),5),Math.min(54,9 + 9*(matchingItems.size()/9 + (matchingItems.size()%9 == 0 ? 0 : 1))),Component.text("Adding Item..."));
+        Inventory itemAddMenuInv = Bukkit.createInventory(new ShopInvHolder(key, itemToAdd.clone(), InvType.ADD_ITEM),Math.min(54,9 + 9*(matchingItems.size()/9 + (matchingItems.size()%9 == 0 ? 0 : 1))),Component.text("Adding Item..."));
         for(int i = 0;i<Math.min(matchingItems.size(),45);i++) {
             ItemStack iTA = matchingItems.get(i).clone();
             ItemMeta meta = iTA.getItemMeta();
