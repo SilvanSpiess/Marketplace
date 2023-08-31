@@ -38,6 +38,7 @@ public class GUI {
         colors.put("desc",plugin.getCustomConfig().getDefaultShopDescColor());
         colors.put("owner",plugin.getCustomConfig().getDefaultShopOwnerColor());
         colors.put("loc",plugin.getCustomConfig().getDefaultShopLocColor());
+        colors.put("u-loc",plugin.getCustomConfig().getDefaultShopULocColor());
         colors.put("dynmap",plugin.getCustomConfig().getDefaultShopDynmapColor());
     }
 
@@ -73,7 +74,13 @@ public class GUI {
             List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + shops.get(i).get("desc")),30)));
             List<Component> lore = new ArrayList<>();
             l.forEach(s -> lore.add(Component.text(s)));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
+            String[] parts = shops.get(i).get("loc").split(",");
+            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+            }
+            else {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
+            }
             lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shops.get(i).get("owners"))));
             lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
             shopMeta.lore(lore);
@@ -213,7 +220,13 @@ public class GUI {
             List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i+currPage*45).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+currPage*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") +  shops.get(i+currPage*45).get("desc")),30)));
             List<Component> lore = new ArrayList<>();
             l.forEach(s -> lore.add(Component.text(s)));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") +  shops.get(i+currPage*45).get("loc"))));
+            String[] parts = shops.get(i).get("loc").split(",");
+            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+            }
+            else {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
+            }
             lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") +  shops.get(i+currPage*45).get("owners"))));
             //adds different lore, based on the types:
             // - (type 0) normal -> shows all shops
@@ -272,7 +285,13 @@ public class GUI {
             List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i+currPage*45).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+currPage*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") +  shops.get(i+currPage*45).get("desc")),30)));
             List<Component> lore = new ArrayList<>();
             l.forEach(s -> lore.add(Component.text(s)));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") +  shops.get(i+currPage*45).get("loc"))));
+            String[] parts = shops.get(i).get("loc").split(",");
+            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+            }
+            else {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
+            }
             lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") +  shops.get(i+currPage*45).get("owners"))));
             //adds different lore, based on the types:
             // - (type 0) normal -> shows all shops
@@ -333,8 +352,15 @@ public class GUI {
             List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(refinedShops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',refinedShops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + refinedShops.get(i).get("desc")),30)));
             List<Component> lore = new ArrayList<>();
             l.forEach(s -> lore.add(Component.text(s)));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + refinedShops.get(i).get("loc"))));
+            String[] parts = refinedShops.get(i).get("loc").split(",");
+            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+            }
+            else {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + refinedShops.get(i).get("loc"))));
+            }
             lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + refinedShops.get(i).get("owners"))));
+            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
             shopMeta.lore(lore);
             shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             shopItem.setItemMeta(shopMeta);
@@ -370,8 +396,15 @@ public class GUI {
             List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(refinedShops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',refinedShops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + refinedShops.get(i).get("desc")),30)));
             List<Component> lore = new ArrayList<>();
             l.forEach(s -> lore.add(Component.text(s)));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + refinedShops.get(i).get("loc"))));
+            String[] parts = refinedShops.get(i).get("loc").split(",");
+            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+            }
+            else {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + refinedShops.get(i).get("loc"))));
+            }
             lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + refinedShops.get(i).get("owners"))));
+            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
             shopMeta.lore(lore);
             shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             shopItem.setItemMeta(shopMeta);
@@ -435,7 +468,13 @@ public class GUI {
             List<String > l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i).get("desc")) : (colors.get("desc") + shops.get(i).get("desc")),30)));
             List<Component> lore = new ArrayList<>();
             l.forEach(s -> lore.add(Component.text(s)));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
+            String[] parts = shops.get(i).get("loc").split(",");
+            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+            }
+            else {
+                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
+            }
             lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shops.get(i).get("owners"))));
             if(type == InvType.PENDING) {
                 lore.add(Component.text(ChatColor.AQUA + "Shift click to view"));

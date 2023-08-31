@@ -1285,17 +1285,25 @@ public class JSONShopRepo implements ShopRepo {
         }
         Shop shop = shops.get(key);
         String loc = shop.getLoc();
-        Matcher locMatcher = java.util.regex.Pattern.compile("(-?\\d+),(-?\\d+)").matcher(loc);
+        Matcher locMatcher = java.util.regex.Pattern.compile("(-?\\d+),(-?\\d+),(-?\\d+)").matcher(loc);
         int x,y,z;
-        if(locMatcher.find()) {
-            x = Integer.parseInt(locMatcher.group(1));
-            z = Integer.parseInt(locMatcher.group(2));
+        if(locMatcher.find()) {            
+            if(locMatcher.group(3)==null) {
+                x = Integer.parseInt(locMatcher.group(1));
+                y = 64;
+                z = Integer.parseInt(locMatcher.group(2));
+            }
+            else {
+                x = Integer.parseInt(locMatcher.group(1));
+                y = Integer.parseInt(locMatcher.group(2));
+                z = Integer.parseInt(locMatcher.group(3));
+            }                
         }
         else {
-            x = player.getLocation().getBlockX();
+            x = player.getLocation().getBlockX();            
+            y = player.getLocation().getBlockY();
             z = player.getLocation().getBlockZ();
-        }
-        y = player.getLocation().getBlockY();
+        }        
         Location location = new Location(player.getWorld(), x, y, z);
         int radius = plugin.getCustomConfig().getDefaultLookupRadius();
         //int interactions = plugin.getCustomConfig().getInteractions();

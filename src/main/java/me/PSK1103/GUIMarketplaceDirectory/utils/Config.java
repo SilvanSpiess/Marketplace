@@ -20,14 +20,17 @@ public class Config {
     private String defaultShopDescColor;
     private String defaultShopOwnerColor;
     private String defaultShopLocColor;
+    private String defaultShopULocColor;
     private String defaultShopDynmapColor;
 
-    private String tutorialLink;
-    private String modTutorialLink;
+    private int shopDetailsLengthLimit;
+
+    private int maxUndergroundMarketLevel;
 
     private boolean moderateDirectory;
-
-    private int shopDetailsLengthLimit;
+    
+    private String tutorialLink;
+    private String modTutorialLink;
 
     private boolean multiOwner;
     private boolean allowAddingOfflinePLayer;
@@ -83,11 +86,15 @@ public class Config {
             defaultShopDescColor = configFile.getString("default-shop-desc-color",defaultConfig.getString("default-shop-desc-color"));
             defaultShopOwnerColor = configFile.getString("default-shop-owner-color",defaultConfig.getString("default-shop-owner-color"));
             defaultShopLocColor = configFile.getString("default-shop-loc-color",defaultConfig.getString("default-shop-loc-color"));
+            defaultShopULocColor = configFile.getString("default-shop-u-loc-color",defaultConfig.getString("default-shop-u-loc-color"));
             defaultShopDynmapColor = configFile.getString("default-shop-dynmap-color",defaultConfig.getString("default-shop-dynmap-color"));
 
             //sets a character limit for shop name + description
             //set to -1 for no limit
             shopDetailsLengthLimit = configFile.getInt("shop-details-length-limit",defaultConfig.getInt("shop-details-length-limit",-1));
+
+            //sets the maximum height of the underground market
+            maxUndergroundMarketLevel = configFile.getInt("max-underground-market-level",defaultConfig.getInt("max-underground-market-level",0));
 
             //determines whether the shops will have to be approved by staff or not. 
             //It is used in SQL database and JSONShopRepo to decide whether to put the newly added shop in PendingShops or shops.
@@ -152,11 +159,15 @@ public class Config {
             defaultShopDescColor = defaultConfig.getString("default-shop-desc-color");
             defaultShopOwnerColor = defaultConfig.getString("default-shop-owner-color");
             defaultShopLocColor = defaultConfig.getString("default-shop-loc-color");
+            defaultShopULocColor = defaultConfig.getString("default-shop-u-loc-color");
             defaultShopDynmapColor = defaultConfig.getString("default-shop-dynmap-color");
 
             //sets a character limit for shop name + description
             //set to -1 for no limit
             shopDetailsLengthLimit = defaultConfig.getInt("shop-details-length-limit",-1);
+
+            //sets the maximum height of the underground market
+            maxUndergroundMarketLevel = defaultConfig.getInt("max-underground-market-level",0);
 
             //determines whether the shops will have to be approved by staff or not. 
             //It is used in SQL database and JSONShopRepo to decide whether to put the newly added shop in PendingShops or shops.
@@ -300,6 +311,10 @@ public class Config {
         return defaultShopLocColor;
     }
 
+    public String getDefaultShopULocColor() {
+        return defaultShopULocColor;
+    }
+
     public String getDefaultShopDynmapColor() {
         return defaultShopDynmapColor;
     }
@@ -318,6 +333,10 @@ public class Config {
 
     public int getShopDetailsLengthLimit() {
         return shopDetailsLengthLimit;
+    }
+
+    public int getMaxUndergroundMarketLevel() {
+        return maxUndergroundMarketLevel;
     }
 
     public boolean multiOwnerEnabled() {
@@ -383,7 +402,10 @@ public class Config {
                 ", default-shop-desc-color='" + defaultShopDescColor + "'\n" +
                 ", default-shop-owner-color='" + defaultShopOwnerColor + "'\n" +
                 ", default-shop-loc-color='" + defaultShopLocColor + "'\n" +
-                ", default-shop-dynmap-color='" + defaultShopDynmapColor + "'\n" + 
+                ", default-shop-u-loc-color='" + defaultShopULocColor + "'\n" +
+                ", default-shop-dynmap-color='" + defaultShopDynmapColor + "'\n" +
+                ", shop-details-length-limit=" + shopDetailsLengthLimit + "\n" +
+                ", max-underground-market-level=" + maxUndergroundMarketLevel + "\n" + 
                 ", tutorial-link='" + tutorialLink + "'\n" + 
                 ", tutorial-moderator-link='" + modTutorialLink + "'\n" + 
                 ", moderate-directory=" + moderateDirectory + "'\n" +

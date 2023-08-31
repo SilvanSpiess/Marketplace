@@ -4,14 +4,18 @@ version: 2
 #custom colors for shop details [description,location,owner name]
 # should be in the format §[0-9a-fk-or]
 default-shop-name-color: §6§l
-default-shop-desc-color: §1
+default-shop-desc-color: §3
 default-shop-owner-color: §d
 default-shop-loc-color: §e
+default-shop-u-loc-color: §9
 default-shop-dynmap-color: §a
 
 #sets a character limit for shop name + description
 #set to -1 for no limit
 shop-details-length-limit: -1
+
+#sets the maximum height of the underground market
+max-underground-market-level: 0
 
 #activates moderation functionality
 moderate-directory: true

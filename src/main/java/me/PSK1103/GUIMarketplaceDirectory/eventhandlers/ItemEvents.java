@@ -2,7 +2,6 @@ package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
-import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
