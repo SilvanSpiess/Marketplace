@@ -199,25 +199,26 @@ public class GUI {
     /*
      * loads the next page of shops in the inventory
      */
-    public void nextPage(Player player, int currPage) {
-        //Creates the inventory of the next page with the shops listed
-        Inventory nextPageInv = player.getOpenInventory().getTopInventory();
-        MarketplaceBookHolder holder = (MarketplaceBookHolder) nextPageInv.getHolder();
+
+    public void updatePage(Player player, int page) {
+        //Creates the inventory of a certain page with the shops listed
+        Inventory pageInv = player.getOpenInventory().getTopInventory();
+        MarketplaceBookHolder holder = (MarketplaceBookHolder) pageInv.getHolder();
         List<Map<String,String>> shops = holder.getShops();
         InvType type = holder.getType();
-        nextPageInv.clear();
-        for(int i=0;i<Math.min(shops.size(),(currPage+1)*45)-currPage*45;i++) {
+        pageInv.clear();
+        for(int i=0;i<Math.min(shops.size(),(page+1)*45)-page*45;i++) {
             ItemStack shopItem;
             try {
-                shopItem = new ItemStack(Material.getMaterial(shops.get(i+currPage*45).get("displayItem")));
+                shopItem = new ItemStack(Material.getMaterial(shops.get(i+page*45).get("displayItem")));
             }
             catch (Exception e) {
                 shopItem = new ItemStack(Material.WRITTEN_BOOK);
             }
             //Adds general descriptive text to each shop
             ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.displayName(Component.text(shops.get(i+currPage*45).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+currPage*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") +  shops.get(i+currPage*45).get("name"))));
-            List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i+currPage*45).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+currPage*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") +  shops.get(i+currPage*45).get("desc")),30)));
+            shopMeta.displayName(Component.text(shops.get(i+page*45).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+page*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") +  shops.get(i+page*45).get("name"))));
+            List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i+page*45).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+page*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") +  shops.get(i+page*45).get("desc")),30)));
             List<Component> lore = new ArrayList<>();
             l.forEach(s -> lore.add(Component.text(s)));
             String[] parts = shops.get(i).get("loc").split(",");
@@ -227,7 +228,7 @@ public class GUI {
             else {
                 lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
             }
-            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") +  shops.get(i+currPage*45).get("owners"))));
+            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") +  shops.get(i+page*45).get("owners"))));
             //adds different lore, based on the types:
             // - (type 0) normal -> shows all shops
             // - (type 1) pending -> shows all pending shops
@@ -246,83 +247,30 @@ public class GUI {
             shopMeta.lore(lore);
             shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             shopItem.setItemMeta(shopMeta);
-            nextPageInv.setItem(i,shopItem);
+            pageInv.setItem(i,shopItem);
         }
         //nextPage button
-        ItemStack nextPage = shops.size() > (currPage+1)*45 ? makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page")): makeDisplayItem(Material.BARRIER, Component.text("Next Page"));
-        nextPageInv.setItem(50,nextPage);
+        ItemStack nextPage = shops.size() > (page+1)*45 ? makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page")): makeDisplayItem(Material.BARRIER, Component.text("Next Page"));
+        pageInv.setItem(50,nextPage);
         //prevPage button
-        ItemStack prevPage = currPage > 0 ? makeDisplayItem(Material.ORANGE_STAINED_GLASS_PANE, Component.text("Previous Page")) : makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
-        nextPageInv.setItem(48,prevPage);
+        ItemStack prevPage = page > 0 ? makeDisplayItem(Material.ORANGE_STAINED_GLASS_PANE, Component.text("Previous Page")) : makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
+        pageInv.setItem(48,prevPage);
         //currPage display
-        ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (currPage+1)));
-        nextPageInv.setItem(49,pageNum);
+        ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (page+1)));
+        pageInv.setItem(49,pageNum);
         player.updateInventory();
+    }
+
+    public void nextPage(Player player, int currPage) {
+        //Creates the inventory of the next page with the shops listed
+        updatePage(player, currPage);
     }
 
     /*
      * loads the previous page of shops in the inventory
      */
     public void prevPage(Player player, int currPage) {
-        currPage-=2;
-        //Creates the inventory of the previous page with the shops listed
-        Inventory prevPageInv = player.getOpenInventory().getTopInventory();
-        MarketplaceBookHolder holder = (MarketplaceBookHolder) prevPageInv.getHolder();
-        List<Map<String,String>> shops = holder.getShops();
-        InvType type = holder.getType();
-        prevPageInv.clear();
-        for(int i=0;i < 45;i++) {
-            ItemStack shopItem;
-            try {
-                shopItem = new ItemStack(Material.getMaterial(shops.get(i+currPage*45).get("displayItem")));
-            }
-            catch (Exception e) {
-                shopItem = new ItemStack(Material.WRITTEN_BOOK);
-            }
-            //Adds general descriptive text to each shop
-            ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.displayName(Component.text(shops.get(i+currPage*45).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+currPage*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") +  shops.get(i+currPage*45).get("name"))));
-            List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i+currPage*45).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+currPage*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") +  shops.get(i+currPage*45).get("desc")),30)));
-            List<Component> lore = new ArrayList<>();
-            l.forEach(s -> lore.add(Component.text(s)));
-            String[] parts = shops.get(i).get("loc").split(",");
-            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
-            }
-            else {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
-            }
-            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") +  shops.get(i+currPage*45).get("owners"))));
-            //adds different lore, based on the types:
-            // - (type 0) normal -> shows all shops
-            // - (type 1) pending -> shows all pending shops
-            // - (type 2) review -> removes shops
-            // - (type 3) recover -> recovers shopOwner book
-            if(type == InvType.NORMAL) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            }else if(type == InvType.PENDING) {
-                lore.add(Component.text(ChatColor.GREEN + "Right click to approve"));
-                lore.add(Component.text(ChatColor.RED + "Left click to reject"));
-            } else if(type == InvType.REVIEW) {
-                lore.add(Component.text(ChatColor.RED + "Right click to delete"));
-            } else if(type == InvType.RECOVER) {
-                lore.add(Component.text(ChatColor.AQUA + "Right click to recover"));
-            }
-            shopMeta.lore(lore);
-            shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            shopItem.setItemMeta(shopMeta);
-            prevPageInv.setItem(i,shopItem);
-        }
-        //nextPage button
-        ItemStack nextPage = shops.size() > (currPage+1)*45 ? makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page")): makeDisplayItem(Material.BARRIER, Component.text("Next Page"));
-        prevPageInv.setItem(50,nextPage);
-        //prevPage button
-        ItemStack prevPage = currPage > 0 ? makeDisplayItem(Material.ORANGE_STAINED_GLASS_PANE, Component.text("Previous Page")) : makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
-        prevPageInv.setItem(48,prevPage);
-        //currPage display
-        ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (currPage+1)));
-        prevPageInv.setItem(49,pageNum);
-        player.updateInventory();
+        updatePage(player, currPage-2);
     }
 
     /*
