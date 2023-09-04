@@ -205,46 +205,29 @@ public class ItemEvents implements Listener {
                     it will put you back to that shop menu with that mode you were in */
                     if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
                         player.closeInventory();
-                        if (type == InvType.NORMAL) {
-                            plugin.gui.openShopDirectory(player);
-                        } else
-                            plugin.gui.openShopDirectoryModerator(player, type);
-                        return;
+                        if (type == InvType.NORMAL) plugin.gui.openShopDirectory(player);
+                        else plugin.gui.openShopDirectoryModerator(player, type);
                     }
                     return;
                 }
-                //if right click AND
-                //   valid item AND
-                //   not barrier AND
-                //   top 5 rows 
-                if (itemCheckEvent.isRightClick() && itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getCurrentItem().getType() != Material.AIR && itemCheckEvent.getCurrentItem().getType() != Material.BARRIER && itemCheckEvent.getRawSlot()<45) {
-                    /* clicks on bottom right slot, which is going to open the normal shop directory if you're in normal view(0)? 
-                    if you were a moderator in mode (pending/review/recover) looking at a shops content, 
-                    it will put you back to that shop menu with that mode you were in */
-                    if (itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
-                        player.closeInventory();
-                        if (type == InvType.NORMAL) { 
-                            plugin.gui.openShopDirectory(player);
-                        } else
-                            plugin.gui.openShopDirectoryModerator(player, type);
+                //if right click AND valid item AND not barrier AND top 5 rows 
+                if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getCurrentItem().getType() != Material.AIR && itemCheckEvent.getCurrentItem().getType() != Material.BARRIER && itemCheckEvent.getRawSlot()<45) {
+                    if(itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() != itemCheckEvent.getInventory().getSize() - 1) {
+                        //if fails, then currPage=1
+                        try {
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
+                        }
+                        catch (Exception ignored) {}
+                        plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), holder.getItemId((currPage-1)*45 + itemCheckEvent.getRawSlot()));
                     }
-                    //if fails, then currPage=1
-                    try {
-                        currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                    }
-                    catch (Exception ignored) {}
-                    plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), holder.getItemId((currPage-1)*45 + itemCheckEvent.getRawSlot()));
                 }
-                /* clicks on bottom right slot, which is going to open the normal shop directory if you're in normal view(0)? 
-                    if you were a moderator in mode (pending/review/recover) looking at a shops content, 
-                    it will put you back to that shop menu with that mode you were in */
+                //returns to previous menu
                 if (itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
                     player.closeInventory();
-                    if (type == InvType.NORMAL) {
-                        plugin.gui.openShopDirectory(player);
-                    } else
-                        plugin.gui.openShopDirectoryModerator(player, type);
-                }
+                    if (type == InvType.NORMAL) plugin.gui.openShopDirectory(player);
+                    else plugin.gui.openShopDirectoryModerator(player, type);
+                } 
+                return;               
             }
             else if(type == InvType.INV_EDIT) {
                 int currPage = 1;
@@ -263,16 +246,33 @@ public class ItemEvents implements Listener {
                             plugin.gui.prevInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
                         }
                     }
-                    /* clicks on bottom right slot, which is going to open the normal shop directory if you're in normal view(0)? 
-                    if you were a moderator in mode (pending/review/recover) looking at a shops content, 
-                    it will put you back to that shop menu with that mode you were in */
+                    //returns to previous menu
                     if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
-                        player.closeInventory();                        
+                        player.closeInventory();                      
                         plugin.gui.openShopEditMenu(player, holder.getKey());
-                        return;
-                    }
+                    }                    
                     return;
                 }
+                else if(itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getCurrentItem().getType() != Material.AIR && itemCheckEvent.getCurrentItem().getType() != Material.BARRIER && itemCheckEvent.getRawSlot()<45) {
+                    if(itemCheckEvent.isShiftClick()) {
+                        plugin.getShopRepo().removeItem(holder.getKey(), itemCheckEvent.getCurrentItem());
+                        plugin.gui.openShopInventory(player, holder.getKey(), plugin.getShopRepo().getShopName(holder.getKey()), InvType.INV_EDIT);
+                    }
+                    else if(itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() != itemCheckEvent.getInventory().getSize() - 1){
+                        //if fails, then currPage=1
+                        try {
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
+                        }
+                        catch (Exception ignored) {}
+                        plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), holder.getItemId((currPage-1)*45 + itemCheckEvent.getRawSlot()));   
+                    }
+                }
+                //returns to previous menu
+                if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
+                    player.closeInventory();                        
+                    plugin.gui.openShopEditMenu(player, holder.getKey());
+                }
+                return;
             }
             else if(type == InvType.SHOP_MENU) {
                     /* this is your shop edit menu, where you can:
@@ -377,9 +377,7 @@ public class ItemEvents implements Listener {
                 else if(itemCheckEvent.getRawSlot()<itemCheckEvent.getInventory().getSize()-9 && itemCheckEvent.getCurrentItem()!=null && itemCheckEvent.isRightClick() && itemCheckEvent.getCurrentItem().getType()!= Material.AIR) {
                     plugin.getShopRepo().removeItem(holder.getKey(), itemCheckEvent.getCurrentItem());
                     List<ItemStack> matchingItems = plugin.getShopRepo().getMatchingItems(holder.getKey(), itemCheckEvent.getCurrentItem().getType().getKey().getKey().toUpperCase());
-                    if(matchingItems.size() == 0)
-                        player.closeInventory();
-
+                    player.closeInventory();
                     plugin.gui.openItemAddMenu(player, holder.getKey(), matchingItems, itemCheckEvent.getCurrentItem());
                 }
             } 

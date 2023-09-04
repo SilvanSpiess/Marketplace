@@ -134,7 +134,11 @@ public class GUI {
             else addItemLore(item, Component.text(ChatColor.GOLD + "§oRight click to find a better deal"));
         });
         //Creates the inventory of a shop with the items listed (first page)
-        Inventory shopInventory = Bukkit.createInventory(new ShopInvHolder(key,type,inv, itemIds),Math.min(9*(inv.size()/9),45) + 9, Component.text(name));
+        Inventory shopInventory;
+        if(plugin.getShopRepo().getPendingShopDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
+            shopInventory = Bukkit.createInventory(new ShopInvHolder(key,type,inv, itemIds),Math.min(9*(inv.size()/9),45) + 9, Component.text(name+" §5§o(pending)"));
+        }
+        else shopInventory = Bukkit.createInventory(new ShopInvHolder(key,type,inv, itemIds),Math.min(9*(inv.size()/9),45) + 9, Component.text(name));
         for(int i=0;i<Math.min(inv.size(),45);i++) {            
             shopInventory.setItem(i,inv.get(i));            
         }
