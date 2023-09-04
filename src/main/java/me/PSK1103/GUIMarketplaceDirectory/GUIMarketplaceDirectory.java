@@ -46,7 +46,7 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
         config = new Config(this);
         if(config.bstatsEnabled())
             metrics = new Metrics(this, pluginId);
-        SQLDatabase.initiateConnection(this);
+        //SQLDatabase.initiateConnection(this);
         /*if(config.usingDB()) {
             shopRepo = new MySQLShopRepo(this);
         }

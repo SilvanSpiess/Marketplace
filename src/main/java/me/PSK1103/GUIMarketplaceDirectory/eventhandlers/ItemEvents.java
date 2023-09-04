@@ -3,6 +3,9 @@ package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -104,7 +107,7 @@ public class ItemEvents implements Listener {
                 } else if (res == 0) {
                     player.sendMessage(ChatColor.GRAY + "Cancelling addition of previous item");
                 } else if (res == 2) {
-                    player.sendMessage(new String[]{ChatColor.YELLOW + "The enchanted item you're trying to add has ilegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});
+                    player.sendMessage(new String[]{ChatColor.YELLOW + " The enchanted item you're trying to add has illegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});
                 }
             }
             else { //if shop owner has the item in shop already it opens a window displaying those items and giving multiple options to perceed. 
@@ -243,22 +246,82 @@ public class ItemEvents implements Listener {
                         plugin.gui.openShopDirectoryModerator(player, type);
                 }
             }
-            else {
-                if(type == InvType.LOOKUP) {
+            else if(type == InvType.INV_EDIT) {
+                int currPage = 1;
+                //if clicks in bottom 9 slots of the inventory AND the inventory size is 54 (double chest).
+                if(itemCheckEvent.getRawSlot() >= (itemCheckEvent.getInventory().getSize() - 9) && itemCheckEvent.getInventory().getSize() == 54) {
+                    //has multiple pages
+                    if(holder.isPaged()) {
+                        //clicks on next page
+                        if (itemCheckEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
+                            plugin.gui.nextInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
+                        }
+                        //clicks on previous page
+                        if (itemCheckEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
+                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
+                            plugin.gui.prevInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
+                        }
+                    }
+                    /* clicks on bottom right slot, which is going to open the normal shop directory if you're in normal view(0)? 
+                    if you were a moderator in mode (pending/review/recover) looking at a shops content, 
+                    it will put you back to that shop menu with that mode you were in */
+                    if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
+                        player.closeInventory();                        
+                        plugin.gui.openShopEditMenu(player, holder.getKey());
+                        return;
+                    }
+                    return;
+                }
+            }
+            else if(type == InvType.SHOP_MENU) {
                     /* this is your shop edit menu, where you can:
-                     * add an owner to your shop
-                     * change the display name of your shop
-                     * delete your shop
+                     * (1) set description
+                     * (4) see shop
+                     * (7) set location
+                     * (10) set display item
+                     * (13) add owner
+                     * (16) delete shop
                      */
                     if(itemCheckEvent.getRawSlot() == 1) {
                         player.closeInventory();
-                        int res = plugin.getShopRepo().startAddingOwner(player.getUniqueId().toString(), holder.getKey());
+                        int res = plugin.getShopRepo().startSettingDescription(player.getUniqueId().toString(), holder.getKey());
                         if(res == -1)
                             player.sendMessage(ChatColor.RED + "This shop doesn't exist");
                         else
-                            player.sendMessage(new String[]{ChatColor.GRAY + "Adding another owner...", ChatColor.YELLOW + "Enter player name (nil to cancel)"});
+                            player.sendMessage(ChatColor.YELLOW + "Enter new description (nil to cancel)");
+                            player.sendMessage(ChatColor.GRAY + "Do not use the '&' symbol");
                     }
-                    else if (itemCheckEvent.getRawSlot() == 4) {
+                    if(itemCheckEvent.getRawSlot() == 4) {
+                        if(itemCheckEvent.isRightClick()) {
+                            String input = holder.getShops().get(0).get("loc");
+                            String[] parts = input.split(",");
+                            String messageLink;
+                            if(parts.length == 2) {       
+                                messageLink = "https://map.projectnebula.network/#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
+                            }
+                            else {      
+                                messageLink = "https://map.projectnebula.network/#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
+                            }
+                            var mm = MiniMessage.miniMessage();
+                            Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
+                            itemCheckEvent.getWhoClicked().sendMessage(parsed);
+                        }
+                        else {
+                            player.closeInventory();
+                            plugin.gui.openShopInventory(player, holder.getKey(), plugin.getShopRepo().getShopName(holder.getKey()), InvType.INV_EDIT);
+                        }
+                        
+                    }                    
+                    if(itemCheckEvent.getRawSlot() == 7) {
+                        player.closeInventory();
+                        int res = plugin.getShopRepo().startSettingLocation(player.getUniqueId().toString(), holder.getKey());
+                        if(res == -1)
+                            player.sendMessage(ChatColor.RED + "This shop doesn't exist");
+                        else
+                            plugin.gui.sendConfirmationMessage(player, "Do you want to move this shop to your current location?");
+                    }
+                    else if (itemCheckEvent.getRawSlot() == 10) {
                         player.closeInventory();
                         int res = plugin.getShopRepo().startSettingDisplayItem(player.getUniqueId().toString(), holder.getKey());
                         if(res == -1)
@@ -266,7 +329,15 @@ public class ItemEvents implements Listener {
                         else
                             player.sendMessage(ChatColor.YELLOW + "Enter display item name (material name only, nil to cancel)");
                     }
-                    else if(itemCheckEvent.getRawSlot() == 7) {
+                    if(itemCheckEvent.getRawSlot() == 13) {
+                        player.closeInventory();
+                        int res = plugin.getShopRepo().startAddingOwner(player.getUniqueId().toString(), holder.getKey());
+                        if(res == -1)
+                            player.sendMessage(ChatColor.RED + "This shop doesn't exist");
+                        else
+                            player.sendMessage(new String[]{ChatColor.GRAY + "Adding another owner...", ChatColor.YELLOW + "Enter player name (nil to cancel)"});
+                    }
+                    else if(itemCheckEvent.getRawSlot() == 16) {
                         player.closeInventory();
                         int res = plugin.getShopRepo().startRemovingShop(player.getUniqueId().toString(),holder.getKey());
                         if(res == -1)
@@ -275,49 +346,48 @@ public class ItemEvents implements Listener {
                             plugin.gui.sendConfirmationMessage(player,"Do you wish to remove this shop?");
                     }
                 }
-                else if(type == InvType.ADD_ITEM) {
-                    /* this is the menu that opens when you wanna add an item that you already sell in your shop.
-                     * it gives you the options to:
-                     * continue adding the item
-                     * remove all matching items
-                     * remove 1 of the matching items
-                     */
-                    if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-7) {
-                        player.closeInventory();
-                        ItemStack item = holder.getItem();
-                        player.sendMessage(ChatColor.GREEN + "Set quantity (in format shulker:stack:num)");
-                        int res = plugin.getShopRepo().initItemAddition(player.getUniqueId().toString(), holder.getKey(), item.getType().getKey().getKey().toUpperCase(), item);
-                        if (res == -1) {
-                            player.sendMessage(ChatColor.RED + "shop not found!");
-                        } else if (res == 0) {
-                            player.sendMessage(ChatColor.GRAY + "Cancelling addition of previous item");
-                        } else if (res == 2) {
-                            player.sendMessage(new String[]{ChatColor.YELLOW + "The head item you're trying to add has no proper skullOwner nbt tags", ChatColor.YELLOW + "place it on the ground and pick it up and then try to add", ChatColor.YELLOW + "Continue adding if this isn't a mistake"});
-                        }
-                    }
-
-                    else if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-3) {
-                        player.closeInventory();
-                        plugin.getShopRepo().removeMatchingItems(holder.getKey(),holder.getItem().getType().getKey().getKey().toUpperCase());
-                        player.closeInventory();
-                        player.sendMessage(ChatColor.YELLOW + "All matching items removed");
-                    }
-
-                    else if(itemCheckEvent.getRawSlot()<itemCheckEvent.getInventory().getSize()-9 && itemCheckEvent.getCurrentItem()!=null && itemCheckEvent.isRightClick() && itemCheckEvent.getCurrentItem().getType()!= Material.AIR) {
-                        plugin.getShopRepo().removeItem(holder.getKey(), itemCheckEvent.getCurrentItem());
-                        List<ItemStack> matchingItems = plugin.getShopRepo().getMatchingItems(holder.getKey(), itemCheckEvent.getCurrentItem().getType().getKey().getKey().toUpperCase());
-                        if(matchingItems.size() == 0)
-                            player.closeInventory();
-
-                        plugin.gui.openItemAddMenu(player, holder.getKey(), matchingItems, itemCheckEvent.getCurrentItem());
-                    }
-                } else if(type == InvType.SEARCH && itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() < Math.min(itemCheckEvent.getInventory().getSize(),holder.getShops().size())) {
-                    /* this is the menu that opens when you search for items */
+            else if(type == InvType.ADD_ITEM) {
+                /* this is the menu that opens when you wanna add an item that you already sell in your shop.
+                    * it gives you the options to:
+                    * continue adding the item
+                    * remove all matching items
+                    * remove 1 of the matching items
+                    */
+                if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-7) {
                     player.closeInventory();
-                    plugin.gui.openShopInventory(player,holder.getShops().get(itemCheckEvent.getRawSlot()).get("id"),holder.getShops().get(itemCheckEvent.getRawSlot()).get("name"),InvType.NORMAL);
+                    ItemStack item = holder.getItem();
+                    player.sendMessage(ChatColor.GREEN + "Set quantity (in format shulker:stack:num)");
+                    int res = plugin.getShopRepo().initItemAddition(player.getUniqueId().toString(), holder.getKey(), item.getType().getKey().getKey().toUpperCase(), item);
+                    if (res == -1) {
+                        player.sendMessage(ChatColor.RED + "shop not found!");
+                    } else if (res == 0) {
+                        player.sendMessage(ChatColor.GRAY + "Cancelling addition of previous item");
+                    } else if (res == 2) {
+                        player.sendMessage(new String[]{ChatColor.YELLOW + " The enchanted item you're trying to add has illegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});                    
+                    }
                 }
-            }
+
+                else if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-3) {
+                    player.closeInventory();
+                    plugin.getShopRepo().removeMatchingItems(holder.getKey(),holder.getItem().getType().getKey().getKey().toUpperCase());
+                    player.closeInventory();
+                    player.sendMessage(ChatColor.YELLOW + "All matching items removed");
+                }
+
+                else if(itemCheckEvent.getRawSlot()<itemCheckEvent.getInventory().getSize()-9 && itemCheckEvent.getCurrentItem()!=null && itemCheckEvent.isRightClick() && itemCheckEvent.getCurrentItem().getType()!= Material.AIR) {
+                    plugin.getShopRepo().removeItem(holder.getKey(), itemCheckEvent.getCurrentItem());
+                    List<ItemStack> matchingItems = plugin.getShopRepo().getMatchingItems(holder.getKey(), itemCheckEvent.getCurrentItem().getType().getKey().getKey().toUpperCase());
+                    if(matchingItems.size() == 0)
+                        player.closeInventory();
+
+                    plugin.gui.openItemAddMenu(player, holder.getKey(), matchingItems, itemCheckEvent.getCurrentItem());
+                }
+            } 
+            else if(type == InvType.SEARCH && itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() < Math.min(itemCheckEvent.getInventory().getSize(),holder.getShops().size())) {
+                /* this is the menu that opens when you search for items */
+                player.closeInventory();
+                plugin.gui.openShopInventory(player,holder.getShops().get(itemCheckEvent.getRawSlot()).get("id"),holder.getShops().get(itemCheckEvent.getRawSlot()).get("name"),InvType.NORMAL);
+            }            
         }
     }
-
 }

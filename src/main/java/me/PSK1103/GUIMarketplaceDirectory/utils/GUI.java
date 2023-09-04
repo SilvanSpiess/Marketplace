@@ -47,10 +47,40 @@ public class GUI {
      */
     public void sendConfirmationMessage(Player player, String msg) {
         Component yes = Component.text(ChatColor.GOLD + "" + ChatColor.BOLD + "Y").clickEvent(net.kyori.adventure.text.event.ClickEvent.clickEvent(net.kyori.adventure.text.event.ClickEvent.Action.RUN_COMMAND,"Y"));
-
         Component no = Component.text(ChatColor.GOLD + "" + ChatColor.BOLD + "N").clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND,"N"));
-
         player.sendMessage(Component.text(msg + " (").color(NamedTextColor.YELLOW).append(yes).append(Component.text("/")).append(no).append(Component.text(")")).color(NamedTextColor.YELLOW));
+    }
+
+    private ItemStack makeShopDisplayItem(Map<String, String> shop, Component... clicks) {
+        ItemStack shopItem;
+        try {
+            shopItem = new ItemStack(Material.getMaterial(shop.get("displayItem")));
+        }
+        catch (Exception e) {
+            shopItem = new ItemStack(Material.WRITTEN_BOOK);
+        }
+        //Adds lore (info) to the shop display items
+        ItemMeta shopMeta = shopItem.getItemMeta();
+        shopMeta.displayName(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") + shop.get("name"))));
+        List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + shop.get("desc")),30)));
+        List<Component> lore = new ArrayList<>();
+        l.forEach(s -> lore.add(Component.text(s)));
+        String[] parts = shop.get("loc").split(",");
+        if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
+            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+        }
+        else {
+            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shop.get("loc"))));
+        }
+        lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shop.get("owners"))));
+        for (Component click: clicks) {
+            lore.add(click);
+        }
+        shopMeta.lore(lore);
+        shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        shopMeta.addItemFlags(ItemFlag.HIDE_ITEM_SPECIFICS);
+        shopItem.setItemMeta(shopMeta);
+        return shopItem;
     }
 
     /*
@@ -58,37 +88,12 @@ public class GUI {
      */
     public void openShopDirectory(Player player) {
         List<Map<String,String>> shops = plugin.getShopRepo().getShopDetails();
-        //Creates the directory of a all/ the selected shops (first page)
+        //Creates the directory of all the selected shops (first page)
         Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops), Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), Component.text("Marketplace Directory"));
         for(int i=0;i<(shops.size() > 54 ? 45 : shops.size());i++) {
-            ItemStack shopItem;
-            try {
-                shopItem = new ItemStack(Material.getMaterial(shops.get(i).get("displayItem")));
-            }
-            catch (Exception e) {
-                shopItem = new ItemStack(Material.WRITTEN_BOOK);
-            }
-            //Adds lore (info) to the shop display items
-            ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.displayName(Component.text(shops.get(i).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") + shops.get(i).get("name"))));
-            List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + shops.get(i).get("desc")),30)));
-            List<Component> lore = new ArrayList<>();
-            l.forEach(s -> lore.add(Component.text(s)));
-            String[] parts = shops.get(i).get("loc").split(",");
-            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
-            }
-            else {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
-            }
-            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shops.get(i).get("owners"))));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            shopMeta.lore(lore);
-            shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            shopItem.setItemMeta(shopMeta);
+            ItemStack shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
             shopDirectory.setItem(i,shopItem);
         }
-
         if(shops.size() > 54) {
             ((MarketplaceBookHolder) shopDirectory.getHolder()).setPaged();
             //nextPage button
@@ -104,19 +109,34 @@ public class GUI {
         player.openInventory(shopDirectory);
     }
 
+    private ItemStack addItemLore(ItemStack item, Component... lore) {        
+        ItemMeta itemMeta = item.getItemMeta();
+        List<Component> allLore = itemMeta.lore();
+        allLore.addAll(Arrays.asList(lore));
+        itemMeta.lore(allLore);
+        item.setItemMeta(itemMeta);
+        return item;
+    }
+
     /*
      * Opens the inventory of the selected shop
      */
     public void openShopInventory(Player player, String key,String name,InvType type) {
-
         List<Object> res = plugin.getShopRepo().getShopInv(key);
         List<ItemStack> inv = (List<ItemStack>) res.get(0);
         List<Integer> itemIds = (List<Integer>) res.get(1);
-
+        //Adding lore to all the items in this the shop
+        inv.forEach(item -> {
+            if(type == InvType.INV_EDIT) {
+                addItemLore(item, Component.text(ChatColor.GOLD + "§oRight click to find a better deal"), 
+                                  Component.text(ChatColor.RED + "Shift click to delete this item"));
+            }
+            else addItemLore(item, Component.text(ChatColor.GOLD + "§oRight click to find a better deal"));
+        });
         //Creates the inventory of a shop with the items listed (first page)
         Inventory shopInventory = Bukkit.createInventory(new ShopInvHolder(key,type,inv, itemIds),Math.min(9*(inv.size()/9),45) + 9, Component.text(name));
-        for(int i=0;i<Math.min(inv.size(),45);i++) {
-            shopInventory.setItem(i,inv.get(i));
+        for(int i=0;i<Math.min(inv.size(),45);i++) {            
+            shopInventory.setItem(i,inv.get(i));            
         }
         if(inv.size() == 0) {
             //empty shop display
@@ -155,8 +175,7 @@ public class GUI {
     /*
      * loads the next OR previous page of the inventory of a shop
      */
-    public void updateInvPage(Player player, int currPage) {
-        
+    public void updateInvPage(Player player, int currPage) {        
         //Creates the inventory of a shop with the items listed (any page)
         Inventory pageInv = player.getOpenInventory().getTopInventory();
         ShopInvHolder holder = (ShopInvHolder) pageInv.getHolder();
@@ -199,7 +218,6 @@ public class GUI {
     /*
      * loads the next page of shops in the inventory
      */
-
     public void updatePage(Player player, int page) {
         //Creates the inventory of a certain page with the shops listed
         Inventory pageInv = player.getOpenInventory().getTopInventory();
@@ -209,44 +227,19 @@ public class GUI {
         pageInv.clear();
         for(int i=0;i<Math.min(shops.size(),(page+1)*45)-page*45;i++) {
             ItemStack shopItem;
-            try {
-                shopItem = new ItemStack(Material.getMaterial(shops.get(i+page*45).get("displayItem")));
-            }
-            catch (Exception e) {
-                shopItem = new ItemStack(Material.WRITTEN_BOOK);
-            }
-            //Adds general descriptive text to each shop
-            ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.displayName(Component.text(shops.get(i+page*45).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+page*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") +  shops.get(i+page*45).get("name"))));
-            List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i+page*45).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i+page*45).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") +  shops.get(i+page*45).get("desc")),30)));
-            List<Component> lore = new ArrayList<>();
-            l.forEach(s -> lore.add(Component.text(s)));
-            String[] parts = shops.get(i).get("loc").split(",");
-            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
-            }
-            else {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
-            }
-            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") +  shops.get(i+page*45).get("owners"))));
-            //adds different lore, based on the types:
-            // - (type 0) normal -> shows all shops
-            // - (type 1) pending -> shows all pending shops
-            // - (type 2) review -> removes shops
-            // - (type 3) recover -> recovers shopOwner book
             if(type == InvType.NORMAL) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
+                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
             }else if(type == InvType.PENDING) {
-                lore.add(Component.text(ChatColor.GREEN + "Right click to approve"));
-                lore.add(Component.text(ChatColor.RED + "Left click to reject"));
+                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.AQUA + "Shift click to view"),
+                                                                     Component.text(ChatColor.GREEN + "Right click to approve"), 
+                                                                     Component.text(ChatColor.RED + "Left click to reject"));
             } else if (type == InvType.REVIEW) {
-                lore.add(Component.text(ChatColor.RED + "Right click to delete"));
+                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.RED + "Right click to delete"));
             } else if(type == InvType.RECOVER) {
-                lore.add(Component.text(ChatColor.AQUA + "Right click to recover"));
+                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.AQUA + "Right click to recover"));
+            } else {
+                shopItem = makeShopDisplayItem(shops.get(i+page*45));
             }
-            shopMeta.lore(lore);
-            shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            shopItem.setItemMeta(shopMeta);
             pageInv.setItem(i,shopItem);
         }
         //nextPage button
@@ -261,6 +254,9 @@ public class GUI {
         player.updateInventory();
     }
 
+    /*
+     * loads the next page of shops in the inventory
+     */
     public void nextPage(Player player, int currPage) {
         //Creates the inventory of the next page with the shops listed
         updatePage(player, currPage);
@@ -287,31 +283,7 @@ public class GUI {
         //Creates the inventory with the shops listed
         Inventory refinedShopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(refinedShops),Math.min(9*(refinedShops.size()/9 + (refinedShops.size() % 9 == 0 ? 0 : 1)),54), Component.text("Search results"));
         for(int i=0;i< (Math.min(refinedShops.size(), 54));i++) {
-            ItemStack shopItem;
-            try {
-                shopItem = new ItemStack(Material.getMaterial(refinedShops.get(i).get("displayItem")));
-            }
-            catch (Exception e) {
-                shopItem = new ItemStack(Material.WRITTEN_BOOK);
-            }
-            //Adds the lore (info) about the shop to be displayed
-            ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.displayName(Component.text(refinedShops.get(i).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',refinedShops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") + refinedShops.get(i).get("name"))));
-            List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(refinedShops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',refinedShops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + refinedShops.get(i).get("desc")),30)));
-            List<Component> lore = new ArrayList<>();
-            l.forEach(s -> lore.add(Component.text(s)));
-            String[] parts = refinedShops.get(i).get("loc").split(",");
-            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
-            }
-            else {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + refinedShops.get(i).get("loc"))));
-            }
-            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + refinedShops.get(i).get("owners"))));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            shopMeta.lore(lore);
-            shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            shopItem.setItemMeta(shopMeta);
+            ItemStack shopItem = makeShopDisplayItem(refinedShops.get(i), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
             refinedShopDirectory.setItem(i,shopItem);
         }
         player.openInventory(refinedShopDirectory);
@@ -331,35 +303,10 @@ public class GUI {
         //Creates the inventory with the shops listed
         Inventory refinedShopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(refinedShops),Math.min(9*(refinedShops.size()/9 + (refinedShops.size() % 9 == 0 ? 0 : 1)),54), Component.text("Search results"));
         for(int i=0;i< (Math.min(refinedShops.size(), 54));i++) {
-            ItemStack shopItem;
-            try {
-                shopItem = new ItemStack(Material.getMaterial(refinedShops.get(i).get("displayItem")));
-            }
-            catch (Exception e) {
-                shopItem = new ItemStack(Material.WRITTEN_BOOK);
-            }
-            //Adds the lore (info) about the shop to be displayed
-            ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.displayName(Component.text(refinedShops.get(i).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',refinedShops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") + refinedShops.get(i).get("name"))));
-            List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(refinedShops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',refinedShops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + refinedShops.get(i).get("desc")),30)));
-            List<Component> lore = new ArrayList<>();
-            l.forEach(s -> lore.add(Component.text(s)));
-            String[] parts = refinedShops.get(i).get("loc").split(",");
-            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
-            }
-            else {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + refinedShops.get(i).get("loc"))));
-            }
-            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + refinedShops.get(i).get("owners"))));
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            shopMeta.lore(lore);
-            shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            shopItem.setItemMeta(shopMeta);
+            ItemStack shopItem = makeShopDisplayItem(refinedShops.get(i), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
             refinedShopDirectory.setItem(i,shopItem);
         }
         player.openInventory(refinedShopDirectory);
-
     }
 
     /*
@@ -405,45 +352,25 @@ public class GUI {
         Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops, type), Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), Component.text("Marketplace Directory"));
         for(int i=0;i<(shops.size() > 54 ? 45 : shops.size());i++) {
             ItemStack shopItem;
-            try {
-                shopItem = new ItemStack(Material.getMaterial(shops.get(i).get("displayItem")));
-            }
-            catch (Exception e) {
-                shopItem = new ItemStack(Material.WRITTEN_BOOK);
-            }
-            ItemMeta shopMeta = shopItem.getItemMeta();
-            shopMeta.setDisplayName(shops.get(i).get("name").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i).get("name")) : ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") + shops.get(i).get("name")));
-            List<String > l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(shops.get(i).get("desc").contains("&") ? ChatColor.translateAlternateColorCodes('&',shops.get(i).get("desc")) : (colors.get("desc") + shops.get(i).get("desc")),30)));
-            List<Component> lore = new ArrayList<>();
-            l.forEach(s -> lore.add(Component.text(s)));
-            String[] parts = shops.get(i).get("loc").split(",");
-            if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
-            }
-            else {
-                lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shops.get(i).get("loc"))));
-            }
-            lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shops.get(i).get("owners"))));
             if(type == InvType.PENDING) {
-                lore.add(Component.text(ChatColor.AQUA + "Shift click to view"));
-                lore.add(Component.text(ChatColor.GREEN + "Right click to approve"));
-                lore.add(Component.text(ChatColor.RED + "Left click to reject"));
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Shift click to view"), 
+                                                             Component.text(ChatColor.GREEN + "Right click to approve"), 
+                                                             Component.text(ChatColor.RED + "Left click to reject"));
             }
             else if (type == InvType.REVIEW) {
-                lore.add(Component.text(ChatColor.RED + "Right click to remove"));
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.RED + "Right click to remove"));
             }
             else if(type == InvType.RECOVER) {
-                lore.add(Component.text(ChatColor.AQUA + "Right click to recover")); //Maybe send recovering message in chat, to notify player
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to recover")); //Maybe send recovering message in chat, to notify player
             }
             else if(type == InvType.LOOKUP) {
-                lore.add(Component.text(ChatColor.AQUA + "Right click to check activity")); //confusing, todo later
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to check activity")); //confusing, todo later
             }
             else if(type == InvType.ADD_ITEM) {
-                lore.add(Component.text(ChatColor.AQUA + "Right click to set lookup radius")); //confusing, todo later
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to set lookup radius")); //confusing, todo later
+            } else {
+                shopItem = makeShopDisplayItem(shops.get(i));
             }
-            shopMeta.lore(lore);
-            shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            shopItem.setItemMeta(shopMeta);
             shopDirectory.setItem(i,shopItem);
         }
 
@@ -460,7 +387,6 @@ public class GUI {
             ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
             shopDirectory.setItem(49,pageNum);
         }
-
         if(shops.size() == 0) {
             logger.info("No pending shop");
         }
@@ -474,18 +400,33 @@ public class GUI {
      * - delete the shop
      */
     public void openShopEditMenu(Player player, String key) {
-        String name = plugin.getShopRepo().getShopName(key);
+        String name = plugin.getShopRepo().getShopName(key);        
         //creates the inventory for this menu
-        Inventory shopEditMenuInv = Bukkit.createInventory(new ShopInvHolder(key, InvType.LOOKUP, null, null),9, Component.text(name));
-        //addOwner button
-        ItemStack addOwner = makeDisplayItem(Material.BEACON, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Add owner"));
-        shopEditMenuInv.setItem(1,addOwner);
+        ShopInvHolder currentShopView = new ShopInvHolder(key, InvType.SHOP_MENU, null, null);
+        //Adds this shop to a list with one entry, to open its inventory if rawSloth 4 is clicked
+        List<Map<String,String>> shop = new LinkedList<>();
+        shop.add(plugin.getShopRepo().getSpecificShopDetails(key));
+        currentShopView.setShops(shop);
+        Inventory shopEditMenuInv = Bukkit.createInventory(currentShopView,18, Component.text(name));
+        //setDescription button
+        ItemStack setDescription = makeDisplayItem(Material.PAPER, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set description"));
+        shopEditMenuInv.setItem(1,setDescription);
+        //see shop button
+        ItemStack seeShop = makeShopDisplayItem(plugin.getShopRepo().getSpecificShopDetails(key), 
+                                                Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
+        shopEditMenuInv.setItem(4,seeShop);
+        //setDescription button
+        ItemStack setLocation = makeDisplayItem(Material.COMPASS, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set location"));
+        shopEditMenuInv.setItem(7,setLocation);
         //setDisplayItem button
         ItemStack setDisplayItem = makeDisplayItem(Material.WRITABLE_BOOK, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set display item"));
-        shopEditMenuInv.setItem(4,setDisplayItem);
+        shopEditMenuInv.setItem(10,setDisplayItem);
+        //addOwner button
+        ItemStack addOwner = makeDisplayItem(Material.BEACON, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Add owner"));
+        shopEditMenuInv.setItem(13,addOwner);
         //removeShop button
-        ItemStack removeShop = makeDisplayItem(Material.FLINT_AND_STEEL, Component.text(ChatColor.RED + "" + ChatColor.ITALIC + "delete shop"));
-        shopEditMenuInv.setItem(7,removeShop);
+        ItemStack removeShop = makeDisplayItem(Material.FLINT_AND_STEEL, Component.text(ChatColor.RED + "" + ChatColor.ITALIC + "Delete shop"));
+        shopEditMenuInv.setItem(16,removeShop);
         player.openInventory(shopEditMenuInv);
     }
 

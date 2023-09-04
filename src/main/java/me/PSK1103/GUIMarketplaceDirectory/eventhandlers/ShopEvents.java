@@ -233,22 +233,12 @@ public class ShopEvents implements Listener {
                     else {      
                         messageLink = "https://map.projectnebula.network/#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
                     }
-                    /*
-                    if(parts.length == 2) {
-                        int numbers[] = {Integer.parseInt(parts[0]), Integer.parseInt(parts[1])};       
-                        messageLink = "https://map.projectnebula.network/#world;flat;" + numbers[0] + ",64," + numbers[1] + ";7";
-                    }
-                    else {
-                        int numbers[] = {Integer.parseInt(parts[0]), Integer.parseInt(parts[2])};       
-                        messageLink = "https://map.projectnebula.network/#world;flat;" + numbers[0] + ",64," + numbers[1] + ";7";
-                    }
-                    */
                     var mm = MiniMessage.miniMessage();
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
                     shopSelectEvent.getWhoClicked().sendMessage(parsed);
                     return;
                 }
-            }            
+            }           
 
             else if (holder.getType() == InvType.PENDING) {
                 if(shopSelectEvent.isShiftClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()){
@@ -420,7 +410,7 @@ public class ShopEvents implements Listener {
             }
             else if(editType == EditType.SET_DISPLAY_ITEM) {
                 if (chatEvent.getMessage().equalsIgnoreCase("nil")) {
-                    plugin.getShopRepo().stopInitOwner(uuid);
+                    plugin.getShopRepo().stopShopEdit(uuid);
                     chatEvent.getPlayer().sendMessage(ChatColor.GRAY + "Cancelled setting display item");
                     return;
                 }
@@ -435,6 +425,27 @@ public class ShopEvents implements Listener {
                     chatEvent.getPlayer().sendMessage(ChatColor.RED + "Item name doesn't match to a proper material name. Try again");
                     chatEvent.getPlayer().sendMessage(ChatColor.YELLOW + "Enter display item name (material name only, nil to cancel)");
                     return;
+                }
+            }
+            else if(editType == EditType.SET_DESCRIPTION) {
+                if (chatEvent.getMessage().equalsIgnoreCase("nil")) {
+                    plugin.getShopRepo().stopShopEdit(uuid);
+                    chatEvent.getPlayer().sendMessage(ChatColor.GRAY + "Cancelled setting description");
+                    return;
+                }
+                String newDesc = chatEvent.getMessage();
+                plugin.getShopRepo().setDescription(uuid, newDesc);
+                chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Shop description has been changed!");             
+            }
+            else if (editType == EditType.SET_LOCATION) {
+                if (chatEvent.getMessage().equalsIgnoreCase("y") || chatEvent.getMessage().equalsIgnoreCase("yes")) {
+                    plugin.getShopRepo().setLocation(uuid, chatEvent.getPlayer().getLocation().getBlockX() + "," + 
+                                                           chatEvent.getPlayer().getLocation().getBlockY() + "," + 
+                                                           chatEvent.getPlayer().getLocation().getBlockZ());
+                    chatEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop relocated successfully!");
+                } else {
+                    plugin.getShopRepo().stopShopEdit(uuid);
+                    chatEvent.getPlayer().sendMessage(ChatColor.YELLOW + "Shop relocation cancelled");
                 }
             }
             else if (editType == EditType.COREPROTECT_RADIUS) {
@@ -465,6 +476,7 @@ public class ShopEvents implements Listener {
             }
             return;
         }
+
         if(plugin.getShopRepo().isUserRejectingShop(chatEvent.getPlayer().getUniqueId().toString())) {
             chatEvent.setCancelled(true);
             String message = chatEvent.getMessage();

@@ -3,13 +3,12 @@ package me.PSK1103.GUIMarketplaceDirectory.shoprepos;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-
 import java.util.List;
 import java.util.Map;
 
 public interface ShopRepo {
     public enum EditType{
-        NOT_UNDER_ADD, NOT_UNDER_EDIT, ADD_OWNER, ADD_SHOP, SET_DISPLAY_ITEM, SET_DESCRIPTION, SHOP_OWNER_ADDITION, COREPROTECT_RADIUS;
+        NOT_UNDER_ADD, NOT_UNDER_EDIT, ADD_OWNER, ADD_SHOP, SET_DISPLAY_ITEM, SET_DESCRIPTION, SHOP_OWNER_ADDITION, COREPROTECT_RADIUS, SET_LOCATION;
     }
     String addShopAsOwner(String name, String desc, String owner, String uuid, String loc, String displayItem);
 
@@ -20,6 +19,16 @@ public interface ShopRepo {
     boolean getIsInitOwner(String uuid);
 
     void stopInitOwner(String uuid);
+
+    void stopShopEdit(String uuid);
+
+    int startSettingDescription(String uuid, String key);
+    
+    void setDescription(String uuid, String description);
+
+    int startSettingLocation(String uuid, String key);
+    
+    void setLocation(String uuid, String location);
 
     int startAddingOwner(String uuid, String key);
 
@@ -79,6 +88,8 @@ public interface ShopRepo {
 
     void addShopToRemoveQueue(String uuid, String key);
 
+    Map<String, String> getSpecificShopDetails(String key);
+
     List<Map<String, String>> getShopDetails();
 
     List<Map<String, String>> getPendingShopDetails();
@@ -104,4 +115,5 @@ public interface ShopRepo {
     void lookupShop(Player player, String key);
 
     void lookupAllShops(Player player);
+
 }

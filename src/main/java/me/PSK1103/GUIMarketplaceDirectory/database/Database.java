@@ -48,7 +48,4 @@ public class Database {
         }
         return sessionFactory;
     }
-
-
-
 }

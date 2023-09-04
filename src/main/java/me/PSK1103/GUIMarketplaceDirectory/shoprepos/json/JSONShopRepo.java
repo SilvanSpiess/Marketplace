@@ -18,7 +18,6 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionData;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -62,6 +61,10 @@ class Shop {
 
     public void setDisplayItem(String displayItem) {
         this.displayItem = displayItem;
+    }
+
+    public void setLoc(String loc) {
+        this.loc = loc;
     }
 
     public void setName(String name) {
@@ -231,6 +234,36 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
+    public void stopShopEdit(String uuid) {
+        if (shopsUnderAdd.containsKey(uuid)) {
+            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
+            shopsUnderAdd.remove(uuid);
+        }
+    }
+
+    @Override
+    public int startSettingDescription(String uuid, String key) {
+        if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
+            return 0;
+        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
+            return -1;
+        shopsUnderAdd.put(uuid, key);    
+        shopsUnderEdit.put(key, EditType.SET_DESCRIPTION);
+        return 0;
+    }
+
+    @Override
+    public int startSettingLocation(String uuid, String key) {
+        if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
+            return 0;
+        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
+            return -1;
+        shopsUnderAdd.put(uuid, key);
+        shopsUnderEdit.put(key, EditType.SET_LOCATION);
+        return 1;
+    }
+
+    @Override
     public int startAddingOwner(String uuid, String key) {
         if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
             return 0;
@@ -314,6 +347,34 @@ public class JSONShopRepo implements ShopRepo {
                 pendingShops.get(shopsUnderAdd.get(uuid)).setDisplayItem(materialName);
             } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
                 shops.get(shopsUnderAdd.get(uuid)).setDisplayItem(materialName);
+            }
+            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
+            shopsUnderAdd.remove(uuid);
+            saveShops();
+        }
+    }
+
+    @Override
+    public void setLocation(String uuid, String location) {
+        if (shopsUnderAdd.containsKey(uuid)) {
+            if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
+                pendingShops.get(shopsUnderAdd.get(uuid)).setLoc(location);
+            } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
+                shops.get(shopsUnderAdd.get(uuid)).setLoc(location);
+            }
+            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
+            shopsUnderAdd.remove(uuid);
+            saveShops();
+        }
+    }
+
+    @Override
+    public void setDescription(String uuid, String description) {
+        if (shopsUnderAdd.containsKey(uuid)) {
+            if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
+                pendingShops.get(shopsUnderAdd.get(uuid)).setDesc(description);
+            } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
+                shops.get(shopsUnderAdd.get(uuid)).setDesc(description);;
             }
             shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
             shopsUnderAdd.remove(uuid);
@@ -428,9 +489,7 @@ public class JSONShopRepo implements ShopRepo {
 
     private boolean initShops() {
         File shopFile = plugin.getShops();
-
         try {
-
             JSONParser parser = new JSONParser();
             assert shopFile != null;
             JSONObject data = (JSONObject) parser.parse(new FileReader(shopFile));
@@ -532,8 +591,6 @@ public class JSONShopRepo implements ShopRepo {
                 }
             }
             return true;
-
-
         } catch (IOException | ParseException | ClassCastException | NullPointerException e) {
             if (e instanceof ParseException || e instanceof ClassCastException)
                 plugin.getLogger().severe("Malformed shops.json, cannot initiate shops");
@@ -1028,33 +1085,33 @@ public class JSONShopRepo implements ShopRepo {
         shopsUnderRemove.put(uuid, key);
     }
 
-    public List<Map<String, String>> getShopDetails() {
-        List<Map<String, String>> detailsList = new ArrayList<>();
-        shops.forEach((s, shop) -> {
+    public Map<String, String> convertToMap(Shop shop) {
             Map<String, String> details = new HashMap<>();
             details.put("name", shop.getName());
             details.put("desc", shop.getDesc());
             details.put("owners", String.join(", ", shop.getOwners().values()));
             details.put("loc", shop.getLoc());
-            details.put("displayItem",shop.getDisplayItem());
             details.put("key", shop.getKey());
-            detailsList.add(details);
-        });
+            details.put("displayItem",shop.getDisplayItem());
+        return details;
+    }
+    
+    @Override
+    public Map<String, String> getSpecificShopDetails(String key) {
+        if(shops.containsKey(key)) return convertToMap(shops.get(key));        
+        else if(pendingShops.containsKey(key)) return convertToMap(pendingShops.get(key));        
+        else return null;
+    }
+
+    public List<Map<String, String>> getShopDetails() {
+        List<Map<String, String>> detailsList = new ArrayList<>();
+        shops.forEach((s, shop) -> detailsList.add(convertToMap(shop)));
         return detailsList;
     }
 
     public List<Map<String, String>> getPendingShopDetails() {
         List<Map<String, String>> detailsList = new ArrayList<>();
-        pendingShops.forEach((s, shop) -> {
-            Map<String, String> details = new HashMap<>();
-            details.put("name", shop.getName());
-            details.put("desc", shop.getDesc());
-            details.put("owners", String.join(", ", shop.getOwners().values()));
-            details.put("loc", shop.getLoc());
-            details.put("key", shop.getKey());
-            details.put("displayItem",shop.getDisplayItem());
-            detailsList.add(details);
-        });
+        pendingShops.forEach((s, shop) -> detailsList.add(convertToMap(shop)));
         return detailsList;
     }
 
@@ -1069,15 +1126,12 @@ public class JSONShopRepo implements ShopRepo {
         List<ItemStack> inv = new ArrayList<>();
         List<Integer> itemIds = new ArrayList<>();
 
-        if (shop == null) {
-            return data;
-        }
+        if (shop == null) return data;
 
         shop.getInv().forEach(itemList -> {
             ItemStack item = itemList.item.clone();
             ItemMeta meta = item.getItemMeta();
             List<Component> lore = meta.lore() == null ? new ArrayList<>() : meta.lore();
-            lore.add(Component.text("Right click to find a better deal"));
             meta.lore(lore);
             item.setItemMeta(meta);
             inv.add(item);
@@ -1148,22 +1202,7 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     public List<Map<String, String>> getRefinedShopsByName(String searchKey) {
-        List<Map<String, String>> detailsList = new ArrayList<>();
-        shops.forEach((s, shop) -> {
-
-            if (shop.getName().toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
-
-                Map<String, String> details = new HashMap<>();
-                details.put("name", shop.getName());
-                details.put("desc", shop.getDesc());
-                details.put("owners", String.join(", ", shop.getOwners().values()));
-                details.put("loc", shop.getLoc());
-                details.put("key", shop.getKey());
-                details.put("displayItem",shop.getDisplayItem());
-                detailsList.add(details);
-            }
-        });
-        return detailsList;
+        return shops.values().stream().filter(shop -> shop.getName().toLowerCase().trim().contains(searchKey.toLowerCase().trim())).map(shop -> convertToMap(shop)).toList();
     }
 
     public List<ItemStack> getMatchingItems(String key, String itemName) {
@@ -1189,27 +1228,9 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     public List<Map<String, String>> getRefinedShopsByPlayer(String searchKey) {
-        List<Map<String, String>> detailsList = new ArrayList<>();
-        shops.forEach((s, shop) -> {
-
-            boolean[] contains = {false};
-            shop.getOwners().values().forEach(s1 -> {
-                if (s1.toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
-                    contains[0] = true;
-                }
-            });
-            if (contains[0]) {
-                Map<String, String> details = new HashMap<>();
-                details.put("name", shop.getName());
-                details.put("desc", shop.getDesc());
-                details.put("owners", String.join(", ", shop.getOwners().values()));
-                details.put("loc", shop.getLoc());
-                details.put("key", shop.getKey());
-                details.put("displayItem",shop.getDisplayItem());
-                detailsList.add(details);
-            }
-        });
-        return detailsList;
+        return shops.values().stream()
+            .filter(shop -> shop.getOwners().values().stream().map(owner -> owner.toLowerCase().trim().contains(searchKey.toLowerCase().trim()))
+            .reduce(false, (x, y) -> x || y)).map(shop -> convertToMap(shop)).toList();
     }
 
     public Map<String, Object> findItem(String searchKey) {
@@ -1327,5 +1348,3 @@ public class JSONShopRepo implements ShopRepo {
         executorService.shutdown();
     }
 }
-
-
