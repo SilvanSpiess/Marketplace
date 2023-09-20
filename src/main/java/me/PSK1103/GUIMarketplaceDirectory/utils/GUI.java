@@ -18,6 +18,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.ChatPaginator;
 
+import de.tr7zw.nbtinjector.javassist.compiler.CompileError;
+
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -51,7 +53,7 @@ public class GUI {
         player.sendMessage(Component.text(msg + " (").color(NamedTextColor.YELLOW).append(yes).append(Component.text("/")).append(no).append(Component.text(")")).color(NamedTextColor.YELLOW));
     }
 
-    private ItemStack makeShopDisplayItem(Map<String, String> shop, Component... clicks) {
+    private ItemStack makeShopDisplayItem(Map<String, String> shop, boolean hasPendingTag, Component... clicks) {
         ItemStack shopItem;
         try {
             shopItem = new ItemStack(Material.getMaterial(shop.get("displayItem")));
@@ -61,18 +63,24 @@ public class GUI {
         }
         //Adds lore (info) to the shop display items
         ItemMeta shopMeta = shopItem.getItemMeta();
+        //shopname
         shopMeta.displayName(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") + shop.get("name"))));
         List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + shop.get("desc")),30)));
         List<Component> lore = new ArrayList<>();
+        //pending tag
+        if (hasPendingTag) lore.add(Component.text(ChatColor.RED + "[Pending changes]"));
+        //owner
+        lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shop.get("owners"))));
+        //description
         l.forEach(s -> lore.add(Component.text(s)));
+        //location
         String[] parts = shop.get("loc").split(",");
         if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + ", " + colors.get("loc") + parts[2])));    
+            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + colors.get("loc") + ", " + parts[2])));    
         }
         else {
             lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shop.get("loc"))));
         }
-        lore.add(0, Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shop.get("owners"))));
         for (Component click: clicks) {
             lore.add(click);
         }
@@ -81,6 +89,10 @@ public class GUI {
         shopMeta.addItemFlags(ItemFlag.HIDE_ITEM_SPECIFICS);
         shopItem.setItemMeta(shopMeta);
         return shopItem;
+    }
+
+    private ItemStack makeShopDisplayItem(Map<String, String> shop, Component... clicks) {
+        return makeShopDisplayItem(shop, false, clicks);
     }
 
     /*
@@ -112,6 +124,7 @@ public class GUI {
     private ItemStack addItemLore(ItemStack item, Component... lore) {        
         ItemMeta itemMeta = item.getItemMeta();
         List<Component> allLore = itemMeta.lore();
+        if (allLore==null) allLore = new LinkedList<>();
         allLore.addAll(Arrays.asList(lore));
         itemMeta.lore(allLore);
         item.setItemMeta(itemMeta);
@@ -129,7 +142,7 @@ public class GUI {
         inv.forEach(item -> {
             if(type == InvType.INV_EDIT) {
                 addItemLore(item, Component.text(ChatColor.GOLD + "§oRight click to find a better deal"), 
-                                  Component.text(ChatColor.RED + "Shift click to delete this item"));
+                                  Component.text(ChatColor.RED + "Press 'drop' key to delete this item"));
             }
             else addItemLore(item, Component.text(ChatColor.GOLD + "§oRight click to find a better deal"));
         });
@@ -164,6 +177,8 @@ public class GUI {
         }
         player.openInventory(shopInventory);
     }
+
+
     
     //calls updateInvPage to load next inventory page
     public void nextInvPage(Player player, int currPage) {
@@ -207,6 +222,22 @@ public class GUI {
         player.updateInventory();
     }
 
+    public void switchShopVersion(Inventory inventory, int invSlot, String key, boolean isNew) {
+        if (isNew) {
+            inventory.setItem(invSlot, makeShopDisplayItem(plugin.getShopRepo().getSpecificChangeDetails(key),
+                                                           Component.text(ChatColor.WHITE + "Left click to see old shop"), 
+                                                           Component.text(ChatColor.AQUA + "Right click to see new shop"),
+                                                           Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
+                                                           Component.text(ChatColor.RED + "Press 'drop' key to reject")));
+        } else {
+            inventory.setItem(invSlot, makeShopDisplayItem(plugin.getShopRepo().getSpecificShopDetails(key),
+                                                           Component.text(ChatColor.WHITE + "Left click to see old shop"), 
+                                                           Component.text(ChatColor.AQUA + "Right click to see new shop"),
+                                                           Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
+                                                           Component.text(ChatColor.RED + "Press 'drop' key to reject")));
+        }
+    }
+
     /*
      * function that makes an ItemStack displayItem, which makes it ready to be added as DiplayItem in calling function
      */
@@ -233,12 +264,17 @@ public class GUI {
             ItemStack shopItem;
             if(type == InvType.NORMAL) {
                 shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            }else if(type == InvType.PENDING) {
+            } else if(type == InvType.PENDING_APPROVALS) {
                 shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.AQUA + "Shift click to view"),
-                                                                     Component.text(ChatColor.GREEN + "Right click to approve"), 
-                                                                     Component.text(ChatColor.RED + "Left click to reject"));
+                                                                     Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
+                                                                     Component.text(ChatColor.RED + "Press 'drop' key to reject"));
+            } else if(type == InvType.PENDING_CHANGES) {
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.WHITE + "Left click to see old shop"), 
+                                                             Component.text(ChatColor.AQUA + "Right click to see new shop"),
+                                                             Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
+                                                             Component.text(ChatColor.RED + "Press 'drop' key to reject"));
             } else if (type == InvType.REVIEW) {
-                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.RED + "Right click to delete"));
+                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.RED + "Press 'drop' key to delete"));
             } else if(type == InvType.RECOVER) {
                 shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.AQUA + "Right click to recover"));
             } else {
@@ -352,17 +388,48 @@ public class GUI {
      * - (type 5) seems to be inactive -> ShopEvents.java ln 365
      */
     public void openShopDirectoryModerator(Player moderator,InvType type) {
-        List<Map<String,String>> shops = type == InvType.PENDING ? plugin.getShopRepo().getPendingShopDetails() : plugin.getShopRepo().getShopDetails();
-        Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops, type), Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), Component.text("Marketplace Directory"));
+        List<Map<String,String>> shops;
+        String name;
+        switch(type) {
+            case PENDING_APPROVALS:
+                shops = plugin.getShopRepo().getPendingShopDetails();
+                name = "GMD pending approvals";
+                break;
+            case PENDING_CHANGES:
+                shops = plugin.getShopRepo().getPendingChangesDetails();
+                name = "GMD pending changes";
+                break;
+            case RECOVER:
+                shops = plugin.getShopRepo().getShopDetails();
+                name = "GMD recover shop book";
+                break;
+            case REVIEW:
+                shops = plugin.getShopRepo().getShopDetails();
+                name = "GMD review shops";
+                break;
+            default:
+                shops = plugin.getShopRepo().getShopDetails();
+                name = "Marketplace Directory";
+                break;
+        }
+        Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops, type), 
+                                                         Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), 
+                                                         Component.text(name));
         for(int i=0;i<(shops.size() > 54 ? 45 : shops.size());i++) {
             ItemStack shopItem;
-            if(type == InvType.PENDING) {
+            if(type == InvType.PENDING_APPROVALS) {
                 shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Shift click to view"), 
-                                                             Component.text(ChatColor.GREEN + "Right click to approve"), 
-                                                             Component.text(ChatColor.RED + "Left click to reject"));
+                                                             Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
+                                                             Component.text(ChatColor.RED + "Press 'drop' key to reject"));
+            } 
+            else if (type == InvType.PENDING_CHANGES) {
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.WHITE + "Left click to see old shop"), 
+                                                             Component.text(ChatColor.AQUA + "Right click to see new shop"),
+                                                             Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
+                                                             Component.text(ChatColor.RED + "Press 'drop' key to reject"));
             }
             else if (type == InvType.REVIEW) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.RED + "Right click to remove"));
+                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.RED + "Press 'drop' key to delete"));
             }
             else if(type == InvType.RECOVER) {
                 shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to recover")); //Maybe send recovering message in chat, to notify player
@@ -404,29 +471,93 @@ public class GUI {
      * - delete the shop
      */
     public void openShopEditMenu(Player player, String key) {
-        String name = plugin.getShopRepo().getShopName(key);        
+        String name;
+        if(plugin.getShopRepo().getPendingShopDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
+            name = plugin.getShopRepo().getShopName(key) + " §5§o(pending a)";
+        }
+        else if(plugin.getShopRepo().getPendingChangesDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
+            name = plugin.getShopRepo().getShopName(key) + " §5§o(pending changes)";
+        }
+        else name = plugin.getShopRepo().getShopName(key);
+               
         //creates the inventory for this menu
         ShopInvHolder currentShopView = new ShopInvHolder(key, InvType.SHOP_MENU, null, null);
         //Adds this shop to a list with one entry, to open its inventory if rawSloth 4 is clicked
         List<Map<String,String>> shop = new LinkedList<>();
         shop.add(plugin.getShopRepo().getSpecificShopDetails(key));
         currentShopView.setShops(shop);
+        Map<String,String> thisShop = plugin.getShopRepo().getSpecificShopDetails(key);
+        Map<String,String> pendingChangesShop = plugin.getShopRepo().getSpecificChangeDetails(key);
+        boolean hasPendingChanges = pendingChangesShop!=null;
         Inventory shopEditMenuInv = Bukkit.createInventory(currentShopView,18, Component.text(name));
         //setDescription button
         ItemStack setDescription = makeDisplayItem(Material.PAPER, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set description"));
+        if (hasPendingChanges && !thisShop.get("desc").equals(pendingChangesShop.get("desc"))) {
+            List<Component> descriptionLore = new LinkedList<>();
+            descriptionLore.add(Component.text(ChatColor.DARK_PURPLE + "[Old]"));
+            descriptionLore.addAll(Arrays.asList(ChatPaginator.wordWrap(ChatColor.GREEN + thisShop.get("desc"),30)).stream().map(x -> Component.text(ChatColor.GREEN + x)).toList());
+            descriptionLore.add(Component.text(ChatColor.LIGHT_PURPLE + "[New]"));
+            descriptionLore.addAll(Arrays.asList(ChatPaginator.wordWrap(ChatColor.GREEN + pendingChangesShop.get("desc"),30)).stream().map(x -> Component.text(ChatColor.GREEN + x)).toList());
+            descriptionLore.add(Component.text(ChatColor.DARK_PURPLE + " "));
+            descriptionLore.add(Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+            setDescription = addItemLore(setDescription, descriptionLore.toArray(new Component[descriptionLore.size()]));
+        }
+        setDescription = addItemLore(setDescription, Component.text(ChatColor.DARK_AQUA + "Left click to change your description"));
         shopEditMenuInv.setItem(1,setDescription);
         //see shop button
-        ItemStack seeShop = makeShopDisplayItem(plugin.getShopRepo().getSpecificShopDetails(key), 
-                                                Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
+        ItemStack seeShop;
+        if (hasPendingChanges) seeShop = makeShopDisplayItem(pendingChangesShop, true, 
+                                                             Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
+        else seeShop = makeShopDisplayItem(thisShop, false, 
+                                           Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
         shopEditMenuInv.setItem(4,seeShop);
-        //setDescription button
+        //setLocation button
         ItemStack setLocation = makeDisplayItem(Material.COMPASS, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set location"));
+        if (hasPendingChanges && !thisShop.get("loc").equals(pendingChangesShop.get("loc"))) {
+            String[] partsOld = thisShop.get("loc").split(",");
+            String[] partsNew = pendingChangesShop.get("loc").split(",");
+            List<Component> locationLore = new LinkedList<>();
+            locationLore.add(Component.text(ChatColor.DARK_PURPLE + "[Old]"));
+            if(Integer.parseInt(partsOld[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && partsOld.length >= 3) {
+                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + partsOld[0] + "," + colors.get("u-loc") + partsOld[1] + colors.get("loc") + "," + partsOld[2])));
+            } else {
+                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + thisShop.get("loc"))));
+            }
+            locationLore.add(Component.text(ChatColor.LIGHT_PURPLE + "[New]"));
+            if(Integer.parseInt(partsNew[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && partsNew.length >= 3) {
+                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + partsNew[0] + "," + colors.get("u-loc") + partsNew[1] + colors.get("loc") + "," + partsNew[2])));
+            } else {
+                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + pendingChangesShop.get("loc"))));
+            }
+            locationLore.add(Component.text(ChatColor.DARK_PURPLE + " "));
+            locationLore.add(Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+            setLocation = addItemLore(setLocation, locationLore.toArray(new Component[locationLore.size()]));
+        }
+        setLocation = addItemLore(setLocation, Component.text(ChatColor.DARK_AQUA + "Left click to move your shop"));
         shopEditMenuInv.setItem(7,setLocation);
         //setDisplayItem button
         ItemStack setDisplayItem = makeDisplayItem(Material.WRITABLE_BOOK, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set display item"));
+        if (hasPendingChanges && !thisShop.get("displayItem").equals(pendingChangesShop.get("displayItem"))) {
+            setDisplayItem = addItemLore(setDisplayItem, Component.text(ChatColor.DARK_PURPLE + "[Old]"),
+                                                         Component.text(ChatColor.GREEN + thisShop.get("displayItem")),
+                                                         Component.text(ChatColor.LIGHT_PURPLE + "[New]"),
+                                                         Component.text(ChatColor.GREEN + pendingChangesShop.get("displayItem")),
+                                                         Component.text(ChatColor.DARK_PURPLE + " "),
+                                                         Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+        }
+        setDisplayItem = addItemLore(setDisplayItem, Component.text(ChatColor.DARK_AQUA + "Left click to change display item"));
         shopEditMenuInv.setItem(10,setDisplayItem);
         //addOwner button
         ItemStack addOwner = makeDisplayItem(Material.BEACON, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Add owner"));
+        if (hasPendingChanges && !thisShop.get("owners").equals(pendingChangesShop.get("owners"))) {
+            addOwner = addItemLore(addOwner, Component.text(ChatColor.DARK_PURPLE + "[Old]"),
+                                             Component.text(ChatColor.GREEN + thisShop.get("owners")),
+                                             Component.text(ChatColor.LIGHT_PURPLE + "[New]"),
+                                             Component.text(ChatColor.GREEN + pendingChangesShop.get("owners")),
+                                             Component.text(ChatColor.DARK_PURPLE + " "),
+                                             Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+        }
+        addOwner = addItemLore(addOwner, Component.text(ChatColor.DARK_AQUA + "Left click to add a new owner"));
         shopEditMenuInv.setItem(13,addOwner);
         //removeShop button
         ItemStack removeShop = makeDisplayItem(Material.FLINT_AND_STEEL, Component.text(ChatColor.RED + "" + ChatColor.ITALIC + "Delete shop"));

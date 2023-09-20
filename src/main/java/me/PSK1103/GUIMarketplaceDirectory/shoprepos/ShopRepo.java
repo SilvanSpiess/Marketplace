@@ -7,9 +7,14 @@ import java.util.List;
 import java.util.Map;
 
 public interface ShopRepo {
-    public enum EditType{
+    public enum EditType {
         NOT_UNDER_ADD, NOT_UNDER_EDIT, ADD_OWNER, ADD_SHOP, SET_DISPLAY_ITEM, SET_DESCRIPTION, SHOP_OWNER_ADDITION, COREPROTECT_RADIUS, SET_LOCATION;
     }
+
+    public enum ModerationType {
+        APPROVE_CHANGE, REJECT_CHANGE;
+    }
+
     String addShopAsOwner(String name, String desc, String owner, String uuid, String loc, String displayItem);
 
     String addShop(String name, String desc, String owner, String uuid, String loc, String displayItem);
@@ -22,33 +27,23 @@ public interface ShopRepo {
 
     void stopShopEdit(String uuid);
 
-    int startSettingDescription(String uuid, String key);
-    
+    void setDisplayItem(String uuid, String materialName);
+    void setLocation(String uuid, String location);    
     void setDescription(String uuid, String description);
+    void addOwner(String uuid, OfflinePlayer player);
 
+    int startSettingDescription(String uuid, String key);
     int startSettingLocation(String uuid, String key);
-    
-    void setLocation(String uuid, String location);
-
     int startAddingOwner(String uuid, String key);
-
     int startSettingDisplayItem(String uuid, String key);
-
     int startRemovingShop(String uuid, String key);
 
     boolean getIsEditingShop(String uuid, String key);
-
     boolean getIsAddingOwner(String key);
-
-    boolean getIsUserAddingOwner(String uuid);
-
-    void addOwner(String uuid, OfflinePlayer player);
-
-    void setDisplayItem(String uuid, String materialName);
+    boolean getIsUserAddingOwner(String uuid);    
+    boolean isShopUnderEditOrAdd(String key);
 
     void saveShops();
-
-    boolean isShopUnderEditOrAdd(String key);
 
     int initItemAddition(String uuid, String key, String name, ItemStack itemStack);
 
@@ -66,33 +61,41 @@ public interface ShopRepo {
 
     boolean isShopOwner(String uuid, String key);
 
+    void approveChange(String uuid);
+    void rejectChange(String uuid);
+    boolean isChangeLocked(String key); 
+    boolean isChangeLocked(String key, ModerationType kind);
+    boolean hasUserLockedChanges(String uuid); 
+    boolean hasUserLockedChanges(String uuid, ModerationType kind); 
+    void unlockChange(String uuid);
+    void lockChange(String uuid, String key, ModerationType kind); 
+
+    void submitNewDescription(String uuid, String newDesc);
+    void submitNewDisplayItem(String uuid, String newDisplayItem);
+    void submitNewLocation(String uuid, String newLoc);
+    void submitNewOwner(String uuid, String newUuid, String name);
+
+    void cancelNewDescription(String uuid, String key);
+    void cancelNewDisplayItem(String uuid, String key);
+    void cancelNewLocation(String uuid, String key);
+    void cancelNewOwner(String uuid, String key);
+
     void approveShop(String key);
-
-    void rejectShop(String uuid);
-
-    void cancelRejectShop(String uuid);
-
-    boolean isShopRejecting(String key);
-
-    boolean isUserRejectingShop(String uuid);
-
-    void addShopToRejectQueue(String uuid, String key);
-
     void removeShop(String uuid);
-
-    void cancelRemoveShop(String uuid);
-
-    boolean isShopRemoving(String key);
-
-    boolean isUserRemovingShop(String uuid);
-
-    void addShopToRemoveQueue(String uuid, String key);
+    void unlockShop(String uuid);
+    boolean isShopLocked(String key);
+    boolean hasUserLockedShop(String uuid);
+    void lockShop(String uuid, String key);
 
     Map<String, String> getSpecificShopDetails(String key);
+
+    Map<String, String> getSpecificChangeDetails(String key);
 
     List<Map<String, String>> getShopDetails();
 
     List<Map<String, String>> getPendingShopDetails();
+
+    List<Map<String, String>> getPendingChangesDetails();
 
     List<Object> getShopInv(String key);
 
@@ -115,5 +118,4 @@ public interface ShopRepo {
     void lookupShop(Player player, String key);
 
     void lookupAllShops(Player player);
-
 }

@@ -1,7 +1,6 @@
 package me.PSK1103.GUIMarketplaceDirectory.database.entities;
 
 import javax.persistence.*;
-import java.util.Map;
 
 @Entity
 @Table(name = "shop")

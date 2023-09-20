@@ -28,6 +28,11 @@ public class Config {
     private int maxUndergroundMarketLevel;
 
     private boolean moderateDirectory;
+
+    private boolean moderateDisplayItem;
+    private boolean moderateLocation;
+    private boolean moderateDescription;
+    private boolean moderateAddOwner;
     
     private String tutorialLink;
     private String modTutorialLink;
@@ -100,7 +105,13 @@ public class Config {
             //It is used in SQL database and JSONShopRepo to decide whether to put the newly added shop in PendingShops or shops.
             //It is used to decide whether to show a message to the player when making a shop.
             moderateDirectory = configFile.getBoolean("moderate-directory",defaultConfig.getBoolean("moderate-directory"));
-
+            
+            //determines whether certain changes will require staff approval
+            moderateDisplayItem = configFile.getBoolean("moderate-ShopDisplayItem",defaultConfig.getBoolean("moderate-ShopDisplayItem"));
+            moderateLocation = configFile.getBoolean("moderate-ShopLocation",defaultConfig.getBoolean("moderate-ShopLocation"));
+            moderateDescription = configFile.getBoolean("moderate-ShopDescription",defaultConfig.getBoolean("moderate-ShopDescription"));
+            moderateAddOwner = configFile.getBoolean("moderate-ShopAddOwner",defaultConfig.getBoolean("moderate-ShopAddOwner"));
+           
             //these are the links that get shown with the "/gmd tutorial" command. It is used inside GUIMarketplaceCommands.
             tutorialLink = configFile.getString("tutorial-link",defaultConfig.getString("tutorial-link"));
             modTutorialLink = configFile.getString("tutorial-moderator-link",defaultConfig.getString("tutorial-moderator-link"));
@@ -173,6 +184,12 @@ public class Config {
             //It is used in SQL database and JSONShopRepo to decide whether to put the newly added shop in PendingShops or shops.
             //It is used to decide whether to show a message to the player when making a shop.
             moderateDirectory = defaultConfig.getBoolean("moderate-directory");
+
+            //determines whether certain changes will require staff approval
+            moderateDisplayItem = defaultConfig.getBoolean("moderate-ShopDisplayItem");
+            moderateLocation = defaultConfig.getBoolean("moderate-ShopLocation");
+            moderateDescription = defaultConfig.getBoolean("moderate-ShopDescription");
+            moderateAddOwner = defaultConfig.getBoolean("moderate-ShopAddOwner");
 
             //these are the links that get shown with the "/gmd tutorial" command. It is used inside GUIMarketplaceCommands.
             tutorialLink = defaultConfig.getString("tutorial-link");
@@ -331,6 +348,22 @@ public class Config {
         return moderateDirectory;
     }
 
+    public boolean displayItemModerationEnabled() {
+        return moderateDisplayItem;
+    }
+
+    public boolean locationModerationEnabled() {
+        return moderateLocation;
+    }
+
+    public boolean descriptionModerationEnabled() {
+        return moderateDescription;
+    }
+
+    public boolean addOwnerModerationEnabled() {
+        return moderateAddOwner;
+    }
+
     public int getShopDetailsLengthLimit() {
         return shopDetailsLengthLimit;
     }
@@ -408,11 +441,19 @@ public class Config {
                 ", max-underground-market-level=" + maxUndergroundMarketLevel + "\n" + 
                 ", tutorial-link='" + tutorialLink + "'\n" + 
                 ", tutorial-moderator-link='" + modTutorialLink + "'\n" + 
-                ", moderate-directory=" + moderateDirectory + "'\n" +
+                ", moderate-directory=" + moderateDirectory + "\n" +
+                ", moderate-ShopDisplayItem=" + moderateDisplayItem + "\n" +
+                ", moderate-ShopLocation=" + moderateLocation + "\n" +
+                ", moderate-ShopDescription=" + moderateDescription + "\n" +
+                ", moderate-ShopAddOwner=" + moderateAddOwner + "\n" +
                 ", multi-owner=" + multiOwner + "\n" +
                 ", enable-custom-approval-message=" + enableCustomApprovalMessage + "\n" +
                 ", custom-approval-message='" + customApprovalMessage + "'\n" +
                 ", enable-bstats=" + enableBstats + "\n" +
                 '}';
     }
+    /* moderate-ShopDisplayItem: true
+moderate-ShopLocation: true
+moderate-ShopDescription: true
+moderate-ShopAddOwner: true*/
 }

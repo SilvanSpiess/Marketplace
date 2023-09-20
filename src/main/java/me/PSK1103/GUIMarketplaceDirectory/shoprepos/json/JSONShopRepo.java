@@ -143,13 +143,15 @@ class Shop {
 public class JSONShopRepo implements ShopRepo {
     private final Map<String, Shop> shops;
     private final Map<String, Shop> pendingShops;
+    private final Map<String, Shop> pendingChanges;
     private final Map<String, Shop> waitingShops;
     private final GUIMarketplaceDirectory plugin;
     private final HashMap<String, String> shopsUnderAdd;
     private final HashMap<String, EditType> shopsUnderEdit;
+    private final HashMap<String, String> userModeratingShop;
+    private final HashMap<String, ModerationType> shopUnderModeration;
     private final HashMap<String, ItemList> itemToAdd;
-    private final HashMap<String, String> shopsUnderReject;
-    private final HashMap<String, String> shopsUnderRemove;
+    private final HashMap<String, String> shopsAwaitingResponse;
 
     private static final EnumSet<Material> materialsWithoutTextures = EnumSet.noneOf(Material.class);
 
@@ -163,15 +165,17 @@ public class JSONShopRepo implements ShopRepo {
     public JSONShopRepo(GUIMarketplaceDirectory plugin) {
         this.shops = new HashMap<>();
         this.pendingShops = new HashMap<>();
+        this.pendingChanges = new HashMap<>();
         shopsUnderAdd = new HashMap<>();
-        shopsUnderReject = new HashMap<>();
-        shopsUnderRemove = new HashMap<>();
+        shopsAwaitingResponse = new HashMap<>();
+        userModeratingShop = new HashMap<>();
+        shopUnderModeration = new HashMap<>();
         shopsUnderEdit = new HashMap<>();
         waitingShops = new HashMap<>();
         itemToAdd = new HashMap<>();
         this.plugin = plugin;
         this.logger = plugin.getLogger();
-        if (initShops()) {
+        if (initShopsFromJSON()) {
             logger.info("Shops loaded");
             if (plugin.getCustomConfig().bstatsEnabled())
                 addShopCountMetric();
@@ -249,7 +253,7 @@ public class JSONShopRepo implements ShopRepo {
             return -1;
         shopsUnderAdd.put(uuid, key);    
         shopsUnderEdit.put(key, EditType.SET_DESCRIPTION);
-        return 0;
+        return 1;
     }
 
     @Override
@@ -291,7 +295,7 @@ public class JSONShopRepo implements ShopRepo {
             return 0;
         if (!shops.containsKey(key) && !pendingShops.containsKey(key))
             return -1;
-        shopsUnderRemove.put(uuid, key);
+        shopsAwaitingResponse.put(uuid, key);
         return 1;
     }
 
@@ -394,82 +398,27 @@ public class JSONShopRepo implements ShopRepo {
                 parser.parse(new FileReader(shopFile));
                 JSONObject data = new JSONObject();
                 JSONArray shopJSONs = new JSONArray();
-                JSONArray pShopJSONs = new JSONArray();
+                JSONArray pendingShopJSONs = new JSONArray();
+                JSONArray pendingChangesJSONs = new JSONArray();
                 shops.forEach((s, shop1) -> {
-                    JSONObject shopJSON = new JSONObject();
-                    shopJSON.put("name", shop1.getName());
-                    shopJSON.put("desc", shop1.getDesc());
-                    shopJSON.put("owner", shop1.getOwner());
-                    shopJSON.put("owners", shop1.getOwners());
-                    shopJSON.put("uuid", shop1.getUuid());
-                    shopJSON.put("key", shop1.getKey());
-                    shopJSON.put("loc", shop1.getLoc());
-                    shopJSON.put("displayItem",shop1.getDisplayItem());
-
+                    JSONObject shopJSON = convertToJSON(shop1);
                     JSONArray items = new JSONArray();
-
-                    shop1.getInv().forEach(itemList -> {
-                        JSONObject item = new JSONObject();
-                        item.put("name", itemList.item.getType().getKey().getKey().toUpperCase());
-                        item.put("price", Integer.valueOf(itemList.price).toString());
-                        item.put("qty", itemList.qty);
-                        if (itemList.item.getItemMeta().hasDisplayName())
-                            //item.put("customName", ((TextComponent) itemList.item.getItemMeta().displayName()).content());
-                            item.put("customName", (itemList.item.getItemMeta().getDisplayName()));
-                        if (itemList.extraInfo != null && itemList.extraInfo.size() > 0) {
-                            item.put("extraInfo", itemList.extraInfo);
-                        }
-                        if (itemList.customType != null && itemList.customType.length() > 0) {
-                            item.put("customType", itemList.customType);
-                        }
-                        items.add(item);
-                    });
-
+                    shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
                     shopJSON.put("items", items);
-
-
                     shopJSONs.add(shopJSON);
                 });
-
                 pendingShops.forEach((s, shop1) -> {
-                    JSONObject shopJSON = new JSONObject();
-                    shopJSON.put("name", shop1.getName());
-                    shopJSON.put("desc", shop1.getDesc());
-                    shopJSON.put("owner", shop1.getOwner());
-                    shopJSON.put("owners", shop1.getOwners());
-                    shopJSON.put("uuid", shop1.getUuid());
-                    shopJSON.put("key", shop1.getKey());
-                    shopJSON.put("loc", shop1.getLoc());
-                    shopJSON.put("displayItem",shop1.getDisplayItem());
-
+                    JSONObject shopJSON = convertToJSON(shop1);
                     JSONArray items = new JSONArray();
-
-                    shop1.getInv().forEach(itemList -> {
-                        JSONObject item = new JSONObject();
-                        item.put("name", itemList.item.getType().getKey().getKey().toUpperCase());
-                        item.put("price", Integer.valueOf(itemList.price).toString());
-                        item.put("qty", itemList.qty);
-                        if (itemList.item.getItemMeta().hasDisplayName()) {
-                            //item.put("customName", ((TextComponent) itemList.item.getItemMeta().displayName()).content());
-                            item.put("customName", (itemList.item.getItemMeta().getDisplayName()));
-                        }
-                        if (itemList.extraInfo != null && itemList.extraInfo.size() > 0) {
-                            item.put("extraInfo", itemList.extraInfo);
-                        }
-                        if (itemList.customType != null && itemList.customType.length() > 0) {
-                            item.put("customType", itemList.customType);
-                        }
-                        items.add(item);
-                    });
-
+                    shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
                     shopJSON.put("items", items);
-
-
-                    pShopJSONs.add(shopJSON);
+                    pendingShopJSONs.add(shopJSON);
                 });
+                pendingChanges.forEach((s, shop1) -> pendingChangesJSONs.add(convertToJSON(shop1)));
 
                 data.put("shops", shopJSONs);
-                data.put("pendingShops", pShopJSONs);
+                data.put("pendingShops", pendingShopJSONs);
+                data.put("pendingChanges", pendingChangesJSONs);
 
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 JsonParser jp = new JsonParser();
@@ -487,51 +436,72 @@ public class JSONShopRepo implements ShopRepo {
         });
     }
 
-    private boolean initShops() {
+    private Shop loadShopData(JSONObject shopJSON) {
+        Shop shop = new Shop(shopJSON.get("name").toString(), 
+                             shopJSON.get("desc").toString(), 
+                             shopJSON.get("owner").toString(), 
+                             shopJSON.get("uuid").toString(), 
+                             shopJSON.get("key").toString(), 
+                             shopJSON.get("loc").toString());
+        if (shopJSON.containsKey("owners")) {
+            Map<String, String> owners = new Gson().fromJson(shopJSON.get("owners").toString(),
+                    new TypeToken<HashMap<String, String>>() {
+                    }.getType());
+
+            shop.setOwners(owners);
+        }
+        if(shopJSON.containsKey("displayItem")) {
+            shop.setDisplayItem(shopJSON.get("displayItem").toString());
+        }
+        return shop;
+    }
+
+    private void loadShopInventory(JSONObject shopJSON, Shop shop) {
+        JSONArray itemsArray = ((JSONArray) shopJSON.get("items"));
+        for (Object o : itemsArray) {
+            try {
+                JSONObject itemJSON = ((JSONObject) o);
+                ItemList item = new ItemList(itemJSON.get("name").toString(), itemJSON.get("qty").toString(), Integer.parseInt(itemJSON.get("price").toString()), this.plugin);
+                if (itemJSON.get("customName") != null)
+                    item.setCustomName(itemJSON.get("customName").toString());
+                if (itemJSON.containsKey("extraInfo") && itemJSON.containsKey("customType")) {
+                    JSONObject extraData = ((JSONObject) itemJSON.get("extraInfo"));
+                    HashMap<String, Object> headInfo = new Gson().fromJson(extraData.toString(), HashMap.class);
+                    item.setExtraInfo(headInfo, itemJSON.getOrDefault("customType","").toString());
+                }
+                shop.addToInv(item);
+            } catch (ClassCastException | NullPointerException e) {
+                if (e instanceof ClassCastException)
+                    logger.severe("Malformed shops.json, cannot add item");
+                if (e instanceof NullPointerException)
+                    logger.warning("Key value(s) missing, item won't be created");
+                e.printStackTrace();
+            }
+        }
+    }
+    private boolean initShopsFromJSON() {
         File shopFile = plugin.getShops();
         try {
             JSONParser parser = new JSONParser();
             assert shopFile != null;
             JSONObject data = (JSONObject) parser.parse(new FileReader(shopFile));
             JSONArray shopJSONs = ((JSONArray) data.get("shops"));
-            JSONArray pShopJSONs = ((JSONArray) data.get("pendingShops"));
-
+            JSONArray pendingShopJSONs = ((JSONArray) data.get("pendingShops"));
+            JSONArray pendingChangesJSONs = ((JSONArray) data.get("pendingChanges"));
+            if (shopJSONs == null) shopJSONs = new JSONArray();
+            if (pendingShopJSONs == null) pendingShopJSONs = new JSONArray();
+            if (pendingChangesJSONs == null) pendingChangesJSONs = new JSONArray();
+            /*
+             * Loads all the normal shops in the directory (shops.json) 
+             */
             if (shopJSONs.size() > 0) {
                 for (Object json : shopJSONs) {
                     try {
                         JSONObject shopJSON = ((JSONObject) json);
-                        Shop shop = new Shop(shopJSON.get("name").toString(), shopJSON.get("desc").toString(), shopJSON.get("owner").toString(), shopJSON.get("uuid").toString(), shopJSON.get("key").toString(), shopJSON.get("loc").toString());
-                        if (shopJSON.containsKey("owners")) {
-                            Map<String, String> owners = new Gson().fromJson(shopJSON.get("owners").toString(),
-                                    new TypeToken<HashMap<String, String>>() {
-                                    }.getType());
-
-                            shop.setOwners(owners);
-                        }
-                        if(shopJSON.containsKey("displayItem")) {
-                            shop.setDisplayItem(shopJSON.get("displayItem").toString());
-                        }
-                        JSONArray itemsArray = ((JSONArray) shopJSON.get("items"));
-                        for (Object o : itemsArray) {
-                            try {
-                                JSONObject itemJSON = ((JSONObject) o);
-                                ItemList item = new ItemList(itemJSON.get("name").toString(), itemJSON.get("qty").toString(), Integer.parseInt(itemJSON.get("price").toString()), this.plugin);
-                                if (itemJSON.get("customName") != null)
-                                    item.setCustomName(itemJSON.get("customName").toString());
-                                if (itemJSON.containsKey("extraInfo")) {
-                                    JSONObject extraData = ((JSONObject) itemJSON.get("extraInfo"));
-                                    HashMap<String, Object> headInfo = new Gson().fromJson(extraData.toString(), HashMap.class);
-                                    item.setExtraInfo(headInfo, itemJSON.getOrDefault("customType","").toString());
-                                }
-                                shop.addToInv(item);
-                            } catch (ClassCastException | NullPointerException e) {
-                                if (e instanceof ClassCastException)
-                                    logger.severe("Malformed shops.json, cannot add item");
-                                if (e instanceof NullPointerException)
-                                    logger.warning("Key value(s) missing, item won't be created");
-                                e.printStackTrace();
-                            }
-                        }
+                        //load the shop data (name, desc, owner, uuid, key, loc, display item) from the JSON
+                        Shop shop = loadShopData(shopJSON);
+                        //load the shop inventory from the JSON
+                        loadShopInventory(shopJSON, shop);
                         shops.put(shopJSON.get("key").toString(), shop);
                     } catch (ClassCastException | NumberFormatException | NullPointerException e) {
                         if (e instanceof ClassCastException || e instanceof NumberFormatException)
@@ -543,44 +513,37 @@ public class JSONShopRepo implements ShopRepo {
                 }
             } else
                 logger.warning("No shops in directory");
-
-            if (pShopJSONs.size() > 0) {
-                for (Object json : pShopJSONs) {
+            /*
+             * Loads all the shops that are pending
+             */
+            if (pendingShopJSONs.size() > 0) {
+                for (Object json : pendingShopJSONs) {
                     try {
                         JSONObject shopJSON = ((JSONObject) json);
-                        Shop shop = new Shop(shopJSON.get("name").toString(), shopJSON.get("desc").toString(), shopJSON.get("owner").toString(), shopJSON.get("uuid").toString(), shopJSON.get("key").toString(), shopJSON.get("loc").toString());
-                        if (shopJSON.containsKey("owners")) {
-                            Map<String, String> owners = new Gson().fromJson(shopJSON.get("owners").toString(),
-                                    new TypeToken<HashMap<String, String>>() {
-                                    }.getType());
-
-                            shop.setOwners(owners);
-                        }
-                        if(shopJSON.containsKey("displayItem")) {
-                            shop.setDisplayItem(shopJSON.get("displayItem").toString());
-                        }
-                        JSONArray itemsArray = ((JSONArray) shopJSON.get("items"));
-                        for (Object o : itemsArray) {
-                            try {
-                                JSONObject itemJSON = ((JSONObject) o);
-                                ItemList item = new ItemList(itemJSON.get("name").toString(), itemJSON.get("qty").toString(), Integer.parseInt(itemJSON.get("price").toString()), this.plugin);
-                                if (itemJSON.get("customName") != null)
-                                    item.setCustomName(itemJSON.get("customName").toString());
-                                if (itemJSON.containsKey("extraInfo") && itemJSON.containsKey("customType")) {
-                                    JSONObject headData = ((JSONObject) itemJSON.get("extraInfo"));
-                                    HashMap<String, Object> headInfo = new Gson().fromJson(headData.toString(), HashMap.class);
-                                    item.setExtraInfo(headInfo, itemJSON.getOrDefault("customType","").toString());
-                                }
-                                shop.addToInv(item);
-                            } catch (ClassCastException | NullPointerException e) {
-                                if (e instanceof ClassCastException)
-                                    logger.severe("Malformed shops.json, cannot add item");
-                                if (e instanceof NullPointerException)
-                                    logger.warning("Key value(s) missing, item won't be created");
-                                e.printStackTrace();
-                            }
-                        }
+                        //load the shop data (name, desc, owner, uuid, key, loc, display item) from the JSON
+                        Shop shop = loadShopData(shopJSON);
+                        //load the shop inventory from the JSON
+                        loadShopInventory(shopJSON, shop);                        
                         pendingShops.put(shopJSON.get("key").toString(), shop);
+                    } catch (ClassCastException | NumberFormatException | NullPointerException e) {
+                        if (e instanceof ClassCastException || e instanceof NumberFormatException)
+                            logger.warning("Malformed shops.json, cannot add shop");
+                        if (e instanceof NullPointerException)
+                            logger.warning("Key value(s) missing, shop won't be created");
+                        e.printStackTrace();
+                    }
+                }
+            }
+            /*
+             * Loads all the shops that have changes pending
+             */
+            if (pendingChangesJSONs.size() > 0) {
+                for (Object json : pendingChangesJSONs) {
+                    try {
+                        JSONObject shopJSON = ((JSONObject) json);
+                        //load the shop data (name, desc, owner, uuid, key, loc, display item) from the JSON
+                        Shop shop = loadShopData(shopJSON);                    
+                        pendingChanges.put(shopJSON.get("key").toString(), shop);
                     } catch (ClassCastException | NumberFormatException | NullPointerException e) {
                         if (e instanceof ClassCastException || e instanceof NumberFormatException)
                             logger.warning("Malformed shops.json, cannot add shop");
@@ -1002,7 +965,6 @@ public class JSONShopRepo implements ShopRepo {
 
         itemToAdd.remove(shopsUnderAdd.get(uuid));
         shopsUnderAdd.remove(uuid);
-
         saveShops();
     }
 
@@ -1023,6 +985,238 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
+    public void approveChange(String uuid) {
+        if(!userModeratingShop.containsKey(uuid) || shopUnderModeration.get(userModeratingShop.get(uuid)) != ModerationType.APPROVE_CHANGE) {
+            return;
+        }
+        String key = userModeratingShop.get(uuid);
+        Shop officialShop;
+        if (shops.containsKey(key)) {
+            officialShop = shops.get(key);
+        } else if (pendingShops.containsKey(key)){
+            officialShop = pendingShops.get(key);
+        } else return;
+        officialShop.setDesc(pendingChanges.get(key).getDesc());
+        officialShop.setOwners(pendingChanges.get(key).getOwners());
+        officialShop.setLoc(pendingChanges.get(key).getLoc());
+        officialShop.setDisplayItem(pendingChanges.get(key).getDisplayItem());
+        pendingChanges.remove(key);
+        unlockChange(uuid);
+        saveShops();
+    }
+
+    @Override
+    public void rejectChange(String uuid) {
+        if(userModeratingShop.containsKey(uuid) && shopUnderModeration.get(userModeratingShop.get(uuid)) == ModerationType.REJECT_CHANGE) {
+            pendingChanges.remove(userModeratingShop.get(uuid));
+            unlockChange(uuid);
+            saveShops();
+        }
+    }
+
+    @Override
+    public boolean isChangeLocked(String key) {
+        return userModeratingShop.containsValue(key);    
+    }
+
+    @Override
+    public boolean isChangeLocked(String key, ModerationType kind) {
+        return userModeratingShop.containsValue(key) && shopUnderModeration.get(key) == kind;    
+    }
+
+    @Override
+    public boolean hasUserLockedChanges(String uuid) {
+        return userModeratingShop.containsKey(uuid);
+    }
+
+    @Override
+    public boolean hasUserLockedChanges(String uuid, ModerationType kind) {
+        return userModeratingShop.containsKey(uuid) && shopUnderModeration.get(userModeratingShop.get(uuid)) == kind;
+    }
+
+    @Override
+    public void unlockChange(String uuid) {
+        shopUnderModeration.remove(userModeratingShop.get(uuid));
+        userModeratingShop.remove(uuid);
+    }
+    
+    @Override
+    public void lockChange(String uuid, String key, ModerationType kind) {
+        shopUnderModeration.put(key, kind);
+        userModeratingShop.put(uuid, key);
+    }     
+    
+    @Override
+    public void submitNewDescription(String uuid, String newDesc) {
+        String key = shopsUnderAdd.get(uuid);
+        Shop currentShop;
+        if (pendingChanges.containsKey(key)) {
+            currentShop = pendingChanges.get(key);
+        } else if (pendingShops.containsKey(key)) {
+            currentShop = pendingShops.get(key);
+        } else if (shops.containsKey(key)) {
+            currentShop = shops.get(key);
+        } else {
+            return;
+        }
+        Shop changedShop = new Shop(currentShop.getName(), 
+                                    newDesc, 
+                                    currentShop.getOwner(), 
+                                    currentShop.getUuid(), 
+                                    currentShop.getKey(), 
+                                    currentShop.getLoc());
+        changedShop.setOwners(currentShop.getOwners());
+        changedShop.setDisplayItem(currentShop.getDisplayItem());
+        pendingChanges.put(key, changedShop);
+        saveShops();
+    }
+
+    @Override
+    public void submitNewDisplayItem(String uuid, String newDisplayItem) {
+        String key = shopsUnderAdd.get(uuid);
+        Shop currentShop;
+        if (pendingChanges.containsKey(key)) {
+            currentShop = pendingChanges.get(key);
+        } else if (pendingShops.containsKey(key)) {
+            currentShop = pendingShops.get(key);
+        } else if (shops.containsKey(key)) {
+            currentShop = shops.get(key);
+        } else {
+            return;
+        }
+        Shop changedShop = new Shop(currentShop.getName(), 
+                                    currentShop.getDesc(), 
+                                    currentShop.getOwner(), 
+                                    currentShop.getUuid(), 
+                                    currentShop.getKey(), 
+                                    currentShop.getLoc());
+        changedShop.setOwners(currentShop.getOwners());
+        changedShop.setDisplayItem(newDisplayItem);
+        pendingChanges.put(key, changedShop);
+        saveShops();
+    }
+
+    @Override
+    public void submitNewLocation(String uuid, String newLoc) {
+        String key = shopsUnderAdd.get(uuid);
+        Shop currentShop;
+        if (pendingChanges.containsKey(key)) {
+            currentShop = pendingChanges.get(key);
+        } else if (pendingShops.containsKey(key)) {
+            currentShop = pendingShops.get(key);
+        } else if (shops.containsKey(key)) {
+            currentShop = shops.get(key);
+        } else {
+            return;
+        }
+        Shop changedShop = new Shop(currentShop.getName(), 
+                                    currentShop.getDesc(), 
+                                    currentShop.getOwner(), 
+                                    currentShop.getUuid(), 
+                                    currentShop.getKey(), 
+                                    newLoc);
+        changedShop.setOwners(currentShop.getOwners());
+        changedShop.setDisplayItem(currentShop.getDisplayItem());
+        pendingChanges.put(key, changedShop);
+        saveShops();
+    }
+
+    @Override
+    public void submitNewOwner(String uuid, String newUuid, String name) {
+        String key = shopsUnderAdd.get(uuid);
+        Shop currentShop;
+        if (pendingChanges.containsKey(key)) {
+            currentShop = pendingChanges.get(key);
+        } else if (pendingShops.containsKey(key)) {
+            currentShop = pendingShops.get(key);
+        } else if (shops.containsKey(key)) {
+            currentShop = shops.get(key);
+        } else {
+            return;
+        }
+        Shop changedShop = new Shop(currentShop.getName(), 
+                                    currentShop.getDesc(), 
+                                    currentShop.getOwner(), 
+                                    currentShop.getUuid(), 
+                                    currentShop.getKey(), 
+                                    currentShop.getLoc());
+        changedShop.setOwners(currentShop.getOwners());
+        changedShop.addOwner(newUuid, name);
+        changedShop.setDisplayItem(currentShop.getDisplayItem());
+        pendingChanges.put(key, changedShop);
+        stopInitOwner(uuid);
+        saveShops();
+    }
+
+     @Override
+    public void cancelNewDescription(String uuid, String key) {
+        Shop changedShop = pendingChanges.get(key);
+        Shop originalShop;
+        if (shops.containsKey(key)) originalShop = shops.get(key);
+        else if (pendingShops.containsKey(key)) originalShop = pendingShops.get(key);
+        else return;
+        changedShop.setDesc(originalShop.getDesc());
+        if(originalShop.getOwners().equals(changedShop.getOwners()) && 
+           originalShop.getDesc().equals(changedShop.getDesc()) && 
+           originalShop.getLoc().equals(changedShop.getLoc()) && 
+           originalShop.getDisplayItem().equals(changedShop.getDisplayItem())) {
+            pendingChanges.remove(key);
+        } 
+        saveShops();
+    }
+
+    @Override
+    public void cancelNewDisplayItem(String uuid, String key) {
+        Shop changedShop = pendingChanges.get(key);
+        Shop originalShop;
+        if (shops.containsKey(key)) originalShop = shops.get(key);
+        else if (pendingShops.containsKey(key)) originalShop = pendingShops.get(key);
+        else return;
+        changedShop.setDisplayItem(originalShop.getDisplayItem());
+        if(originalShop.getOwners().equals(changedShop.getOwners()) && 
+           originalShop.getDesc().equals(changedShop.getDesc()) && 
+           originalShop.getLoc().equals(changedShop.getLoc()) && 
+           originalShop.getDisplayItem().equals(changedShop.getDisplayItem())) {
+            pendingChanges.remove(key);
+        } 
+        saveShops();
+    }
+
+    @Override
+    public void cancelNewLocation(String uuid, String key) {
+        Shop changedShop = pendingChanges.get(key);
+        Shop originalShop;
+        if (shops.containsKey(key)) originalShop = shops.get(key);
+        else if (pendingShops.containsKey(key)) originalShop = pendingShops.get(key);
+        else return;
+        changedShop.setLoc(originalShop.getLoc());
+        if(originalShop.getOwners().equals(changedShop.getOwners()) && 
+           originalShop.getDesc().equals(changedShop.getDesc()) && 
+           originalShop.getLoc().equals(changedShop.getLoc()) && 
+           originalShop.getDisplayItem().equals(changedShop.getDisplayItem())) {
+            pendingChanges.remove(key);
+        } 
+        saveShops();
+    }
+
+    @Override
+    public void cancelNewOwner(String uuid, String key) {
+        Shop changedShop = pendingChanges.get(key);
+        Shop originalShop;
+        if (shops.containsKey(key)) originalShop = shops.get(key);
+        else if (pendingShops.containsKey(key)) originalShop = pendingShops.get(key);
+        else return;
+        changedShop.setOwners(originalShop.getOwners());
+        if(originalShop.getOwners().equals(changedShop.getOwners()) && 
+           originalShop.getDesc().equals(changedShop.getDesc()) && 
+           originalShop.getLoc().equals(changedShop.getLoc()) && 
+           originalShop.getDisplayItem().equals(changedShop.getDisplayItem())) {
+            pendingChanges.remove(key);
+        } 
+        saveShops();
+    }
+
+    @Override
     public void approveShop(String key) {
         if (pendingShops.containsKey(key)) {
             shops.put(key, pendingShops.get(key));
@@ -1032,60 +1226,39 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void rejectShop(String uuid) {
-        pendingShops.remove(shopsUnderReject.get(uuid));
-        shopsUnderReject.remove(uuid);
-        saveShops();
-    }
-
-    @Override
-    public void cancelRejectShop(String uuid) {
-        shopsUnderReject.remove(uuid);
-    }
-
-    @Override
-    public boolean isShopRejecting(String key) {
-        return shopsUnderReject.containsValue(key);
-    }
-
-    @Override
-    public boolean isUserRejectingShop(String uuid) {
-        return shopsUnderReject.containsKey(uuid);
-    }
-
-    @Override
-    public void addShopToRejectQueue(String uuid, String key) {
-        shopsUnderReject.put(uuid, key);
-    }
-
-    @Override
     public void removeShop(String uuid) {
-        shops.remove(shopsUnderRemove.get(uuid));
-        shopsUnderRemove.remove(uuid);
+        if(shops.containsKey(shopsAwaitingResponse.get(uuid)))
+            shops.remove(shopsAwaitingResponse.get(uuid));
+        else if(pendingShops.containsKey(shopsAwaitingResponse.get(uuid)))
+            pendingShops.remove(shopsAwaitingResponse.get(uuid));
         saveShops();
+        unlockShop(uuid);
+    } 
+    
+    @Override 
+    public void unlockShop(String uuid) {
+        if(shopsAwaitingResponse.containsKey(uuid))
+            shopsAwaitingResponse.remove(uuid);
+        if(userModeratingShop.containsKey(uuid))
+            userModeratingShop.remove(uuid);
+    } 
+
+    @Override 
+    public boolean isShopLocked(String key) {
+        return shopsAwaitingResponse.containsValue(key);
     }
 
     @Override
-    public void cancelRemoveShop(String uuid) {
-        shopsUnderRemove.remove(uuid);
+    public boolean hasUserLockedShop(String uuid) {
+        return shopsAwaitingResponse.containsKey(uuid);
     }
 
     @Override
-    public boolean isShopRemoving(String key) {
-        return shopsUnderRemove.containsValue(key);
+    public void lockShop(String uuid, String key) {
+        shopsAwaitingResponse.put(uuid, key);
     }
 
-    @Override
-    public boolean isUserRemovingShop(String uuid) {
-        return shopsUnderRemove.containsKey(uuid);
-    }
-
-    @Override
-    public void addShopToRemoveQueue(String uuid, String key) {
-        shopsUnderRemove.put(uuid, key);
-    }
-
-    public Map<String, String> convertToMap(Shop shop) {
+    private Map<String, String> convertToMap(Shop shop) {
             Map<String, String> details = new HashMap<>();
             details.put("name", shop.getName());
             details.put("desc", shop.getDesc());
@@ -1095,11 +1268,46 @@ public class JSONShopRepo implements ShopRepo {
             details.put("displayItem",shop.getDisplayItem());
         return details;
     }
+
+    private JSONObject convertToJSON(Shop shop) {
+        JSONObject shopJSON = new JSONObject();
+        shopJSON.put("name", shop.getName());
+        shopJSON.put("desc", shop.getDesc());
+        shopJSON.put("owner", shop.getOwner());
+        shopJSON.put("owners", shop.getOwners());
+        shopJSON.put("uuid", shop.getUuid());
+        shopJSON.put("key", shop.getKey());
+        shopJSON.put("loc", shop.getLoc());
+        shopJSON.put("displayItem",shop.getDisplayItem());
+        return shopJSON;
+    }
+
+    private JSONObject convertToJSON(ItemList itemList) {
+        JSONObject item = new JSONObject();
+        item.put("name", itemList.item.getType().getKey().getKey().toUpperCase());
+        item.put("price", Integer.valueOf(itemList.price).toString());
+        item.put("qty", itemList.qty);
+        if (itemList.item.getItemMeta().hasDisplayName())
+            item.put("customName", (itemList.item.getItemMeta().getDisplayName()));
+        if (itemList.extraInfo != null && itemList.extraInfo.size() > 0) {
+            item.put("extraInfo", itemList.extraInfo);
+        }
+        if (itemList.customType != null && itemList.customType.length() > 0) {
+            item.put("customType", itemList.customType);
+        }
+        return item;
+    }
     
     @Override
     public Map<String, String> getSpecificShopDetails(String key) {
         if(shops.containsKey(key)) return convertToMap(shops.get(key));        
         else if(pendingShops.containsKey(key)) return convertToMap(pendingShops.get(key));        
+        else return null;
+    }
+
+    @Override
+    public Map<String, String> getSpecificChangeDetails(String key) {
+        if(pendingChanges.containsKey(key)) return convertToMap(pendingChanges.get(key));      
         else return null;
     }
 
@@ -1112,6 +1320,12 @@ public class JSONShopRepo implements ShopRepo {
     public List<Map<String, String>> getPendingShopDetails() {
         List<Map<String, String>> detailsList = new ArrayList<>();
         pendingShops.forEach((s, shop) -> detailsList.add(convertToMap(shop)));
+        return detailsList;
+    }
+
+    public List<Map<String, String>> getPendingChangesDetails() {
+        List<Map<String, String>> detailsList = new ArrayList<>();
+        pendingChanges.forEach((s, shop) -> detailsList.add(convertToMap(shop)));
         return detailsList;
     }
 
@@ -1220,11 +1434,13 @@ public class JSONShopRepo implements ShopRepo {
     public void removeMatchingItems(String key, String itemName) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
         shop.setInv(shop.getInv().stream().filter(itemList -> !itemList.name.equals(itemName)).collect(Collectors.toList()));
+        saveShops();
     }
 
     public void removeItem(String key, ItemStack item) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
         shop.setInv(shop.getInv().stream().filter(itemList -> itemList.getItem().getType() != item.getType() || !((TextComponent) item.getItemMeta().lore().get(0)).content().equals(((TextComponent) itemList.item.getItemMeta().lore().get(0)).content())).collect(Collectors.toList()));
+        saveShops();
     }
 
     public List<Map<String, String>> getRefinedShopsByPlayer(String searchKey) {

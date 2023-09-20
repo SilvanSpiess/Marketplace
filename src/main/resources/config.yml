@@ -20,6 +20,12 @@ max-underground-market-level: 0
 #activates moderation functionality
 moderate-directory: true
 
+#toggles for appoving changes on the display item
+moderate-ShopDisplayItem: true
+moderate-ShopLocation: true
+moderate-ShopDescription: true
+moderate-ShopAddOwner: true
+
 #links to to the tutorial video and the moderator tutorial video, put n/a if there is no moderator tutorial video
 tutorial-link: https://www.youtube.com/watch?v=PWbqJ8S9MRU
 tutorial-moderator-link: https://www.youtube.com/watch?v=dQw4w9WgXcQ

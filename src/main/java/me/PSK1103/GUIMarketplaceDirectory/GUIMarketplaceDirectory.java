@@ -61,7 +61,7 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
 
     @Override
     public void onDisable() {
-        shopRepo.saveShops();
+        //shopRepo.saveShops();
     }
 
     @Nullable
@@ -77,8 +77,9 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
                 getDataFolder().mkdir();
                 shops.createNewFile();
                 JSONObject init = new JSONObject();
-                init.put("shops",new JSONArray());
-                init.put("pendingShops",new JSONArray());
+                init.put("shops", new JSONArray());
+                init.put("pendingShops", new JSONArray());
+                init.put("pendingChanges", new JSONArray());
                 FileWriter writer = new FileWriter(shops);
                 writer.write(init.toJSONString());
                 writer.close();

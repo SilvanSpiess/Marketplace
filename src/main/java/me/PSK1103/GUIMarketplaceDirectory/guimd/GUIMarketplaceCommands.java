@@ -96,9 +96,13 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             return true;
                         }
                         switch (args[1]) {
-                            case "pending":
-                            case "p":
-                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.PENDING);
+                            case "approvals":
+                            case "a":
+                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.PENDING_APPROVALS);
+                                return true;
+                            case "changes":
+                            case "c":
+                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.PENDING_CHANGES);
                                 return true;
 
                             case "review":
@@ -138,7 +142,8 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd tutorial: " + ChatColor.GREEN + "Shows link to the tutorial video");
                         }
                         if(commandSender.hasPermission("GUIMD.moderate")) {
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate pending: " + ChatColor.GREEN + "Shows shops requiring approval");
+                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate approvals: " + ChatColor.GREEN + "Shows shops requiring approval");
+                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate changes: " + ChatColor.GREEN + "Shows shop changes requiring acceptance");
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate review: " + ChatColor.GREEN + "Shows active shops for removal if deemed objectionable");
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate recover: " + ChatColor.GREEN + "Shows active shops for recovering a copy of the [shop init] book if the owner loses their copy");
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd reload: " + ChatColor.GREEN + "Refreshes the plugin");  
@@ -180,7 +185,8 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         if(tutorialLink.length() <= 5 && modTutorialLink.length() <= 5){
                             commandSender.sendMessage(ChatColor.RED + "No tutorial video links were provided ");
                             return true;
-                        }else{
+                        }
+                        else {
                             if(tutorialLink.length() > 5){
                                 var mm = MiniMessage.miniMessage();
                                 Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + tutorialLink + "</underlined>'><click:OPEN_URL:'" + tutorialLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to watch <#ee2bd6><bold>the guimd tutorial</bold><#3ed3f1>.");
@@ -217,8 +223,10 @@ public class GUIMarketplaceCommands implements TabExecutor {
                 } else {
                     if ("moderate".startsWith(args[0]) && commandSender.hasPermission("GUIMD.moderate")) {
                         if (args[0].equals("moderate")) {
-                            hints.add("migrate");
-                            hints.add("pending");
+                            //hints.add("migrate");
+                            //hints.add("lookup");
+                            hints.add("approvals");
+                            hints.add("changes");
                             hints.add("recover");
                             hints.add("review");
                         } else
@@ -244,12 +252,14 @@ public class GUIMarketplaceCommands implements TabExecutor {
             if (args.length == 2) {
                 if (args[0].equals("moderate") && commandSender.hasPermission("GUIMD.moderate")) {
                     if (args[1].length() == 0) {
-                        hints.add("lookup");
-                        hints.add("migrate");
-                        hints.add("pending");
+                        //hints.add("lookup");
+                        //hints.add("migrate");
+                        hints.add("approvals");
+                        hints.add("changes");
                         hints.add("recover");
                         hints.add("review");
                     } else {
+                        /*
                         if ("lookup".startsWith(args[1])) {
                             if (!args[1].equals("lookup")) {
                                 hints.add("lookup");
@@ -259,10 +269,15 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             if (!args[1].equals("migrate")) {
                                 hints.add("migrate");
                             }
+                        } */
+                        if ("approvals".startsWith(args[1])) {
+                            if (!args[1].equals("approvals")) {
+                                hints.add("approvals");
+                            }
                         }
-                        if ("pending".startsWith(args[1])) {
-                            if (!args[1].equals("pending")) {
-                                hints.add("pending");
+                        else if ("changes".startsWith(args[1])) {
+                            if (!args[1].equals("changes")) {
+                                hints.add("changes");
                             }
                         }
                         if ("recover".startsWith(args[1])) {
@@ -333,9 +348,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                     }
                 }
             }
-
             return hints;
-
         }
         return null;
     }
