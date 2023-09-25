@@ -462,7 +462,7 @@ public class ShopEvents implements Listener {
                 } else {
                     if (plugin.getCustomConfig().addOwnerModerationEnabled()) {
                         plugin.getShopRepo().submitNewOwner(uuid, players.get(0).getUniqueId().toString(), players.get(0).getName());
-                        chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "submitted " + ChatColor.GOLD + players.get(0).getName() + ChatColor.GREEN + " for approval as co-owner");
+                        chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "submitted " + ChatColor.GOLD + players.get(0).getName() + ChatColor.GREEN + " for approval as co-owner! please open a shop ticket to notify staff!");
                     } else {
                         plugin.getShopRepo().addOwner(uuid, players.get(0));
                         chatEvent.getPlayer().sendMessage(ChatColor.GOLD + players.get(0).getName() + ChatColor.GREEN + " added as owner successfully");
@@ -481,10 +481,10 @@ public class ShopEvents implements Listener {
                 if(trial != null) {
                     if (plugin.getCustomConfig().displayItemModerationEnabled()) {
                         plugin.getShopRepo().submitNewDisplayItem(uuid, materialName);
-                        chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "submitted new display item " + ChatColor.GOLD + "\"" + trial.getKey().getKey() + "\"" + ChatColor.GREEN + " for approval");
+                        chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Submitted new display item " + ChatColor.GOLD + "\"" + trial.getKey().getKey() + "\"" + ChatColor.GREEN + " for approval! Please open a shop ticket to notify staff!");
                     } else {
                         plugin.getShopRepo().setDisplayItem(uuid,materialName);
-                        chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "set shop display item to " + ChatColor.GOLD + trial.getKey().getKey());
+                        chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Set shop display item to " + ChatColor.GOLD + trial.getKey().getKey());
                     }
                     plugin.getShopRepo().stopShopEdit(uuid);              
                 }
@@ -503,7 +503,7 @@ public class ShopEvents implements Listener {
                 String newDesc = chatEvent.getMessage();
                 if (plugin.getCustomConfig().descriptionModerationEnabled()) {
                     plugin.getShopRepo().submitNewDescription(uuid, newDesc);
-                    chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Shop description submitted for approval!");
+                    chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Shop description submitted for approval! Please open a shop ticket to notify staff!");
                 } else {
                     plugin.getShopRepo().setDescription(uuid, newDesc);
                     chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Shop description has been changed!");  
@@ -517,7 +517,7 @@ public class ShopEvents implements Listener {
                         plugin.getShopRepo().submitNewLocation(uuid, chatEvent.getPlayer().getLocation().getBlockX() + "," + 
                                                                     chatEvent.getPlayer().getLocation().getBlockY() + "," + 
                                                                     chatEvent.getPlayer().getLocation().getBlockZ());
-                        chatEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop relocation submitted successfully!");
+                        chatEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop relocation submitted successfully! Please open a shop ticket to notify staff!");
                     } else {
                         plugin.getShopRepo().setLocation(uuid, chatEvent.getPlayer().getLocation().getBlockX() + "," + 
                                                                chatEvent.getPlayer().getLocation().getBlockY() + "," + 
