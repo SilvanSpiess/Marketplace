@@ -1,6 +1,7 @@
 package me.PSK1103.GUIMarketplaceDirectory.utils;
 
 import me.PSK1103.GUIMarketplaceDirectory.database.DBConfig;
+import me.PSK1103.GUIMarketplaceDirectory.database.entities.Shop;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -36,6 +37,13 @@ public class Config {
     
     private String tutorialLink;
     private String modTutorialLink;
+
+    private String dynmapServerAdress;
+    private boolean enableDynmapMarkers;
+    private String shopSetName;
+    private String shopIconName;
+    private int minZoomDynmap;
+    private int maxZoomDynmap;
 
     private boolean multiOwner;
     private boolean allowAddingOfflinePLayer;
@@ -120,6 +128,14 @@ public class Config {
             enableCustomApprovalMessage = configFile.getBoolean("enable-custom-approval-message",defaultConfig.getBoolean("enable-custom-approval-message"));
             customApprovalMessage = configFile.getString("custom-approval-message",defaultConfig.getString("custom-approval-message"));
 
+            //gets the Dynmap Protperties
+            dynmapServerAdress = configFile.getString("dynmap-server-adress", defaultConfig.getString("dynmap-server-adress"));
+            enableDynmapMarkers = configFile.getBoolean("enable-dynmap-markers", defaultConfig.getBoolean("enable-dynmap-markers"));
+            shopSetName = configFile.getString("shop-set-name", defaultConfig.getString("shop-set-name"));
+            shopIconName = configFile.getString("shop-icon-name", defaultConfig.getString("shop-icon-name"));
+            minZoomDynmap = configFile.getInt("min-zoom-dynmap", defaultConfig.getInt("min-zoom-dynmap"));
+            maxZoomDynmap = configFile.getInt("max-zoom-dynmap", defaultConfig.getInt("max-zoom-dynmap"));
+
             //co owner can be added to a shop. Used in ShopEvents.
             multiOwner = configFile.getBoolean("multi-owner",defaultConfig.getBoolean("multi-owner"));
 
@@ -198,6 +214,14 @@ public class Config {
             //gets called when a player makes a shop in ShopEvents
             enableCustomApprovalMessage = defaultConfig.getBoolean("enable-custom-approval-message");
             customApprovalMessage = defaultConfig.getString("custom-approval-message");
+
+            //gets the Dynmap Protperties
+            dynmapServerAdress = defaultConfig.getString("dynmap-server-adress");
+            enableDynmapMarkers = defaultConfig.getBoolean("enable-dynmap-markers");
+            shopSetName = defaultConfig.getString("shop-set-name");
+            shopIconName = defaultConfig.getString("shop-icon-name");
+            minZoomDynmap = defaultConfig.getInt("min-zoom-dynmap");
+            maxZoomDynmap = defaultConfig.getInt("max-zoom-dynmap");
 
             //co owner can be added to a shop. Used in ShopEvents.
             multiOwner = defaultConfig.getBoolean("multi-owner");
@@ -372,6 +396,30 @@ public class Config {
         return maxUndergroundMarketLevel;
     }
 
+    public String getDynmapServerAdress() {
+        return dynmapServerAdress;
+    }            
+
+    public boolean getEnableDynmapMarkers() {
+        return enableDynmapMarkers;
+    }
+
+    public String getShopSetName() {
+        return shopSetName;
+    }
+
+    public String getShopIconName() {
+        return shopIconName;
+    }
+
+    public int getMinZoomDynmap() {
+        return minZoomDynmap;
+    }
+
+    public int getMaxZoomDynmap() {
+        return maxZoomDynmap;
+    }
+
     public boolean multiOwnerEnabled() {
         return multiOwner;
     }
@@ -446,6 +494,12 @@ public class Config {
                 ", moderate-ShopLocation=" + moderateLocation + "\n" +
                 ", moderate-ShopDescription=" + moderateDescription + "\n" +
                 ", moderate-ShopAddOwner=" + moderateAddOwner + "\n" +
+                ", dynmap-server-adress=" + dynmapServerAdress + "'\n" +
+                ", enable-dynmap-markers=" + enableDynmapMarkers + "\n" +
+                ", shop-set-name=" + shopSetName + "'\n" +
+                ", shop-icon-name=" + shopIconName + "'\n" +
+                ", min-zoom-dynmap=" + minZoomDynmap + "\n" +
+                ", max-zoom-dynmap=" + maxZoomDynmap + "\n" +
                 ", multi-owner=" + multiOwner + "\n" +
                 ", enable-custom-approval-message=" + enableCustomApprovalMessage + "\n" +
                 ", custom-approval-message='" + customApprovalMessage + "'\n" +

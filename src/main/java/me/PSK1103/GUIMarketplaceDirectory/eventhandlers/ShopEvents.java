@@ -237,10 +237,10 @@ public class ShopEvents implements Listener {
                     String[] parts = input.split(",");
                     String messageLink;
                     if(parts.length == 2) {       
-                        messageLink = "https://map.projectnebula.network/#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
                     }
                     else {      
-                        messageLink = "https://map.projectnebula.network/#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
                     }
                     var mm = MiniMessage.miniMessage();
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
@@ -264,8 +264,7 @@ public class ShopEvents implements Listener {
                         shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Shop under some operation. Try again later");
                         return;
                     }
-                    plugin.getShopRepo().approveShop(holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"));
-                    shopSelectEvent.getWhoClicked().sendMessage(ChatColor.GREEN + "Shop approved");
+                    plugin.getShopRepo().approveShop((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"));                    
                     shopSelectEvent.getWhoClicked().closeInventory();
                     plugin.gui.openShopDirectoryModerator(((Player) shopSelectEvent.getWhoClicked()),InvType.PENDING_APPROVALS);
                     return;
@@ -286,7 +285,7 @@ public class ShopEvents implements Listener {
                 }
             }
             else if (holder.getType() == InvType.PENDING_CHANGES) {
-                //leftclick to siwtch to old shop
+                //leftclick to switch to old shop
                 if(shopSelectEvent.getClick() == ClickType.LEFT && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()){
                     plugin.gui.switchShopVersion(shopSelectEvent.getInventory(), shopSelectEvent.getRawSlot(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"), false);
                     return;
@@ -483,7 +482,7 @@ public class ShopEvents implements Listener {
                         plugin.getShopRepo().submitNewDisplayItem(uuid, materialName);
                         chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Submitted new display item " + ChatColor.GOLD + "\"" + trial.getKey().getKey() + "\"" + ChatColor.GREEN + " for approval! Please open a shop ticket to notify staff!");
                     } else {
-                        plugin.getShopRepo().setDisplayItem(uuid,materialName);
+                        plugin.getShopRepo().setDisplayItem(chatEvent.getPlayer(), materialName);
                         chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Set shop display item to " + ChatColor.GOLD + trial.getKey().getKey());
                     }
                     plugin.getShopRepo().stopShopEdit(uuid);              
@@ -505,7 +504,7 @@ public class ShopEvents implements Listener {
                     plugin.getShopRepo().submitNewDescription(uuid, newDesc);
                     chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Shop description submitted for approval! Please open a shop ticket to notify staff!");
                 } else {
-                    plugin.getShopRepo().setDescription(uuid, newDesc);
+                    plugin.getShopRepo().setDescription(chatEvent.getPlayer(), newDesc);
                     chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Shop description has been changed!");  
                 }       
                 plugin.getShopRepo().stopShopEdit(uuid);    
@@ -515,13 +514,13 @@ public class ShopEvents implements Listener {
                 if (chatEvent.getMessage().equalsIgnoreCase("y") || chatEvent.getMessage().equalsIgnoreCase("yes")) {
                     if (plugin.getCustomConfig().locationModerationEnabled()) {
                         plugin.getShopRepo().submitNewLocation(uuid, chatEvent.getPlayer().getLocation().getBlockX() + "," + 
-                                                                    chatEvent.getPlayer().getLocation().getBlockY() + "," + 
-                                                                    chatEvent.getPlayer().getLocation().getBlockZ());
+                                                                     chatEvent.getPlayer().getLocation().getBlockY() + "," + 
+                                                                     chatEvent.getPlayer().getLocation().getBlockZ());
                         chatEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop relocation submitted successfully! Please open a shop ticket to notify staff!");
                     } else {
-                        plugin.getShopRepo().setLocation(uuid, chatEvent.getPlayer().getLocation().getBlockX() + "," + 
-                                                               chatEvent.getPlayer().getLocation().getBlockY() + "," + 
-                                                               chatEvent.getPlayer().getLocation().getBlockZ());
+                        plugin.getShopRepo().setLocation(chatEvent.getPlayer(), chatEvent.getPlayer().getLocation().getBlockX() + "," + 
+                                                                                chatEvent.getPlayer().getLocation().getBlockY() + "," + 
+                                                                                chatEvent.getPlayer().getLocation().getBlockZ());
                         chatEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop relocated successfully!");
                     } 
                 } else {                    
@@ -554,8 +553,7 @@ public class ShopEvents implements Listener {
                 }
                 chatEvent.getPlayer().sendMessage("Setting lookup radius to " + ChatColor.AQUA + radius);
                 ((MySQLShopRepo) plugin.getShopRepo()).setLookupRadius(uuid, radius);*/
-
-            }
+            }            
             return;
         }
 
@@ -563,8 +561,8 @@ public class ShopEvents implements Listener {
             chatEvent.setCancelled(true);
             String message = chatEvent.getMessage();
             if(message.equalsIgnoreCase("y") || message.equalsIgnoreCase("yes")) {
-                plugin.getShopRepo().removeShop(chatEvent.getPlayer().getUniqueId().toString());
-                chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Removed shop successfully");
+                plugin.getShopRepo().removeShop(chatEvent.getPlayer(), chatEvent.getPlayer().getUniqueId().toString());
+                return;               
             }
             else if(message.equalsIgnoreCase("n") || message.equalsIgnoreCase("no")) {
                 plugin.getShopRepo().unlockShop(chatEvent.getPlayer().getUniqueId().toString());
@@ -580,7 +578,7 @@ public class ShopEvents implements Listener {
             chatEvent.setCancelled(true);
             String message = chatEvent.getMessage();
             if(message.equalsIgnoreCase("y") || message.equalsIgnoreCase("yes")) {
-                plugin.getShopRepo().approveChange(chatEvent.getPlayer().getUniqueId().toString());
+                plugin.getShopRepo().approveChange(chatEvent.getPlayer(), chatEvent.getPlayer().getUniqueId().toString());
                 chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Approved change successfully");
             }
             else if(message.equalsIgnoreCase("n") || message.equalsIgnoreCase("no")) {
@@ -606,6 +604,19 @@ public class ShopEvents implements Listener {
             else {
                 plugin.getShopRepo().unlockChange(chatEvent.getPlayer().getUniqueId().toString());
                 chatEvent.getPlayer().sendMessage(ChatColor.GRAY + "Didn't get proper response, cancelling rejection");
+            }
+        }
+        if(plugin.getShopRepo().isUserSettingMarkers(chatEvent.getPlayer().getUniqueId().toString())) {
+            chatEvent.setCancelled(true);
+            if (chatEvent.getMessage().equalsIgnoreCase("y") || chatEvent.getMessage().equalsIgnoreCase("yes")) {
+                plugin.getShopRepo().addAllShopMarkers(chatEvent.getPlayer());
+                plugin.getShopRepo().unlockSettingMarkers(chatEvent.getPlayer().getUniqueId().toString());
+                chatEvent.getPlayer().sendMessage(ChatColor.GREEN + "Markers of all shops have been created successfully!");
+            } else if (chatEvent.getMessage().equalsIgnoreCase("n") || (chatEvent.getMessage().equalsIgnoreCase("no"))) {
+                plugin.getShopRepo().unlockSettingMarkers(chatEvent.getPlayer().getUniqueId().toString());
+                chatEvent.getPlayer().sendMessage(ChatColor.YELLOW + "Procedure of adding all Markers has been cancelled");
+            } else {
+                chatEvent.getPlayer().sendMessage(ChatColor.GRAY + "Didn't get proper response, answer again");
             }
         }
     }    

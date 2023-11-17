@@ -35,6 +35,14 @@ tutorial-moderator-link: https://www.youtube.com/watch?v=dQw4w9WgXcQ
 enable-custom-approval-message: false
 custom-approval-message: §eBruh get your shop approved from moderators
 
+#Dynmap Properties
+dynmap-server-adress: https://map.projectnebula.network/
+enable-dynmap-markers: false
+shop-set-name: shops
+shop-icon-name: shop_icon
+min-zoom-dynmap: 4
+max-zoom-dynmap: 6
+
 #allows multi-player ownership of shops, side effect: allows players to make shops for others, but makes them co-owners too
 multi-owner: true
 

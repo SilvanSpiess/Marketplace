@@ -26,6 +26,7 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -150,14 +151,21 @@ public class JSONShopRepo implements ShopRepo {
     private final HashMap<String, EditType> shopsUnderEdit;
     private final HashMap<String, String> userModeratingShop;
     private final HashMap<String, ModerationType> shopUnderModeration;
+    private final HashMap<String, ModerationType> userSettingMarkers;
     private final HashMap<String, ItemList> itemToAdd;
     private final HashMap<String, String> shopsAwaitingResponse;
 
     private static final EnumSet<Material> materialsWithoutTextures = EnumSet.noneOf(Material.class);
 
     static {
-        materialsWithoutTextures.addAll(Arrays.asList(Material.LAVA, Material.WATER, Material.BUBBLE_COLUMN,Material.PISTON_HEAD,
-                Material.MOVING_PISTON,Material.AIR,Material.ATTACHED_MELON_STEM, Material.ATTACHED_PUMPKIN_STEM));
+        materialsWithoutTextures.addAll(Arrays.asList(Material.LAVA, 
+                                                      Material.WATER, 
+                                                      Material.BUBBLE_COLUMN,
+                                                      Material.PISTON_HEAD,
+                                                      Material.MOVING_PISTON,
+                                                      Material.AIR,
+                                                      Material.ATTACHED_MELON_STEM, 
+                                                      Material.ATTACHED_PUMPKIN_STEM));
     }
 
     private final Logger logger;
@@ -169,6 +177,7 @@ public class JSONShopRepo implements ShopRepo {
         shopsUnderAdd = new HashMap<>();
         shopsAwaitingResponse = new HashMap<>();
         userModeratingShop = new HashMap<>();
+        userSettingMarkers = new HashMap<>();
         shopUnderModeration = new HashMap<>();
         shopsUnderEdit = new HashMap<>();
         waitingShops = new HashMap<>();
@@ -345,7 +354,8 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void setDisplayItem(String uuid, String materialName) {
+    public void setDisplayItem(Player player, String materialName) {
+        String uuid = player.getUniqueId().toString();
         if (shopsUnderAdd.containsKey(uuid)) {
             if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
                 pendingShops.get(shopsUnderAdd.get(uuid)).setDisplayItem(materialName);
@@ -359,13 +369,16 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void setLocation(String uuid, String location) {
+    public void setLocation(Player player, String location) {
+        String uuid = player.getUniqueId().toString();
         if (shopsUnderAdd.containsKey(uuid)) {
             if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
                 pendingShops.get(shopsUnderAdd.get(uuid)).setLoc(location);
             } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
                 shops.get(shopsUnderAdd.get(uuid)).setLoc(location);
-            }
+                if(plugin.getCustomConfig().getEnableDynmapMarkers())           
+                    updateShopMarker(player);
+            }            
             shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
             shopsUnderAdd.remove(uuid);
             saveShops();
@@ -373,12 +386,15 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void setDescription(String uuid, String description) {
+    public void setDescription(Player player, String description) {
+        String uuid = player.getUniqueId().toString();
         if (shopsUnderAdd.containsKey(uuid)) {
             if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
                 pendingShops.get(shopsUnderAdd.get(uuid)).setDesc(description);
             } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
-                shops.get(shopsUnderAdd.get(uuid)).setDesc(description);;
+                shops.get(shopsUnderAdd.get(uuid)).setDesc(description);
+                if(plugin.getCustomConfig().getEnableDynmapMarkers())           
+                    updateShopMarker(player);
             }
             shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
             shopsUnderAdd.remove(uuid);
@@ -434,6 +450,91 @@ public class JSONShopRepo implements ShopRepo {
                 e.printStackTrace();
             }
         });
+    }
+    
+    //creates an empty set of markers
+    //Example: /dmarker addset shops maxzoom:6 minzoom:4
+    public String addShopSet() {
+        return "dmarker addset label:" + plugin.getCustomConfig().getShopSetName().replaceAll(" ", "_") + 
+               " maxzoom:" + plugin.getCustomConfig().getMaxZoomDynmap() + 
+               " minzoom:" + plugin.getCustomConfig().getMinZoomDynmap();
+    }
+
+    //deletes the existing shops set
+    //Example: /dmarker deleteset shops 
+    public String deleteShopSet() {
+        return "dmarker deleteset label:" + plugin.getCustomConfig().getShopSetName().replaceAll(" ", "_");
+    }
+
+    //creates a new marker for the specified shop
+    //Example: /dmarker add shop_name icon:shop_icon set:shops x:-23 y:78 z:-345 world:world
+    public String addShopMarker(String key) {
+        String[] splitLoc = shops.get(key).getLoc().split(","); 
+        if(splitLoc.length == 2) {
+            return "dmarker add label:" + shops.get(key).getName().replaceAll(" ", "_").
+                                                                   replaceAll("'", "").
+                                                                   replaceAll("&", "and") +
+                   " icon:" + plugin.getCustomConfig().getShopIconName() +
+                   " set:" + plugin.getCustomConfig().getShopSetName() +
+                   " x:" + splitLoc[0] + " y:64 z:" + splitLoc[1] + " world:world";
+        }
+        else {
+            return "dmarker add label:" + shops.get(key).getName().replaceAll(" ", "_").
+                                                                   replaceAll("'", "").
+                                                                   replaceAll("&", "and") +
+                   " icon:" + plugin.getCustomConfig().getShopIconName() +
+                   " set:" + plugin.getCustomConfig().getShopSetName() +
+                   " x:" + splitLoc[0] + " y:" + splitLoc[1] + " z:" + splitLoc[2] + " world:world";
+        }        
+    }
+    
+    //creates an empty set of markers
+    //Example: /dmarker delete shop_name set:shops
+    public String deleteShopMarker(String key) {
+        return "dmarker delete label:" + shops.get(key).getName().replaceAll(" ", "_").
+                                                                  replaceAll("'", "").
+                                                                  replaceAll("&", "and") + 
+               " set:" + plugin.getCustomConfig().getShopSetName();
+    }
+
+    //appends a description to the specified marker (shop)
+    //Example: /dmarker appenddesc shop_name set:shops desc:"Shop by shop_owner, shop_desc"
+    public String appendShopMarkerDescription(String key) {
+        return "dmarker appenddesc label:" + shops.get(key).getName().replaceAll(" ", "_").
+                                                                      replaceAll("'", "").
+                                                                      replaceAll("&", "and") + 
+               " set:" + plugin.getCustomConfig().getShopSetName() +
+               " desc:\"Shop by " + shops.get(key).getOwner() +
+               ", " + shops.get(key).getDesc() + "\"";
+    }
+
+    //resets the description of the specified marker (shop)
+    public String resetShopMarkerDescription(String key) {
+        return "dmarker resetdesc " + shops.get(key).getName().replaceAll(" ", "_").
+                                                               replaceAll("'", "").
+                                                               replaceAll("&", "and") + 
+               " set:" + plugin.getCustomConfig().getShopSetName();
+    }
+
+    public void updateShopMarker(Player player) {
+        String key = shopsUnderAdd.get(player.getUniqueId().toString());
+        CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key), addShopMarker(key), appendShopMarkerDescription(key));
+        Bukkit.getScheduler().runTask(plugin, commandExecutor);
+    }
+
+    public void addAllShopMarkers(Player player) {
+        player.sendMessage(ChatColor.GREEN + "Starting to create all dynmap shop markers");
+        CommandExecutor commandExecutor0 = new CommandExecutor(player, deleteShopSet(), addShopSet());
+        Bukkit.getScheduler().runTask(plugin, commandExecutor0);
+        for(String key : shops.keySet()) {
+            CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key), addShopMarker(key), appendShopMarkerDescription(key));
+            Bukkit.getScheduler().runTask(plugin, commandExecutor);
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } 
+        }
     }
 
     private Shop loadShopData(JSONObject shopJSON) {
@@ -942,6 +1043,7 @@ public class JSONShopRepo implements ShopRepo {
         shopsUnderEdit.put(shopsUnderAdd.get(uuid), EditType.SHOP_OWNER_ADDITION);
     }
 
+
     @Override
     public EditType getEditType(String uuid) {
         if (!shopsUnderAdd.containsKey(uuid))
@@ -985,7 +1087,7 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void approveChange(String uuid) {
+    public void approveChange(Player player, String uuid) {
         if(!userModeratingShop.containsKey(uuid) || shopUnderModeration.get(userModeratingShop.get(uuid)) != ModerationType.APPROVE_CHANGE) {
             return;
         }
@@ -1000,6 +1102,12 @@ public class JSONShopRepo implements ShopRepo {
         officialShop.setOwners(pendingChanges.get(key).getOwners());
         officialShop.setLoc(pendingChanges.get(key).getLoc());
         officialShop.setDisplayItem(pendingChanges.get(key).getDisplayItem());
+        if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
+            CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key), addShopMarker(key), appendShopMarkerDescription(key) );
+            Bukkit.getScheduler().runTask(plugin, commandExecutor);
+            player.sendMessage(ChatColor.GREEN + "Change approved and Dynmap marker updated");
+        }
+        else player.sendMessage(ChatColor.GREEN + "Change approved!");
         pendingChanges.remove(key);
         unlockChange(uuid);
         saveShops();
@@ -1033,6 +1141,21 @@ public class JSONShopRepo implements ShopRepo {
     public boolean hasUserLockedChanges(String uuid, ModerationType kind) {
         return userModeratingShop.containsKey(uuid) && shopUnderModeration.get(userModeratingShop.get(uuid)) == kind;
     }
+    
+    @Override
+    public void initShopMarkerAddition(Player player) {
+        userSettingMarkers.put(player.getUniqueId().toString(), ModerationType.SET_MARKERS);
+    }
+
+    @Override
+    public boolean isUserSettingMarkers(String uuid) {
+        return userSettingMarkers.containsKey(uuid) && userSettingMarkers.get(uuid) == ModerationType.SET_MARKERS;
+    }
+
+    @Override
+    public void unlockSettingMarkers(String uuid) {
+        userSettingMarkers.remove(uuid);
+    }
 
     @Override
     public void unlockChange(String uuid) {
@@ -1044,7 +1167,7 @@ public class JSONShopRepo implements ShopRepo {
     public void lockChange(String uuid, String key, ModerationType kind) {
         shopUnderModeration.put(key, kind);
         userModeratingShop.put(uuid, key);
-    }     
+    } 
     
     @Override
     public void submitNewDescription(String uuid, String newDesc) {
@@ -1217,20 +1340,34 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void approveShop(String key) {
+    public void approveShop(Player player, String key) {
         if (pendingShops.containsKey(key)) {
             shops.put(key, pendingShops.get(key));
+            if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
+                CommandExecutor commandExecutor = new CommandExecutor(player, addShopMarker(key), appendShopMarkerDescription(key) );
+                Bukkit.getScheduler().runTask(plugin, commandExecutor); 
+                player.sendMessage(ChatColor.GREEN + "Shop approved and Dynmap marker created");      
+            } 
+            else player.sendMessage(ChatColor.GREEN + "Shop approved");
             pendingShops.remove(key);
             saveShops();
         }
     }
 
     @Override
-    public void removeShop(String uuid) {
-        if(shops.containsKey(shopsAwaitingResponse.get(uuid)))
-            shops.remove(shopsAwaitingResponse.get(uuid));
-        else if(pendingShops.containsKey(shopsAwaitingResponse.get(uuid)))
-            pendingShops.remove(shopsAwaitingResponse.get(uuid));
+    public void removeShop(Player player, String uuid) {
+        String key = shopsAwaitingResponse.get(uuid);              
+        if(shops.containsKey(key)) {            
+            if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
+                CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key));
+                Bukkit.getScheduler().runTask(plugin, commandExecutor);       
+            }    
+            shops.remove(key);                    
+        } else if(pendingShops.containsKey(key))
+            pendingShops.remove(key);
+        if(plugin.getCustomConfig().getEnableDynmapMarkers()) 
+            player.sendMessage(ChatColor.GREEN + "Shop and Dynmap marker removed successfully!");        
+        else player.getPlayer().sendMessage(ChatColor.GREEN + "Removed shop successfully");               
         saveShops();
         unlockShop(uuid);
     } 
@@ -1562,5 +1699,20 @@ public class JSONShopRepo implements ShopRepo {
             executorService.submit(new LookupThread());
         });
         executorService.shutdown();
+    }
+}
+
+class CommandExecutor implements Runnable {
+    private String[] commands;
+    private Player player;
+    public CommandExecutor(Player player, String... commands) {
+        this.commands = commands;
+        this.player = player;
+    }
+    @Override
+    public void run() {
+        for(String command : commands) {
+            Bukkit.getServer().dispatchCommand(player, command);
+        }
     }
 }

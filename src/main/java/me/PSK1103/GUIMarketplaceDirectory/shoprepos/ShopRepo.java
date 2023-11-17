@@ -12,7 +12,7 @@ public interface ShopRepo {
     }
 
     public enum ModerationType {
-        APPROVE_CHANGE, REJECT_CHANGE;
+        APPROVE_CHANGE, REJECT_CHANGE, DELETE_SHOP, SET_MARKERS;
     }
 
     String addShopAsOwner(String name, String desc, String owner, String uuid, String loc, String displayItem);
@@ -27,9 +27,9 @@ public interface ShopRepo {
 
     void stopShopEdit(String uuid);
 
-    void setDisplayItem(String uuid, String materialName);
-    void setLocation(String uuid, String location);    
-    void setDescription(String uuid, String description);
+    void setDisplayItem(Player player, String materialName);
+    void setLocation(Player player, String location);    
+    void setDescription(Player player, String description);
     void addOwner(String uuid, OfflinePlayer player);
 
     int startSettingDescription(String uuid, String key);
@@ -61,7 +61,7 @@ public interface ShopRepo {
 
     boolean isShopOwner(String uuid, String key);
 
-    void approveChange(String uuid);
+    void approveChange(Player player, String uuid);
     void rejectChange(String uuid);
     boolean isChangeLocked(String key); 
     boolean isChangeLocked(String key, ModerationType kind);
@@ -80,21 +80,29 @@ public interface ShopRepo {
     void cancelNewLocation(String uuid, String key);
     void cancelNewOwner(String uuid, String key);
 
-    void approveShop(String key);
-    void removeShop(String uuid);
+    void approveShop(Player player, String key);
+    void removeShop(Player player, String uuid);
     void unlockShop(String uuid);
     boolean isShopLocked(String key);
     boolean hasUserLockedShop(String uuid);
     void lockShop(String uuid, String key);
+    boolean isUserSettingMarkers(String uuid);
+    void unlockSettingMarkers(String uuid);
+
+    String addShopSet();
+    String deleteShopSet();
+    String addShopMarker(String key);
+    String deleteShopMarker(String key);
+    String appendShopMarkerDescription(String key);
+    String resetShopMarkerDescription(String key);
+    void addAllShopMarkers(Player player);
+    void updateShopMarker(Player player);
+    void initShopMarkerAddition(Player player);
 
     Map<String, String> getSpecificShopDetails(String key);
-
     Map<String, String> getSpecificChangeDetails(String key);
-
     List<Map<String, String>> getShopDetails();
-
     List<Map<String, String>> getPendingShopDetails();
-
     List<Map<String, String>> getPendingChangesDetails();
 
     List<Object> getShopInv(String key);

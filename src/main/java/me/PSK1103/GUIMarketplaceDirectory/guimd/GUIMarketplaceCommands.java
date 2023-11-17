@@ -2,6 +2,7 @@ package me.PSK1103.GUIMarketplaceDirectory.guimd;
 
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo.ModerationType;
 //import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
@@ -128,6 +129,12 @@ public class GUIMarketplaceCommands implements TabExecutor {
                                 */
                                 commandSender.sendMessage(ChatColor.RED + "Migration is currently disabled");
                                 return true;
+                            case "dynmap":
+                            case "d":
+                                plugin.getShopRepo().initShopMarkerAddition((Player) commandSender);
+                                plugin.gui.sendConfirmationMessage((Player) commandSender, "Do you want to (re-)create all Dynmap Shop markers?");
+                                commandSender.sendMessage(ChatColor.GRAY + "This is a time and memory costly operation");
+                                return true;
                         }
                         break;
                 }
@@ -229,6 +236,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             hints.add("changes");
                             hints.add("recover");
                             hints.add("review");
+                            hints.add("dynmap");
                         } else
                             hints.add("moderate");
                     } else if ("reload".startsWith(args[0])) {
@@ -258,6 +266,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         hints.add("changes");
                         hints.add("recover");
                         hints.add("review");
+                        hints.add("dynmap");
                     } else {
                         /*
                         if ("lookup".startsWith(args[1])) {
@@ -288,6 +297,11 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         if ("review".startsWith(args[1])) {
                             if (!args[1].equals("review")) {
                                 hints.add("review");
+                            }
+                        }
+                        if ("dynmap".startsWith(args[1])) {
+                            if (!args[1].equals("dynmap")) {
+                                hints.add("dynmap");
                             }
                         }
                     }
