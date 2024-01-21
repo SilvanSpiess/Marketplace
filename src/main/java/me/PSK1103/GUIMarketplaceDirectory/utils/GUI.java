@@ -473,7 +473,7 @@ public class GUI {
     public void openShopEditMenu(Player player, String key) {
         String name;
         if(plugin.getShopRepo().getPendingShopDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
-            name = plugin.getShopRepo().getShopName(key) + " §5§o(pending)";
+            name = plugin.getShopRepo().getShopName(key) + " §5§o(pending approvals)";
         }
         else if(plugin.getShopRepo().getPendingChangesDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
             name = plugin.getShopRepo().getShopName(key) + " §5§o(pending changes)";

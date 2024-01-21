@@ -13,7 +13,6 @@ import org.bukkit.entity.TropicalFish;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
@@ -126,11 +125,16 @@ public class ItemList {
                 skullmeta.setOwnerProfile(playerProfile);
                 item.setItemMeta(skullmeta);
             }
-            case "potion", "tippedArrow" -> {
+            case "potion", "tippedArrow" -> {//TODO
                 PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
-                Object integer1 = extraInfo.get("effect");
-                PotionData base = new PotionData(PotionType.values()[integer1 instanceof String ? Integer.parseInt(integer1.toString()) : integer1 instanceof Integer ? Integer.parseInt(integer1.toString()) : Double.valueOf(integer1.toString()).intValue()], (Boolean) extraInfo.get("extended"), (Boolean) extraInfo.get("upgraded"));
-                potionMeta.setBasePotionData(base);
+                PotionType potiontype = PotionType.valueOf(extraInfo.get("effect").toString());
+                potionMeta.setBasePotionType(potiontype);
+                //Integer effectID = (Integer) extraInfo.get("effect");
+                //Boolean extendedInfo = (Boolean) extraInfo.get("extended"); 
+                //Boolean upgradedInfo = (Boolean) extraInfo.get("upgraded");
+                
+                //PotionData base = new PotionData(PotionType.values()[integer1 instanceof String ? Integer.parseInt(integer1.toString()) : integer1 instanceof Integer ? Integer.parseInt(integer1.toString()) : Double.valueOf(integer1.toString()).intValue()], (Boolean) extraInfo.get("extended"), (Boolean) extraInfo.get("upgraded"));
+                //potionMeta.setBasePotionData(base);
                 item.setItemMeta(potionMeta);
             }
             case "rocket" -> {
@@ -199,7 +203,8 @@ public class ItemList {
             case "enchantedBook" -> {
                 Map<String, Object> enchants = (Map<String, Object>) extraInfo.get("storedEnchants");
                 EnchantmentStorageMeta esm = (EnchantmentStorageMeta) item.getItemMeta();
-                enchants.forEach((enchant, integer) -> esm.addStoredEnchant(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), false));
+                //enchants.forEach((enchant, integer) -> esm.addStoredEnchant(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), false));
+                enchants.forEach((enchant, integer) -> esm.addEnchant(Enchantment.getByName(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), true));
                 item.setItemMeta(esm);
             }
             case "axolotl" -> {
@@ -349,7 +354,7 @@ public class ItemList {
                 goatHornMeta.setInstrument(MusicInstrument.getByKey(NamespacedKey.fromString(extraInfo.get("instrument").toString())));
                 item.setItemMeta(goatHornMeta);
             }
-            case "suspiciousStew" -> {
+            case "suspiciousStew" -> {//TODO ?
                 SuspiciousStewMeta suspiciousStewMeta = (SuspiciousStewMeta) item.getItemMeta();
                 suspiciousStewMeta.addCustomEffect(new PotionEffect(PotionEffectType.getByName(extraInfo.get("effect").toString()), 1, 1), true);
                 item.setItemMeta(suspiciousStewMeta);
@@ -367,9 +372,12 @@ public class ItemList {
         }
         if (extraInfo.containsKey("enchants")) {
             Map<String,Object> codedEnchants = (Map<String, Object>) extraInfo.get("enchants");
-            Map<Enchantment,Integer> enchants = new HashMap<>();
-            codedEnchants.forEach((enchant, integer) -> enchants.put(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue()));
-            item.addEnchantments(enchants);
+            //Map<Enchantment,Integer> enchants = new HashMap<>();
+            //codedEnchants.forEach((enchant, integer) -> enchants.put(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue()));
+            //item.addEnchantments(enchants);
+            ItemMeta itemMeta = item.getItemMeta();
+            codedEnchants.forEach((enchant, integer) -> itemMeta.addEnchant(Enchantment.getByName(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), true));
+            item.setItemMeta(itemMeta);  
         }
         return item;
     }

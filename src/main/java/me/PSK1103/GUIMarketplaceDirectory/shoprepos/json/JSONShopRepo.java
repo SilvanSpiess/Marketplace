@@ -18,6 +18,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
+import org.bukkit.potion.PotionType;
 import org.bukkit.potion.PotionData;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -715,14 +716,15 @@ public class JSONShopRepo implements ShopRepo {
                             }
                             item.extraInfo = extraInfo;
                             item.customType = "head";
-                        } else if (n.contains("POTION")) {
-                            PotionMeta potionMeta = (PotionMeta) itemStack1.getItemMeta();
+                        } else if (n.contains("POTION")) {//TODO 
+                            PotionMeta potionMeta = (PotionMeta) itemStack1.getItemMeta();                            
+                            PotionType potionType = potionMeta.getBasePotionType();
                             Map<String, Object> data = new HashMap<>();
-                            PotionData potionType = potionMeta.getBasePotionData();
-                            data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-                            data.put("upgraded", potionType.isUpgraded());
-                            data.put("extended", potionType.isExtended());
-                            content.put("extraInfo", data);
+                            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
+                            //data.put("upgraded", potionType.isUpgraded());
+                            //data.put("extended", potionType.isExtended());
+                            data.put("effect", potionType.toString());
+                            content.put("extraInfo", data);                            
                             content.put("customType", "potion");
                         } else if (n.contains("FIREWORK_ROCKET")) {
                             FireworkMeta rocketMeta = (FireworkMeta) itemStack1.getItemMeta();
@@ -745,13 +747,14 @@ public class JSONShopRepo implements ShopRepo {
                             fireworksData.put("effects", effects);
                             content.put("extraInfo", fireworksData);
                             content.put("customType", "rocket");
-                        } else if (n.contains("TIPPED_ARROW")) {
-                            PotionMeta potionMeta = (PotionMeta) itemStack1.getItemMeta();
+                        } else if (n.contains("TIPPED_ARROW")) {//TODO
+                            PotionMeta potionMeta = (PotionMeta) itemStack1.getItemMeta();                            
+                            PotionType potionType = potionMeta.getBasePotionType();
                             Map<String, Object> data = new HashMap<>();
-                            PotionData potionType = potionMeta.getBasePotionData();
-                            data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-                            data.put("upgraded", potionType.isUpgraded());
-                            data.put("extended", potionType.isExtended());
+                            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
+                            //data.put("upgraded", potionType.isUpgraded());
+                            //data.put("extended", potionType.isExtended());
+                            data.put("effect", potionType.toString());
                             content.put("extraInfo", data);
                             content.put("customType", "tippedArrow");
                         } else if (n.contains("BANNER")) {
@@ -866,13 +869,15 @@ public class JSONShopRepo implements ShopRepo {
             }
             item.extraInfo = extraInfo;
             item.customType = "head";
-        } else if (name.contains("POTION")) {
+        } else if (name.contains("POTION")) {//TODO
             PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
+            PotionType potionType = potionMeta.getBasePotionType();
             Map<String, Object> data = new HashMap<>();
-            PotionData potionType = potionMeta.getBasePotionData();
-            data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-            data.put("upgraded", potionType.isUpgraded());
-            data.put("extended", potionType.isExtended());
+            //PotionData potionType = potionMeta.getBasePotionData();
+            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
+            //data.put("upgraded", potionType.isUpgraded());
+            //data.put("extended", potionType.isExtended());
+            data.put("effect", potionType.toString());
             item.extraInfo = data;
             item.customType = "potion";
         } else if (name.contains("FIREWORK_ROCKET")) {
@@ -896,13 +901,14 @@ public class JSONShopRepo implements ShopRepo {
             fireworksData.put("effects", effects);
             item.extraInfo = fireworksData;
             item.customType = "rocket";
-        } else if (name.contains("TIPPED_ARROW")) {
+        } else if (name.contains("TIPPED_ARROW")) {//TODO
             PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
+            PotionType potionType = potionMeta.getBasePotionType();
             Map<String, Object> data = new HashMap<>();
-            PotionData potionType = potionMeta.getBasePotionData();
-            data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-            data.put("upgraded", potionType.isUpgraded());
-            data.put("extended", potionType.isExtended());
+            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
+            //data.put("upgraded", potionType.isUpgraded());
+            //data.put("extended", potionType.isExtended());
+            data.put("effect", potionType.toString());
             item.extraInfo = data;
             item.customType = "tippedArrow";
         } else if (name.endsWith("BANNER")) {
@@ -973,7 +979,7 @@ public class JSONShopRepo implements ShopRepo {
             item.extraInfo.put("instrument", goatHornMeta.getInstrument().getKey().toString());
             item.customType = "goatHorn";
         } else if(itemStack.getType() == Material.SUSPICIOUS_STEW) {
-            SuspiciousStewMeta suspiciousStewMeta = (SuspiciousStewMeta) itemStack.getItemMeta();
+            SuspiciousgitMeta suspiciousStewMeta = (SuspiciousStewMeta) itemStack.getItemMeta();
             item.extraInfo = new HashMap<>();
             item.extraInfo.put("effect", suspiciousStewMeta.getCustomEffects().get(0).getType().getName());
             item.customType = "suspiciousStew";
@@ -1517,7 +1523,7 @@ public class JSONShopRepo implements ShopRepo {
                 shop.getInv().forEach(itemList -> {
                     if (itemList.name.equals(name)) {
                         if(plugin.getCustomConfig().filterAlternatives()) {
-                            if(((item.item.getType() == Material.POTION && itemList.item.getType() == Material.POTION) || (item.item.getType() == Material.LINGERING_POTION && itemList.item.getType() == Material.LINGERING_POTION) || (item.item.getType() == Material.TIPPED_ARROW && itemList.item.getType() == Material.TIPPED_ARROW)) && ((PotionMeta)item.item.getItemMeta()).getBasePotionData().getType().ordinal() != ((PotionMeta)itemList.item.getItemMeta()).getBasePotionData().getType().ordinal())
+                            if(((item.item.getType() == Material.POTION && itemList.item.getType() == Material.POTION) || (item.item.getType() == Material.LINGERING_POTION && itemList.item.getType() == Material.LINGERING_POTION) || (item.item.getType() == Material.TIPPED_ARROW && itemList.item.getType() == Material.TIPPED_ARROW)) && ((PotionMeta)item.item.getItemMeta()).getBasePotionType() != ((PotionMeta)itemList.item.getItemMeta()).getBasePotionType())
                                 return;
                             if (item.item.getType() == Material.ENCHANTED_BOOK && item.extraInfo.containsKey("storedEnchants") && itemList.item.getType() == Material.ENCHANTED_BOOK && itemList.extraInfo.containsKey("storedEnchants") && ((EnchantmentStorageMeta)item.item.getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.item.getItemMeta()).getStoredEnchants().containsKey(enchantment)))
                                 return;

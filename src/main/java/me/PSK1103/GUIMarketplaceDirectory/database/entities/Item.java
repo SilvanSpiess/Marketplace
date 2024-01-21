@@ -178,15 +178,16 @@ public class Item {
             case "enchantedBook" -> {
                 Map<String, Object> enchants = (Map<String, Object>) extraInfo.get("storedEnchants");
                 EnchantmentStorageMeta esm = (EnchantmentStorageMeta) item.getItemMeta();
-                enchants.forEach((enchant, integer) -> esm.addStoredEnchant(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), false));
+                //enchants.forEach((enchant, integer) -> esm.addStoredEnchant(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), false));
+                enchants.forEach((enchant, integer) -> esm.addEnchant(Enchantment.getByName(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), true));
                 item.setItemMeta(esm);
             }
         }
         if (extraInfo.containsKey("enchants")) {
             Map<String,Object> codedEnchants = (Map<String, Object>) extraInfo.get("enchants");
-            Map<Enchantment,Integer> enchants = new HashMap<>();
-            codedEnchants.forEach((enchant, integer) -> enchants.put(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue()));
-            item.addEnchantments(enchants);
+            ItemMeta itemMeta = item.getItemMeta();
+            codedEnchants.forEach((enchant, integer) -> itemMeta.addEnchant(Enchantment.getByName(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), true));
+            item.setItemMeta(itemMeta);
         }
         return item;
     }
