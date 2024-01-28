@@ -1,7 +1,5 @@
 package me.PSK1103.GUIMarketplaceDirectory.utils;
 
-import me.PSK1103.GUIMarketplaceDirectory.database.DBConfig;
-import me.PSK1103.GUIMarketplaceDirectory.database.entities.Shop;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -445,7 +443,7 @@ public class Config {
     }
 
     public void initDB() {
-        DBConfig.setDB(DB_TYPE, DB_PREFIX, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD);
+        //DBConfig.setDB(DB_TYPE, DB_PREFIX, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD);
     }
 
     public Map<String,String> getMySQLDetails() {

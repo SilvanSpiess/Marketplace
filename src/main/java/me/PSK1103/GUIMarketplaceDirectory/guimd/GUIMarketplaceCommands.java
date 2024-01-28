@@ -131,9 +131,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                                 return true;
                             case "dynmap":
                             case "d":
-                                plugin.getShopRepo().initShopMarkerAddition((Player) commandSender);
-                                plugin.gui.sendConfirmationMessage((Player) commandSender, "Do you want to (re-)create all Dynmap Shop markers?");
-                                commandSender.sendMessage(ChatColor.GRAY + "This is a time and memory costly operation");
+                                plugin.getProcessHandler().startAddingAllShopMarkers((Player) commandSender);
                                 return true;
                         }
                         break;

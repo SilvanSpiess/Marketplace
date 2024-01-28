@@ -1,0 +1,44 @@
+write your pseudo code hasGeneration
+
+hi! 
+love you <3
+
+interface process
+    handleChat() 
+
+
+class addItem implements process
+    Player player;
+    itemStack itemToBeAdded;
+    Shop shop;
+    String quantity;
+    String price;
+    ShopRepo shoprepo
+
+    
+
+    boolean handleChat(String s)
+        if stage = getting_quantity (enum):
+            if s is a quantity
+                quantity = s
+                return true
+            else return false
+        
+        if done
+            shoprepo.endProcess(this)
+
+
+in shoprepo:
+    map<player, process> processes
+
+    void endProcess(process)
+        if process instanceOf addItem {
+            remove process from processes
+            shoprepo.addItem(process.getDataCollected())
+        }
+
+
+
+
+
+

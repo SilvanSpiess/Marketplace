@@ -7,19 +7,29 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.AddItemProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.AddOwnerProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ApproveChangeProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChangeDescriptionProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChangeDisplayitemProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChangeLocationProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.NewShopProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.RejectChangeProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.RemoveShopProcess;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.UpdateAllMarkersProcess;
+import me.PSK1103.GUIMarketplaceDirectory.utils.DynmapMarkerHandler;
 import me.PSK1103.GUIMarketplaceDirectory.utils.CoreProtectLookup;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
 import org.bukkit.*;
-import org.bukkit.block.ShulkerBox;
-import org.bukkit.enchantments.Enchantment;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
-import org.bukkit.potion.PotionType;
-import org.bukkit.potion.PotionData;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -27,7 +37,6 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -82,7 +91,8 @@ class Shop {
     }
 
     public void setOwners(Map<String, String> owners) {
-        this.owners = owners;
+        this.owners = new HashMap<>();
+        this.owners.putAll(owners);
     }
 
     public void addOwner(String uuid, String owner) {
@@ -143,18 +153,11 @@ class Shop {
 }
 
 public class JSONShopRepo implements ShopRepo {
+    private final GUIMarketplaceDirectory plugin;
+    
     private final Map<String, Shop> shops;
     private final Map<String, Shop> pendingShops;
     private final Map<String, Shop> pendingChanges;
-    private final Map<String, Shop> waitingShops;
-    private final GUIMarketplaceDirectory plugin;
-    private final HashMap<String, String> shopsUnderAdd;
-    private final HashMap<String, EditType> shopsUnderEdit;
-    private final HashMap<String, String> userModeratingShop;
-    private final HashMap<String, ModerationType> shopUnderModeration;
-    private final HashMap<String, ModerationType> userSettingMarkers;
-    private final HashMap<String, ItemList> itemToAdd;
-    private final HashMap<String, String> shopsAwaitingResponse;
 
     private static final EnumSet<Material> materialsWithoutTextures = EnumSet.noneOf(Material.class);
 
@@ -175,14 +178,7 @@ public class JSONShopRepo implements ShopRepo {
         this.shops = new HashMap<>();
         this.pendingShops = new HashMap<>();
         this.pendingChanges = new HashMap<>();
-        shopsUnderAdd = new HashMap<>();
-        shopsAwaitingResponse = new HashMap<>();
-        userModeratingShop = new HashMap<>();
-        userSettingMarkers = new HashMap<>();
-        shopUnderModeration = new HashMap<>();
-        shopsUnderEdit = new HashMap<>();
-        waitingShops = new HashMap<>();
-        itemToAdd = new HashMap<>();
+
         this.plugin = plugin;
         this.logger = plugin.getLogger();
         if (initShopsFromJSON()) {
@@ -214,193 +210,79 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public String addShop(String name, String desc, String owner, String uuid, String loc, String displayItem) {
-        String key = "" + System.currentTimeMillis() + uuid;
-        Shop shop = new Shop(name, desc, owner, uuid, key, loc);
-        Material material = Material.matchMaterial(displayItem);
-        if(material != null && !materialsWithoutTextures.contains(material)) {
-            shop.setDisplayItem(displayItem);
-        }
-        else shop.setDisplayItem("WRITTEN_BOOK");
-        waitingShops.put(uuid, shop);
-        shopsUnderEdit.put(key, EditType.ADD_SHOP);
-        shopsUnderAdd.put(uuid, key);
-        return key;
-    }
-
-    @Override
     public String getOwner(String key) {
         return shops.get(key).getOwner();
     }
 
-    @Override
-    public boolean getIsInitOwner(String uuid) {
-        return waitingShops.containsKey(uuid);
+    public boolean shopExist(String shopKey) {
+        return shops.containsKey(shopKey) || pendingShops.containsKey(shopKey);
     }
 
+    
+
     @Override
-    public void stopInitOwner(String uuid) {
-        waitingShops.remove(uuid);
-        if (shopsUnderAdd.containsKey(uuid)) {
-            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
-            shopsUnderAdd.remove(uuid);
+    public void addOwner(String shopKey, OfflinePlayer player) {
+        if (pendingShops.containsKey(shopKey)) {
+            pendingShops.get(shopKey).addOwner(player.getUniqueId().toString(), player.getName());
+        } else if (shops.containsKey(shopKey)) {
+            shops.get(shopKey).addOwner(player.getUniqueId().toString(), player.getName());
         }
+        saveShops();
     }
 
     @Override
-    public void stopShopEdit(String uuid) {
-        if (shopsUnderAdd.containsKey(uuid)) {
-            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
-            shopsUnderAdd.remove(uuid);
-        }
-    }
-
-    @Override
-    public int startSettingDescription(String uuid, String key) {
-        if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
-            return 0;
-        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
-            return -1;
-        shopsUnderAdd.put(uuid, key);    
-        shopsUnderEdit.put(key, EditType.SET_DESCRIPTION);
-        return 1;
-    }
-
-    @Override
-    public int startSettingLocation(String uuid, String key) {
-        if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
-            return 0;
-        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
-            return -1;
-        shopsUnderAdd.put(uuid, key);
-        shopsUnderEdit.put(key, EditType.SET_LOCATION);
-        return 1;
-    }
-
-    @Override
-    public int startAddingOwner(String uuid, String key) {
-        if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
-            return 0;
-        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
-            return -1;
-        shopsUnderAdd.put(uuid, key);
-        shopsUnderEdit.put(key, EditType.ADD_OWNER);
-        return 1;
-    }
-
-    @Override
-    public int startSettingDisplayItem(String uuid, String key) {
-        if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
-            return 0;
-        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
-            return -1;
-        shopsUnderAdd.put(uuid, key);
-        shopsUnderEdit.put(key, EditType.SET_DISPLAY_ITEM);
-        return 1;
-    }
-
-    @Override
-    public int startRemovingShop(String uuid, String key) {
-        if (shopsUnderAdd.containsKey(uuid) && !shopsUnderEdit.containsKey(key))
-            return 0;
-        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
-            return -1;
-        shopsAwaitingResponse.put(uuid, key);
-        return 1;
-    }
-
-    @Override
-    public boolean getIsEditingShop(String uuid, String key) {
-        return shopsUnderAdd.containsKey(uuid) || shopsUnderAdd.containsValue(key);
-    }
-
-    @Override
-    public boolean getIsAddingOwner(String key) {
-        return shopsUnderAdd.containsValue(key) && shopsUnderEdit.containsKey(key);
-    }
-
-    @Override
-    public boolean getIsUserAddingOwner(String uuid) {
-        return shopsUnderAdd.containsKey(uuid) && shopsUnderEdit.containsKey(shopsUnderAdd.get(uuid)) || waitingShops.containsKey(uuid);
-    }
-
-    @Override
-    public void addOwner(String uuid, OfflinePlayer player) {
-        if (waitingShops.containsKey(uuid)) {
-            Shop shop = waitingShops.get(uuid);
-            shop.setOwner(player.getName());
-            shop.setUuid(player.getUniqueId().toString());
-            shop.addOwner(player.getUniqueId().toString(), player.getName());
-            if (plugin.getCustomConfig().directoryModerationEnabled())
-                pendingShops.put(shop.getKey(), shop);
-            else
-                shops.put(shop.getKey(), shop);
-
-            waitingShops.remove(uuid);
-            shopsUnderAdd.remove(uuid);
-            shopsUnderEdit.remove(shop.getKey());
-            saveShops();
+    public boolean setDisplayItem(Player player, String shopKey, String materialName) {
+        Shop shop;
+        if (shops.containsKey(shopKey)) {
+            shop = shops.get(shopKey);
+        } else if (pendingShops.containsKey(shopKey)) {
+            shop = pendingShops.get(shopKey);
         } else {
-            if (shopsUnderAdd.containsKey(uuid)) {
-                if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
-                    pendingShops.get(shopsUnderAdd.get(uuid)).addOwner(player.getUniqueId().toString(), player.getName());
-                } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
-                    shops.get(shopsUnderAdd.get(uuid)).addOwner(player.getUniqueId().toString(), player.getName());
-                }
-                shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
-                shopsUnderAdd.remove(uuid);
-                saveShops();
-            }
+            return false;
         }
+        shop.setDisplayItem(materialName);
+        saveShops();
+        return true;
     }
 
     @Override
-    public void setDisplayItem(Player player, String materialName) {
-        String uuid = player.getUniqueId().toString();
-        if (shopsUnderAdd.containsKey(uuid)) {
-            if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
-                pendingShops.get(shopsUnderAdd.get(uuid)).setDisplayItem(materialName);
-            } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
-                shops.get(shopsUnderAdd.get(uuid)).setDisplayItem(materialName);
-            }
-            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
-            shopsUnderAdd.remove(uuid);
-            saveShops();
+    public boolean setLocation(Player player, String shopKey, String location) {
+        Shop shop;
+        if (shops.containsKey(shopKey)) {
+            shop = shops.get(shopKey);
+        } else if (pendingShops.containsKey(shopKey)) {
+            shop = pendingShops.get(shopKey);
+        } else {
+            return false;
         }
+        shop.setLoc(location);        
+        if(plugin.getCustomConfig().getEnableDynmapMarkers()) {          
+            plugin.getDynmapMarkerHandler().updateShopMarkerCommand(player, shopKey);
+            player.sendMessage(ChatColor.GREEN + "Updated Dynmap marker");
+        }
+            
+        saveShops();
+        return true;
     }
 
     @Override
-    public void setLocation(Player player, String location) {
-        String uuid = player.getUniqueId().toString();
-        if (shopsUnderAdd.containsKey(uuid)) {
-            if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
-                pendingShops.get(shopsUnderAdd.get(uuid)).setLoc(location);
-            } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
-                shops.get(shopsUnderAdd.get(uuid)).setLoc(location);
-                if(plugin.getCustomConfig().getEnableDynmapMarkers())           
-                    updateShopMarker(player);
-            }            
-            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
-            shopsUnderAdd.remove(uuid);
-            saveShops();
+    public boolean setDescription(Player player, String shopKey, String description) {
+        Shop shop;
+        if (shops.containsKey(shopKey)) {
+            shop = shops.get(shopKey);
+        } else if (pendingShops.containsKey(shopKey)) {
+            shop = pendingShops.get(shopKey);
+        } else {
+            return false;
         }
-    }
-
-    @Override
-    public void setDescription(Player player, String description) {
-        String uuid = player.getUniqueId().toString();
-        if (shopsUnderAdd.containsKey(uuid)) {
-            if (pendingShops.containsKey(shopsUnderAdd.get(uuid))) {
-                pendingShops.get(shopsUnderAdd.get(uuid)).setDesc(description);
-            } else if (shops.containsKey(shopsUnderAdd.get(uuid))) {
-                shops.get(shopsUnderAdd.get(uuid)).setDesc(description);
-                if(plugin.getCustomConfig().getEnableDynmapMarkers())           
-                    updateShopMarker(player);
-            }
-            shopsUnderEdit.remove(shopsUnderAdd.get(uuid));
-            shopsUnderAdd.remove(uuid);
-            saveShops();
-        }
+        shop.setDesc(description);        
+        if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
+            plugin.getDynmapMarkerHandler().updateShopMarkerCommand(player, shopKey);
+            player.sendMessage(ChatColor.GREEN + "Updated Dynmap marker");
+        }    
+        
+        saveShops();
+        return true;
     }
 
     @Override
@@ -451,91 +333,6 @@ public class JSONShopRepo implements ShopRepo {
                 e.printStackTrace();
             }
         });
-    }
-    
-    //creates an empty set of markers
-    //Example: /dmarker addset shops maxzoom:6 minzoom:4
-    public String addShopSet() {
-        return "dmarker addset label:" + plugin.getCustomConfig().getShopSetName().replaceAll(" ", "_") + 
-               " maxzoom:" + plugin.getCustomConfig().getMaxZoomDynmap() + 
-               " minzoom:" + plugin.getCustomConfig().getMinZoomDynmap();
-    }
-
-    //deletes the existing shops set
-    //Example: /dmarker deleteset shops 
-    public String deleteShopSet() {
-        return "dmarker deleteset label:" + plugin.getCustomConfig().getShopSetName().replaceAll(" ", "_");
-    }
-
-    //creates a new marker for the specified shop
-    //Example: /dmarker add shop_name icon:shop_icon set:shops x:-23 y:78 z:-345 world:world
-    public String addShopMarker(String key) {
-        String[] splitLoc = shops.get(key).getLoc().split(","); 
-        if(splitLoc.length == 2) {
-            return "dmarker add label:" + shops.get(key).getName().replaceAll(" ", "_").
-                                                                   replaceAll("'", "").
-                                                                   replaceAll("&", "and") +
-                   " icon:" + plugin.getCustomConfig().getShopIconName() +
-                   " set:" + plugin.getCustomConfig().getShopSetName() +
-                   " x:" + splitLoc[0] + " y:64 z:" + splitLoc[1] + " world:world";
-        }
-        else {
-            return "dmarker add label:" + shops.get(key).getName().replaceAll(" ", "_").
-                                                                   replaceAll("'", "").
-                                                                   replaceAll("&", "and") +
-                   " icon:" + plugin.getCustomConfig().getShopIconName() +
-                   " set:" + plugin.getCustomConfig().getShopSetName() +
-                   " x:" + splitLoc[0] + " y:" + splitLoc[1] + " z:" + splitLoc[2] + " world:world";
-        }        
-    }
-    
-    //creates an empty set of markers
-    //Example: /dmarker delete shop_name set:shops
-    public String deleteShopMarker(String key) {
-        return "dmarker delete label:" + shops.get(key).getName().replaceAll(" ", "_").
-                                                                  replaceAll("'", "").
-                                                                  replaceAll("&", "and") + 
-               " set:" + plugin.getCustomConfig().getShopSetName();
-    }
-
-    //appends a description to the specified marker (shop)
-    //Example: /dmarker appenddesc shop_name set:shops desc:"Shop by shop_owner, shop_desc"
-    public String appendShopMarkerDescription(String key) {
-        return "dmarker appenddesc label:" + shops.get(key).getName().replaceAll(" ", "_").
-                                                                      replaceAll("'", "").
-                                                                      replaceAll("&", "and") + 
-               " set:" + plugin.getCustomConfig().getShopSetName() +
-               " desc:\"Shop by " + shops.get(key).getOwner() +
-               ", " + shops.get(key).getDesc() + "\"";
-    }
-
-    //resets the description of the specified marker (shop)
-    public String resetShopMarkerDescription(String key) {
-        return "dmarker resetdesc " + shops.get(key).getName().replaceAll(" ", "_").
-                                                               replaceAll("'", "").
-                                                               replaceAll("&", "and") + 
-               " set:" + plugin.getCustomConfig().getShopSetName();
-    }
-
-    public void updateShopMarker(Player player) {
-        String key = shopsUnderAdd.get(player.getUniqueId().toString());
-        CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key), addShopMarker(key), appendShopMarkerDescription(key));
-        Bukkit.getScheduler().runTask(plugin, commandExecutor);
-    }
-
-    public void addAllShopMarkers(Player player) {
-        player.sendMessage(ChatColor.GREEN + "Starting to create all dynmap shop markers");
-        CommandExecutor commandExecutor0 = new CommandExecutor(player, deleteShopSet(), addShopSet());
-        Bukkit.getScheduler().runTask(plugin, commandExecutor0);
-        for(String key : shops.keySet()) {
-            CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key), addShopMarker(key), appendShopMarkerDescription(key));
-            Bukkit.getScheduler().runTask(plugin, commandExecutor);
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } 
-        }
     }
 
     private Shop loadShopData(JSONObject shopJSON) {
@@ -667,424 +464,16 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public boolean isShopUnderEditOrAdd(String key) {
-        return itemToAdd.containsKey(key) || shopsUnderEdit.containsKey(key);
-    }
-
-    @Override
-    public int initItemAddition(String uuid, String key, String name, ItemStack itemStack) {
-        int res = 1;
-        if (!shops.containsKey(key) && !pendingShops.containsKey(key))
-            return -1;
-
-        if (shopsUnderAdd.containsKey(uuid) || itemToAdd.containsKey(key)) {
-            return 0;
-        }
-
-        ItemList item = new ItemList(name, itemStack.getItemMeta(), this.plugin);
-
-        if (name.contains("SHULKER_BOX")) {
-            if (itemStack.getItemMeta() instanceof BlockStateMeta) {
-                BlockStateMeta im = (BlockStateMeta) itemStack.getItemMeta();
-                if (im.getBlockState() instanceof ShulkerBox) {
-                    ShulkerBox shulker = (ShulkerBox) im.getBlockState();
-
-                    List<Map<String, Object>> contents = new ArrayList<>();
-
-                    for (int i = 0; i < 27; i++) {
-                        ItemStack itemStack1 = shulker.getSnapshotInventory().getItem(i);
-                        if (itemStack1 == null || itemStack1.getType() == Material.AIR)
-                            continue;
-                        String n = itemStack1.getType().getKey().getKey().toUpperCase(Locale.ROOT);
-
-                        Map<String, Object> content = new HashMap<>();
-                        content.put("name", itemStack1.getType().getKey().getKey().toUpperCase());
-                        content.put("quantity", itemStack1.getAmount());
-
-                        if (itemStack1.getType() == Material.PLAYER_HEAD) {
-                            SkullMeta skullMeta = (SkullMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            OfflinePlayer whoSkull = skullMeta.getOwningPlayer();
-                            if(whoSkull != null) {
-                                extraInfo.put("name", skullMeta.getOwningPlayer().getName());
-                            }
-                            if (skullMeta.getOwnerProfile() != null && 
-                                skullMeta.getOwnerProfile().getTextures() != null && 
-                                skullMeta.getOwnerProfile().getTextures().getSkin() != null) {
-                                extraInfo.put("skin", skullMeta.getOwnerProfile().getTextures().getSkin().toString());
-                                extraInfo.put("profileId", skullMeta.getOwnerProfile().getUniqueId().toString());
-                            }
-                            item.extraInfo = extraInfo;
-                            item.customType = "head";
-                        } else if (n.contains("POTION")) {//TODO 
-                            PotionMeta potionMeta = (PotionMeta) itemStack1.getItemMeta();                            
-                            PotionType potionType = potionMeta.getBasePotionType();
-                            Map<String, Object> data = new HashMap<>();
-                            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-                            //data.put("upgraded", potionType.isUpgraded());
-                            //data.put("extended", potionType.isExtended());
-                            data.put("effect", potionType.toString());
-                            content.put("extraInfo", data);                            
-                            content.put("customType", "potion");
-                        } else if (n.contains("FIREWORK_ROCKET")) {
-                            FireworkMeta rocketMeta = (FireworkMeta) itemStack1.getItemMeta();
-                            List<Object> effects = new ArrayList<>();
-                            rocketMeta.getEffects().forEach(fireworkEffect -> {
-                                Map<String, Object> effect = new HashMap<>();
-                                effect.put("type", fireworkEffect.getType());
-                                effect.put("flicker", fireworkEffect.hasFlicker());
-                                effect.put("trail", fireworkEffect.hasTrail());
-                                List<Integer> colors = new ArrayList<>();
-                                List<Integer> fadeColors = new ArrayList<>();
-                                fireworkEffect.getColors().forEach(color -> colors.add(color.asRGB()));
-                                fireworkEffect.getFadeColors().forEach(fadeColor -> fadeColors.add(fadeColor.asRGB()));
-                                effect.put("colors", colors);
-                                effect.put("fadeColors", fadeColors);
-                                effects.add(effect);
-                            });
-                            Map<String, Object> fireworksData = new HashMap<>();
-                            fireworksData.put("flight", Integer.toString(rocketMeta.getPower()));
-                            fireworksData.put("effects", effects);
-                            content.put("extraInfo", fireworksData);
-                            content.put("customType", "rocket");
-                        } else if (n.contains("TIPPED_ARROW")) {//TODO
-                            PotionMeta potionMeta = (PotionMeta) itemStack1.getItemMeta();                            
-                            PotionType potionType = potionMeta.getBasePotionType();
-                            Map<String, Object> data = new HashMap<>();
-                            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-                            //data.put("upgraded", potionType.isUpgraded());
-                            //data.put("extended", potionType.isExtended());
-                            data.put("effect", potionType.toString());
-                            content.put("extraInfo", data);
-                            content.put("customType", "tippedArrow");
-                        } else if (n.contains("BANNER")) {
-                            BannerMeta bannerMeta = (BannerMeta) itemStack1.getItemMeta();
-                            List<Object> patterns = new ArrayList<>();
-                            bannerMeta.getPatterns().forEach(pattern -> {
-                                Map<String, Object> patternData = new HashMap<>();
-                                patternData.put("color", pattern.getColor().name().toUpperCase());
-                                patternData.put("type", pattern.getPattern().name().toUpperCase());
-                                patterns.add(patternData);
-                            });
-                            Map<String, Object> info = new HashMap<>();
-                            info.put("patterns", patterns);
-                            content.put("extraInfo", info);
-                            content.put("customType", "banner");
-                        } else if(itemStack1.getType() == Material.ENCHANTED_BOOK) {
-                            Map<String,String> storedEnchants = new HashMap<>();
-                            ((EnchantmentStorageMeta) itemStack1.getItemMeta()).getStoredEnchants().forEach((enchantment, integer) -> storedEnchants.put(enchantment.getKey().getKey(),integer.toString()));
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("storedEnchants",storedEnchants);
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "enchantedBook");
-                        } else if(itemStack1.getType() == Material.AXOLOTL_BUCKET) {
-                            AxolotlBucketMeta axolotlMeta = (AxolotlBucketMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("type", axolotlMeta.getVariant().toString());
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "axolotl");
-                        } else if(itemStack1.getType() == Material.WRITABLE_BOOK || itemStack1.getType() == Material.WRITTEN_BOOK) {
-                            BookMeta writtenBookMeta = (BookMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            if (writtenBookMeta.hasAuthor()) {
-                                extraInfo.put("author", writtenBookMeta.getAuthor());
-                            }
-                            if (writtenBookMeta.hasGeneration()) {
-                                extraInfo.put("generation", writtenBookMeta.getGeneration().toString());
-                            }
-                            if (writtenBookMeta.hasTitle()) {
-                                extraInfo.put("title", writtenBookMeta.getTitle());
-                            }
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "writtenBook");
-                        } else if(itemStack1.getType() == Material.CROSSBOW) {
-                            CrossbowMeta crossbowMeta = (CrossbowMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("loaded", crossbowMeta.getChargedProjectiles().get(0).getType().toString());
-                            if (crossbowMeta.getChargedProjectiles().get(0).getType() == Material.TIPPED_ARROW) {
-                                extraInfo.put("tipped", Integer.toString(((PotionMeta) crossbowMeta.getChargedProjectiles().get(0)).getColor().asRGB()));
-                            }
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "crossbow");
-                        } else if(n.contains("BOOTS") || n.contains("LEGGINGS") || n.contains("CHESTPLATE") || n.contains("HELMET")) {
-                            ArmorMeta armorMeta = (ArmorMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();               
-                                
-                            if(armorMeta.getTrim() != null) {
-                                extraInfo.put("trimMaterial", armorMeta.getTrim().getMaterial().getKey().toString());
-                                extraInfo.put("trimPattern", armorMeta.getTrim().getPattern().getKey().toString());
-                            }
-                            if(n.contains("LEATHER")) {
-                                extraInfo.put("color", Integer.toString(((ColorableArmorMeta) itemStack1.getItemMeta()).getColor().asRGB()));
-                            }
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "armor");
-                        } else if(itemStack1.getType() == Material.FILLED_MAP) {
-                            MapMeta mapMeta = (MapMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("id", Integer.toString(mapMeta.getMapId()));
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "filledMap");
-                        } else if(itemStack1.getType() == Material.GOAT_HORN) {
-                            MusicInstrumentMeta goatHornMeta = (MusicInstrumentMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("instrument", goatHornMeta.getInstrument().getKey().toString());
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "goatHorn");
-                        } else if(itemStack1.getType() == Material.SUSPICIOUS_STEW) {
-                            SuspiciousStewMeta suspiciousStewMeta = (SuspiciousStewMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("effect", suspiciousStewMeta.getCustomEffects().get(0).getType().getName());
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "suspiciousStew");
-                        } else if(itemStack1.getType() == Material.TROPICAL_FISH_BUCKET) {
-                            TropicalFishBucketMeta tropicalFishBucketMeta = (TropicalFishBucketMeta) itemStack1.getItemMeta();
-                            Map<String, Object> extraInfo = new HashMap<>();
-                            extraInfo.put("color", tropicalFishBucketMeta.getBodyColor().toString());
-                            extraInfo.put("pattern", tropicalFishBucketMeta.getPattern().toString());
-                            extraInfo.put("patternColor", tropicalFishBucketMeta.getPatternColor().toString());
-                            content.put("extraInfo", extraInfo);
-                            content.put("customType", "tropicalFishBucket");
-                        }
-
-                        contents.add(content);
-                    }
-                    item.extraInfo = new HashMap<>();
-                    item.extraInfo.put("contents", contents);
-                    item.customType = "shulker";
-                }
-            }
-        } else if (itemStack.getType() == Material.PLAYER_HEAD) {
-            SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
-            Map<String, Object> extraInfo = new HashMap<>();
-            OfflinePlayer whoSkull = skullMeta.getOwningPlayer();
-            if(whoSkull != null){
-                extraInfo.put("name", skullMeta.getOwningPlayer().getName());
-            }
-            if(skullMeta.getOwnerProfile() != null && 
-                skullMeta.getOwnerProfile().getTextures() != null && 
-                skullMeta.getOwnerProfile().getTextures().getSkin() != null) {
-                    extraInfo.put("skin", skullMeta.getOwnerProfile().getTextures().getSkin().toString());
-                    extraInfo.put("profileId", skullMeta.getOwnerProfile().getUniqueId().toString());
-            }
-            item.extraInfo = extraInfo;
-            item.customType = "head";
-        } else if (name.contains("POTION")) {//TODO
-            PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
-            PotionType potionType = potionMeta.getBasePotionType();
-            Map<String, Object> data = new HashMap<>();
-            //PotionData potionType = potionMeta.getBasePotionData();
-            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-            //data.put("upgraded", potionType.isUpgraded());
-            //data.put("extended", potionType.isExtended());
-            data.put("effect", potionType.toString());
-            item.extraInfo = data;
-            item.customType = "potion";
-        } else if (name.contains("FIREWORK_ROCKET")) {
-            FireworkMeta rocketMeta = (FireworkMeta) itemStack.getItemMeta();
-            List<Object> effects = new ArrayList<>();
-            rocketMeta.getEffects().forEach(fireworkEffect -> {
-                Map<String, Object> effect = new HashMap<>();
-                effect.put("type", fireworkEffect.getType());
-                effect.put("flicker", fireworkEffect.hasFlicker());
-                effect.put("trail", fireworkEffect.hasTrail());
-                List<Integer> colors = new ArrayList<>();
-                List<Integer> fadeColors = new ArrayList<>();
-                fireworkEffect.getColors().forEach(color -> colors.add(color.asRGB()));
-                fireworkEffect.getFadeColors().forEach(fadeColor -> fadeColors.add(fadeColor.asRGB()));
-                effect.put("colors", colors);
-                effect.put("fadeColors", fadeColors);
-                effects.add(effect);
-            });
-            Map<String, Object> fireworksData = new HashMap<>();
-            fireworksData.put("flight", Integer.toString(rocketMeta.getPower()));
-            fireworksData.put("effects", effects);
-            item.extraInfo = fireworksData;
-            item.customType = "rocket";
-        } else if (name.contains("TIPPED_ARROW")) {//TODO
-            PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
-            PotionType potionType = potionMeta.getBasePotionType();
-            Map<String, Object> data = new HashMap<>();
-            //data.put("effect", Integer.valueOf(potionType.getType().ordinal()).toString());
-            //data.put("upgraded", potionType.isUpgraded());
-            //data.put("extended", potionType.isExtended());
-            data.put("effect", potionType.toString());
-            item.extraInfo = data;
-            item.customType = "tippedArrow";
-        } else if (name.endsWith("BANNER")) {
-            BannerMeta bannerMeta = (BannerMeta) itemStack.getItemMeta();
-            List<Object> patterns = new ArrayList<>();
-            bannerMeta.getPatterns().forEach(pattern -> {
-                Map<String, Object> patternData = new HashMap<>();
-                patternData.put("color", pattern.getColor().name().toUpperCase());
-                patternData.put("type", pattern.getPattern().name().toUpperCase());
-                patterns.add(patternData);
-            });
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("patterns", patterns);
-            item.customType = "banner";
-        }
-        else if(itemStack.getType() == Material.ENCHANTED_BOOK) {
-            Map<String,String> storedEnchants = new HashMap<>();
-            ((EnchantmentStorageMeta) itemStack.getItemMeta()).getStoredEnchants().forEach((enchantment, integer) -> storedEnchants.put(enchantment.getKey().getKey(),integer.toString()));
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("storedEnchants",storedEnchants);
-            item.customType = "enchantedBook";
-        } else if(itemStack.getType() == Material.AXOLOTL_BUCKET) {
-            AxolotlBucketMeta axolotlMeta = (AxolotlBucketMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("type", axolotlMeta.getVariant().toString());
-            item.customType = "axolotl";
-        } else if(itemStack.getType() == Material.WRITABLE_BOOK || itemStack.getType() == Material.WRITTEN_BOOK) {
-            BookMeta writtenBookMeta = (BookMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            if (writtenBookMeta.hasAuthor()) {
-                item.extraInfo.put("author", writtenBookMeta.getAuthor());
-            }
-            if (writtenBookMeta.hasGeneration()) {
-                item.extraInfo.put("generation", writtenBookMeta.getGeneration().toString());
-            }
-            if (writtenBookMeta.hasTitle()) {
-                item.extraInfo.put("title", writtenBookMeta.getTitle());
-            }
-            item.customType = "writtenBook";
-        } else if(itemStack.getType() == Material.CROSSBOW) {
-            CrossbowMeta crossbowMeta = (CrossbowMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("loaded", crossbowMeta.getChargedProjectiles().get(0).getType().toString());
-            if (crossbowMeta.getChargedProjectiles().get(0).getType() == Material.TIPPED_ARROW) {
-                item.extraInfo.put("tipped", Integer.toString(((PotionMeta) crossbowMeta.getChargedProjectiles().get(0)).getColor().asRGB()));
-            }
-            item.customType = "crossbow";
-        } else if(name.contains("BOOTS") || name.contains("LEGGINGS") || name.contains("CHESTPLATE") || name.contains("HELMET")) {
-            ArmorMeta armorMeta = (ArmorMeta) itemStack.getItemMeta();
-                item.extraInfo = new HashMap<>();               
-                
-            if(armorMeta.getTrim() != null) {
-                item.extraInfo.put("trimMaterial", armorMeta.getTrim().getMaterial().getKey().toString());
-                item.extraInfo.put("trimPattern", armorMeta.getTrim().getPattern().getKey().toString());
-            }
-            if(name.contains("LEATHER")) {
-                item.extraInfo.put("color", Integer.toString(((ColorableArmorMeta) itemStack.getItemMeta()).getColor().asRGB()));
-            }
-            item.customType = "armor";
-        } else if(itemStack.getType() == Material.FILLED_MAP) {
-            MapMeta mapMeta = (MapMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("id", Integer.toString(mapMeta.getMapId()));
-            item.customType = "filledMap";
-        } else if(itemStack.getType() == Material.GOAT_HORN) {
-            MusicInstrumentMeta goatHornMeta = (MusicInstrumentMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("instrument", goatHornMeta.getInstrument().getKey().toString());
-            item.customType = "goatHorn";
-        } else if(itemStack.getType() == Material.SUSPICIOUS_STEW) {
-            SuspiciousgitMeta suspiciousStewMeta = (SuspiciousStewMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("effect", suspiciousStewMeta.getCustomEffects().get(0).getType().getName());
-            item.customType = "suspiciousStew";
-        } else if(itemStack.getType() == Material.TROPICAL_FISH_BUCKET) {
-            TropicalFishBucketMeta tropicalFishBucketMeta = (TropicalFishBucketMeta) itemStack.getItemMeta();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("color", tropicalFishBucketMeta.getBodyColor().toString());
-            item.extraInfo.put("pattern", tropicalFishBucketMeta.getPattern().toString());
-            item.extraInfo.put("patternColor", tropicalFishBucketMeta.getPatternColor().toString());
-            item.customType = "tropicalFishBucket";
-        } else if(itemStack.getType() == Material.DECORATED_POT) {
-            /*
-            DecoratedPot decoratedPot = (DecoratedPot) ((BlockStateMeta) itemStack.getItemMeta()).getBlockState();
-            item.extraInfo = new HashMap<>();
-            Iterator<NamespacedKey> it = decoratedPot.getPersistentDataContainer().getKeys().iterator();
-            while (it.hasNext()) {
-                NamespacedKey currKey = it.next();
-                item.extraInfo.put("shards" + currKey.getKey(), currKey.getKey());
-                item.extraInfo.put("exists", "found smth");
-            }
-            //item.extraInfo.put("shards", decoratedPot.getPersistentDataContainer().isEmpty() ? "has keys" : "no keys");
-            //decoratedPot.getPersistentDataContainer().getKeys().toString()
-            item.customType = "decoratedPot";
-            */
-            /* failed getMetadata approach
-            DecoratedPot decoratedPot = (DecoratedPot) ((BlockStateMeta) itemStack.getItemMeta()).getBlockState();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("shards", decoratedPot.getMetadata("Leonne is sexy").get(0).asString());
-            item.customType = "decoratedPot";
-            */
-            /* Silvans failed getShards
-            DecoratedPot decoratedPot = (DecoratedPot) ((BlockStateMeta) itemStack.getItemMeta()).getBlockState();
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("shards", decoratedPot.getShards().toString());
-            item.customType = "decoratedPot";
-            */
-            /* Leonnes failed blockdata
-            DecoratedPot decoratedPot = (DecoratedPot) ((BlockDataMeta) itemStack.getItemMeta()).getBlockData(Material.DECORATED_POT);
-            item.extraInfo = new HashMap<>();
-            item.extraInfo.put("shards", decoratedPot.getAsString());
-            item.customType = "decoratedPot";
-            */
-        } 
-
-        Map<Enchantment,Integer> enchants = itemStack.getEnchantments();
-        if(!enchants.isEmpty()) {
-            if(item.extraInfo==null)
-                item.extraInfo = new HashMap<>();
-            Map<String,String> codedEnchants = new HashMap<>();
-            Iterator<Map.Entry<Enchantment,Integer>> enchantIterator = enchants.entrySet().iterator();
-            while (enchantIterator.hasNext()) {
-                Map.Entry<Enchantment,Integer> enchant = enchantIterator.next();
-                if (enchant.getValue().intValue() >= enchant.getKey().getStartLevel() && enchant.getValue().intValue() <= enchant.getKey().getMaxLevel() && enchant.getKey().canEnchantItem(itemStack)) {
-                    codedEnchants.put(enchant.getKey().getKey().getKey() , enchant.getValue().toString());
-                } else res = 2;
-            }
-            item.extraInfo.put("enchants", codedEnchants);
-        } 
-
-        shopsUnderAdd.put(uuid, key);
-        itemToAdd.put(key, item);
-        return res;
-    }
-
-    @Override
-    public void initShopOwnerAddition(String uuid) {
-        shopsUnderEdit.put(shopsUnderAdd.get(uuid), EditType.SHOP_OWNER_ADDITION);
-    }
-
-
-    @Override
-    public EditType getEditType(String uuid) {
-        if (!shopsUnderAdd.containsKey(uuid))
-            return EditType.NOT_UNDER_ADD;
-
-        return shopsUnderEdit.getOrDefault(shopsUnderAdd.get(uuid), EditType.NOT_UNDER_EDIT);
-    }
-
-    @Override
-    public void setQty(String qty, String uuid) {
-        itemToAdd.get(shopsUnderAdd.get(uuid)).setQty(qty);
-    }
-
-    @Override
-    public void setPrice(int price, String uuid) {
-        itemToAdd.get(shopsUnderAdd.get(uuid)).setPrice(price);
-        if (shops.containsKey(shopsUnderAdd.get(uuid)))
-            shops.get(shopsUnderAdd.get(uuid)).addToInv(itemToAdd.get(shopsUnderAdd.get(uuid)));
-        else if (pendingShops.containsKey(shopsUnderAdd.get(uuid)))
-            pendingShops.get(shopsUnderAdd.get(uuid)).addToInv(itemToAdd.get(shopsUnderAdd.get(uuid)));
-
-        itemToAdd.remove(shopsUnderAdd.get(uuid));
-        shopsUnderAdd.remove(uuid);
+    public boolean addItemToShop(ItemList item, String shopkey) {
+        Shop shop;
+        if (shops.containsKey(shopkey)) {
+            shop = shops.get(shopkey);
+        } else if (pendingShops.containsKey(shopkey)) {
+            shop = pendingShops.get(shopkey);
+        } else return false;
+        shop.addToInv(item);
         saveShops();
-    }
-
-    @Override
-    public boolean isAddingItem(String uuid) {
-        return shopsUnderAdd.containsKey(uuid) && !waitingShops.containsKey(uuid) && !shopsUnderEdit.containsKey(shopsUnderAdd.get(uuid));
-    }
-
-    @Override
-    public void stopEditing(String uuid) {
-        itemToAdd.remove(shopsUnderAdd.get(uuid));
-        shopsUnderAdd.remove(uuid);
+        return true;
     }
 
     @Override
@@ -1092,99 +481,49 @@ public class JSONShopRepo implements ShopRepo {
         return (shops.containsKey(key) && (shops.get(key).getUuid().equals(uuid) || shops.get(key).getOwners().containsKey(uuid))) || (pendingShops.containsKey(key) && (pendingShops.get(key).getUuid().equals(uuid) || pendingShops.get(key).getOwners().containsKey(uuid)));
     }
 
+
     @Override
-    public void approveChange(Player player, String uuid) {
-        if(!userModeratingShop.containsKey(uuid) || shopUnderModeration.get(userModeratingShop.get(uuid)) != ModerationType.APPROVE_CHANGE) {
-            return;
+    public boolean approveChange(Player player, String shopKey) {
+        if (!pendingChanges.containsKey(shopKey)) {
+            return false;
         }
-        String key = userModeratingShop.get(uuid);
         Shop officialShop;
-        if (shops.containsKey(key)) {
-            officialShop = shops.get(key);
-        } else if (pendingShops.containsKey(key)){
-            officialShop = pendingShops.get(key);
-        } else return;
-        officialShop.setDesc(pendingChanges.get(key).getDesc());
-        officialShop.setOwners(pendingChanges.get(key).getOwners());
-        officialShop.setLoc(pendingChanges.get(key).getLoc());
-        officialShop.setDisplayItem(pendingChanges.get(key).getDisplayItem());
+        if (shops.containsKey(shopKey)) {
+            officialShop = shops.get(shopKey);
+        } else if (pendingShops.containsKey(shopKey)){
+            officialShop = pendingShops.get(shopKey);
+        } else return false;
+        officialShop.setDesc(pendingChanges.get(shopKey).getDesc());
+        officialShop.setOwners(pendingChanges.get(shopKey).getOwners());
+        officialShop.setLoc(pendingChanges.get(shopKey).getLoc());
+        officialShop.setDisplayItem(pendingChanges.get(shopKey).getDisplayItem());
         if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
-            CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key), addShopMarker(key), appendShopMarkerDescription(key) );
-            Bukkit.getScheduler().runTask(plugin, commandExecutor);
-            player.sendMessage(ChatColor.GREEN + "Change approved and Dynmap marker updated");
+            plugin.getDynmapMarkerHandler().updateShopMarkerCommand(player, shopKey);
+            player.sendMessage(ChatColor.GREEN + "Dynmap marker updated");
         }
-        else player.sendMessage(ChatColor.GREEN + "Change approved!");
-        pendingChanges.remove(key);
-        unlockChange(uuid);
+        pendingChanges.remove(shopKey);
         saveShops();
+        return true;
     }
 
     @Override
-    public void rejectChange(String uuid) {
-        if(userModeratingShop.containsKey(uuid) && shopUnderModeration.get(userModeratingShop.get(uuid)) == ModerationType.REJECT_CHANGE) {
-            pendingChanges.remove(userModeratingShop.get(uuid));
-            unlockChange(uuid);
+    public boolean rejectChange(String shopKey) {
+        if(pendingChanges.containsKey(shopKey)) {
+            pendingChanges.remove(shopKey);
             saveShops();
         }
-    }
-
-    @Override
-    public boolean isChangeLocked(String key) {
-        return userModeratingShop.containsValue(key);    
-    }
-
-    @Override
-    public boolean isChangeLocked(String key, ModerationType kind) {
-        return userModeratingShop.containsValue(key) && shopUnderModeration.get(key) == kind;    
-    }
-
-    @Override
-    public boolean hasUserLockedChanges(String uuid) {
-        return userModeratingShop.containsKey(uuid);
-    }
-
-    @Override
-    public boolean hasUserLockedChanges(String uuid, ModerationType kind) {
-        return userModeratingShop.containsKey(uuid) && shopUnderModeration.get(userModeratingShop.get(uuid)) == kind;
+        return true;
     }
     
     @Override
-    public void initShopMarkerAddition(Player player) {
-        userSettingMarkers.put(player.getUniqueId().toString(), ModerationType.SET_MARKERS);
-    }
-
-    @Override
-    public boolean isUserSettingMarkers(String uuid) {
-        return userSettingMarkers.containsKey(uuid) && userSettingMarkers.get(uuid) == ModerationType.SET_MARKERS;
-    }
-
-    @Override
-    public void unlockSettingMarkers(String uuid) {
-        userSettingMarkers.remove(uuid);
-    }
-
-    @Override
-    public void unlockChange(String uuid) {
-        shopUnderModeration.remove(userModeratingShop.get(uuid));
-        userModeratingShop.remove(uuid);
-    }
-    
-    @Override
-    public void lockChange(String uuid, String key, ModerationType kind) {
-        shopUnderModeration.put(key, kind);
-        userModeratingShop.put(uuid, key);
-    } 
-    
-    @Override
-    public void submitNewDescription(String uuid, String newDesc) {
-        String key = shopsUnderAdd.get(uuid);
+    public void submitNewDescription(String uuid, String shopkey, String newDesc) {
         Shop currentShop;
-        if (pendingChanges.containsKey(key)) {
-            currentShop = pendingChanges.get(key);
-        } else if (pendingShops.containsKey(key)) {
-            currentShop = pendingShops.get(key);
-        } else if (shops.containsKey(key)) {
-            currentShop = shops.get(key);
+        if (pendingChanges.containsKey(shopkey)) {
+            currentShop = pendingChanges.get(shopkey);
+        } else if (pendingShops.containsKey(shopkey)) {
+            currentShop = pendingShops.get(shopkey);
+        } else if (shops.containsKey(shopkey)) {
+            currentShop = shops.get(shopkey);
         } else {
             return;
         }
@@ -1196,20 +535,19 @@ public class JSONShopRepo implements ShopRepo {
                                     currentShop.getLoc());
         changedShop.setOwners(currentShop.getOwners());
         changedShop.setDisplayItem(currentShop.getDisplayItem());
-        pendingChanges.put(key, changedShop);
+        pendingChanges.put(shopkey, changedShop);
         saveShops();
     }
 
     @Override
-    public void submitNewDisplayItem(String uuid, String newDisplayItem) {
-        String key = shopsUnderAdd.get(uuid);
+    public void submitNewDisplayItem(String uuid, String shopkey, String newDisplayItem) {
         Shop currentShop;
-        if (pendingChanges.containsKey(key)) {
-            currentShop = pendingChanges.get(key);
-        } else if (pendingShops.containsKey(key)) {
-            currentShop = pendingShops.get(key);
-        } else if (shops.containsKey(key)) {
-            currentShop = shops.get(key);
+        if (pendingChanges.containsKey(shopkey)) {
+            currentShop = pendingChanges.get(shopkey);
+        } else if (pendingShops.containsKey(shopkey)) {
+            currentShop = pendingShops.get(shopkey);
+        } else if (shops.containsKey(shopkey)) {
+            currentShop = shops.get(shopkey);
         } else {
             return;
         }
@@ -1221,20 +559,19 @@ public class JSONShopRepo implements ShopRepo {
                                     currentShop.getLoc());
         changedShop.setOwners(currentShop.getOwners());
         changedShop.setDisplayItem(newDisplayItem);
-        pendingChanges.put(key, changedShop);
+        pendingChanges.put(shopkey, changedShop);
         saveShops();
     }
 
     @Override
-    public void submitNewLocation(String uuid, String newLoc) {
-        String key = shopsUnderAdd.get(uuid);
+    public void submitNewLocation(String uuid, String shopKey, String newLoc) {
         Shop currentShop;
-        if (pendingChanges.containsKey(key)) {
-            currentShop = pendingChanges.get(key);
-        } else if (pendingShops.containsKey(key)) {
-            currentShop = pendingShops.get(key);
-        } else if (shops.containsKey(key)) {
-            currentShop = shops.get(key);
+        if (pendingChanges.containsKey(shopKey)) {
+            currentShop = pendingChanges.get(shopKey);
+        } else if (pendingShops.containsKey(shopKey)) {
+            currentShop = pendingShops.get(shopKey);
+        } else if (shops.containsKey(shopKey)) {
+            currentShop = shops.get(shopKey);
         } else {
             return;
         }
@@ -1246,20 +583,19 @@ public class JSONShopRepo implements ShopRepo {
                                     newLoc);
         changedShop.setOwners(currentShop.getOwners());
         changedShop.setDisplayItem(currentShop.getDisplayItem());
-        pendingChanges.put(key, changedShop);
+        pendingChanges.put(shopKey, changedShop);
         saveShops();
     }
 
     @Override
-    public void submitNewOwner(String uuid, String newUuid, String name) {
-        String key = shopsUnderAdd.get(uuid);
+    public void submitNewOwner(String shopKey, String newUuid, String name) {
         Shop currentShop;
-        if (pendingChanges.containsKey(key)) {
-            currentShop = pendingChanges.get(key);
-        } else if (pendingShops.containsKey(key)) {
-            currentShop = pendingShops.get(key);
-        } else if (shops.containsKey(key)) {
-            currentShop = shops.get(key);
+        if (pendingChanges.containsKey(shopKey)) {
+            currentShop = pendingChanges.get(shopKey);
+        } else if (pendingShops.containsKey(shopKey)) {
+            currentShop = pendingShops.get(shopKey);
+        } else if (shops.containsKey(shopKey)) {
+            currentShop = shops.get(shopKey);
         } else {
             return;
         }
@@ -1272,8 +608,7 @@ public class JSONShopRepo implements ShopRepo {
         changedShop.setOwners(currentShop.getOwners());
         changedShop.addOwner(newUuid, name);
         changedShop.setDisplayItem(currentShop.getDisplayItem());
-        pendingChanges.put(key, changedShop);
-        stopInitOwner(uuid);
+        pendingChanges.put(shopKey, changedShop);
         saveShops();
     }
 
@@ -1286,9 +621,9 @@ public class JSONShopRepo implements ShopRepo {
         else return;
         changedShop.setDesc(originalShop.getDesc());
         if(originalShop.getOwners().equals(changedShop.getOwners()) && 
-           originalShop.getDesc().equals(changedShop.getDesc()) && 
-           originalShop.getLoc().equals(changedShop.getLoc()) && 
-           originalShop.getDisplayItem().equals(changedShop.getDisplayItem())) {
+            originalShop.getDesc().equals(changedShop.getDesc()) && 
+            originalShop.getLoc().equals(changedShop.getLoc()) && 
+            originalShop.getDisplayItem().equals(changedShop.getDisplayItem())) {
             pendingChanges.remove(key);
         } 
         saveShops();
@@ -1346,60 +681,34 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void approveShop(Player player, String key) {
-        if (pendingShops.containsKey(key)) {
-            shops.put(key, pendingShops.get(key));
+    public void approveShop(Player player, String shopKey) {
+        if (pendingShops.containsKey(shopKey)) {
+            shops.put(shopKey, pendingShops.get(shopKey));
             if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
-                CommandExecutor commandExecutor = new CommandExecutor(player, addShopMarker(key), appendShopMarkerDescription(key) );
-                Bukkit.getScheduler().runTask(plugin, commandExecutor); 
+                plugin.getDynmapMarkerHandler().addShopMarkerCommand(player, shopKey);
                 player.sendMessage(ChatColor.GREEN + "Shop approved and Dynmap marker created");      
             } 
             else player.sendMessage(ChatColor.GREEN + "Shop approved");
-            pendingShops.remove(key);
+            pendingShops.remove(shopKey);
             saveShops();
         }
     }
 
-    @Override
-    public void removeShop(Player player, String uuid) {
-        String key = shopsAwaitingResponse.get(uuid);              
-        if(shops.containsKey(key)) {            
+    public boolean removeShop(Player player, String shopKey) {  
+        if(pendingChanges.containsKey(shopKey))
+            pendingChanges.remove(shopKey);          
+        if(shops.containsKey(shopKey)) {            
             if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
-                CommandExecutor commandExecutor = new CommandExecutor(player, deleteShopMarker(key));
-                Bukkit.getScheduler().runTask(plugin, commandExecutor);       
+                player.sendMessage(ChatColor.GRAY + "removing dynmap marker");
+                plugin.getDynmapMarkerHandler().deleteShopMarkerCommand(player, shopKey);  
             }    
-            shops.remove(key);                    
-        } else if(pendingShops.containsKey(key))
-            pendingShops.remove(key);
-        if(plugin.getCustomConfig().getEnableDynmapMarkers()) 
-            player.sendMessage(ChatColor.GREEN + "Shop and Dynmap marker removed successfully!");        
-        else player.getPlayer().sendMessage(ChatColor.GREEN + "Removed shop successfully");               
+            shops.remove(shopKey);
+        } else if(pendingShops.containsKey(shopKey)) {
+            pendingShops.remove(shopKey);
+        }
         saveShops();
-        unlockShop(uuid);
+        return true;
     } 
-    
-    @Override 
-    public void unlockShop(String uuid) {
-        if(shopsAwaitingResponse.containsKey(uuid))
-            shopsAwaitingResponse.remove(uuid);
-        if(userModeratingShop.containsKey(uuid))
-            userModeratingShop.remove(uuid);
-    } 
-
-    @Override 
-    public boolean isShopLocked(String key) {
-        return shopsAwaitingResponse.containsValue(key);
-    }
-
-    @Override
-    public boolean hasUserLockedShop(String uuid) {
-        return shopsAwaitingResponse.containsKey(uuid);
-    }
-
-    @Override
-    public void lockShop(String uuid, String key) {
-        shopsAwaitingResponse.put(uuid, key);
-    }
 
     private Map<String, String> convertToMap(Shop shop) {
             Map<String, String> details = new HashMap<>();
@@ -1705,20 +1014,5 @@ public class JSONShopRepo implements ShopRepo {
             executorService.submit(new LookupThread());
         });
         executorService.shutdown();
-    }
-}
-
-class CommandExecutor implements Runnable {
-    private String[] commands;
-    private Player player;
-    public CommandExecutor(Player player, String... commands) {
-        this.commands = commands;
-        this.player = player;
-    }
-    @Override
-    public void run() {
-        for(String command : commands) {
-            Bukkit.getServer().dispatchCommand(player, command);
-        }
     }
 }

@@ -1,11 +1,11 @@
 package me.PSK1103.GUIMarketplaceDirectory;
 
-import me.PSK1103.GUIMarketplaceDirectory.database.SQLDatabase;
 import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ItemEvents;
 import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ShopEvents;
 import me.PSK1103.GUIMarketplaceDirectory.guimd.GUIMarketplaceCommands;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
-//import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.utils.DynmapMarkerHandler;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
@@ -30,6 +30,8 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
 
     File shops = null;
     private ShopRepo shopRepo;
+    private ProcessHandler processHandler;
+    private DynmapMarkerHandler dynmapMarkerHandler;
     private Config config;
     public GUI gui;
     private Metrics metrics;
@@ -46,18 +48,21 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
         config = new Config(this);
         if(config.bstatsEnabled())
             metrics = new Metrics(this, pluginId);
-        //SQLDatabase.initiateConnection(this);
-        /*if(config.usingDB()) {
-            shopRepo = new MySQLShopRepo(this);
-        }
-        else*/
+       
         shopRepo = new JSONShopRepo(this);
+        processHandler = new ProcessHandler(this, shopRepo);
+        if (config.getEnableDynmapMarkers()) {
+            dynmapMarkerHandler = new DynmapMarkerHandler(this, shopRepo);
+        }
+         
         this.gui = new GUI(this);
 
         getServer().getPluginManager().registerEvents(new ShopEvents(this),this);
         getServer().getPluginManager().registerEvents(new ItemEvents(this),this);
         getCommand("GUIMD").setExecutor(new GUIMarketplaceCommands(this));
     }
+
+
 
     @Override
     public void onDisable() {
@@ -103,6 +108,14 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
 
     public Config getCustomConfig() {
         return config;
+    }
+
+    public DynmapMarkerHandler getDynmapMarkerHandler() {
+        return dynmapMarkerHandler;
+    }
+
+    public ProcessHandler getProcessHandler() {
+        return processHandler;
     }
 
     public Server getguimdServer() {

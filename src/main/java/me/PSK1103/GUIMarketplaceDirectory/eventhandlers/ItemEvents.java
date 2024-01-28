@@ -3,6 +3,7 @@ package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 
@@ -46,7 +47,6 @@ public class ItemEvents implements Listener {
             if(item == null || item.getType().isAir()) {
                 return;
             }
-            String name = item.getType().getKey().getKey().toUpperCase();
             // searches for a place to put the book, because your inventory will be closed in order to type in chat
             Player player = ((Player) itemEvent.getWhoClicked());
             Inventory inventory = itemEvent.getInventory();
@@ -64,24 +64,15 @@ public class ItemEvents implements Listener {
             player.closeInventory(); //inventory gets closed
 
             //checks whether an item can be added right now
-            if(!plugin.getShopRepo().isShopOwner(player.getUniqueId().toString(),bookMeta.getPage(bookMeta.getPageCount()))) {
-                player.sendMessage(ChatColor.RED + "You do not have permission to edit this shop");
-                return;
+            if (plugin.getProcessHandler().isPlayerInProcess(player.getUniqueId().toString())) {
+                ChatProcess process = this.plugin.getProcessHandler().getPlayerProcess(player.getUniqueId().toString());
+                player.sendMessage(ChatColor.RED + "Finish " + process.getName() + " first");
+                return;  
             }
 
-            if(plugin.getShopRepo().getIsAddingOwner(bookMeta.getPage(bookMeta.getPageCount())) || plugin.getShopRepo().hasUserLockedShop(player.getUniqueId().toString())) {
-                player.sendMessage(ChatColor.RED + "Cannot add items to shop right now");
-                return;
-            }
-
-            if(plugin.getShopRepo().getIsUserAddingOwner(player.getUniqueId().toString())) {
-                player.sendMessage(ChatColor.RED + "Finish adding owner to shop first");
-                return;
-            }
-
-            if(plugin.getShopRepo().isShopUnderEditOrAdd(bookMeta.getPage(bookMeta.getPageCount()))) {
-                player.sendMessage(ChatColor.RED + "This shop is currently under some other operation, try again later");
-                return;
+            if (plugin.getProcessHandler().isShopInProcess(bookMeta.getPage(bookMeta.getPageCount()))) {
+                player.sendMessage(ChatColor.RED + "Shop is under some operation, try again later.");
+                return;  
             }
 
             List<ItemStack> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType().getKey().getKey().toUpperCase());
@@ -93,17 +84,7 @@ public class ItemEvents implements Listener {
             //asks for quantity and the function addItemData will pick up when the player types the amount or price in chat.
 
             if(matchingItems.size() == 0) { //if shop owner doesn't have the item in shop already. 
-                player.sendMessage(ChatColor.GREEN + "Set quantity (in format shulker:stack:num)");
-                //player.sendMessage(item.getItemMeta().getAsString());
-                int res = plugin.getShopRepo().initItemAddition(player.getUniqueId().toString(), bookMeta.getPage(bookMeta.getPageCount()), name, item);
-                //player.sendMessage("§6res= " + res);
-                if (res == -1) {
-                    player.sendMessage(ChatColor.RED + "shop not found!");
-                } else if (res == 0) {
-                    player.sendMessage(ChatColor.GRAY + "Cancelling addition of previous item");
-                } else if (res == 2) {
-                    player.sendMessage(new String[]{ChatColor.YELLOW + " The enchanted item you're trying to add has illegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});
-                }
+                plugin.getProcessHandler().initItemAddition(player, bookMeta.getPage(bookMeta.getPageCount()), item);
             }
             else { //if shop owner has the item in shop already it opens a window displaying those items and giving multiple options to perceed. 
                 plugin.gui.openItemAddMenu(player,bookMeta.getPage(bookMeta.getPageCount()),matchingItems,item);
@@ -114,26 +95,13 @@ public class ItemEvents implements Listener {
     @EventHandler
     public final void addItemData(AsyncPlayerChatEvent addItemDetails) {
         /* this event gets executed every time people speak in chat, 
-         * but will only do something if the function/boolean isAddingItem returns true for that player. 
+         * but will only do something if the corresponding player is in a chatProcess
          */
-        //if message is in format shulker:stack:num then 
-        if(addItemDetails.getMessage().matches("\\d+:\\d+:\\d+") && plugin.getShopRepo().isAddingItem(addItemDetails.getPlayer().getUniqueId().toString())) {
-            plugin.getShopRepo().setQty(addItemDetails.getMessage(),addItemDetails.getPlayer().getUniqueId().toString());
-            addItemDetails.getPlayer().sendMessage(ChatColor.GREEN + "Enter price (in diamonds)");
-            addItemDetails.setCancelled(true);
-            return;
-        }
-        //if message is a number
-        if(addItemDetails.getMessage().matches("-?\\d+") && plugin.getShopRepo().isAddingItem(addItemDetails.getPlayer().getUniqueId().toString())) {
-            plugin.getShopRepo().setPrice(Integer.parseInt(addItemDetails.getMessage()),addItemDetails.getPlayer().getUniqueId().toString());
-            addItemDetails.getPlayer().sendMessage(ChatColor.GOLD + "Item added successfully!");
-            addItemDetails.setCancelled(true);
-            return; 
-        }
-        //if message doesn't fullfill either of the criteria the item addition gets cancelled
-        if(plugin.getShopRepo().isAddingItem(addItemDetails.getPlayer().getUniqueId().toString())) {
-            plugin.getShopRepo().stopEditing(addItemDetails.getPlayer().getUniqueId().toString());
-            addItemDetails.getPlayer().sendMessage(ChatColor.GRAY + "Cancelled item addition");
+        if (plugin.getProcessHandler().isPlayerInProcess(addItemDetails.getPlayer().getUniqueId().toString())) {
+            ChatProcess process = plugin.getProcessHandler().getPlayerProcess(addItemDetails.getPlayer().getUniqueId().toString());
+            if (process.handleChat(addItemDetails.getPlayer(), addItemDetails.getMessage())) {
+                addItemDetails.setCancelled(true);
+            }
         }
     }
 
@@ -284,13 +252,9 @@ public class ItemEvents implements Listener {
                             plugin.getShopRepo().cancelNewDescription(player.getUniqueId().toString(), holder.getKey());
                             plugin.gui.openShopEditMenu(player, holder.getKey());
                         } else {
+                            //TODO
                             player.closeInventory();
-                            int res = plugin.getShopRepo().startSettingDescription(player.getUniqueId().toString(), holder.getKey());
-                            if(res == -1)
-                                player.sendMessage(ChatColor.RED + "This shop doesn't exist");
-                            else
-                                player.sendMessage(ChatColor.YELLOW + "Enter new description (nil to cancel)");
-                                player.sendMessage(ChatColor.GRAY + "Do not use the '&' symbol");
+                            plugin.getProcessHandler().startSettingDescription(player, holder.getKey());
                         }
                     }
                     if(itemCheckEvent.getRawSlot() == 4) {
@@ -320,11 +284,7 @@ public class ItemEvents implements Listener {
                             plugin.gui.openShopEditMenu(player, holder.getKey());
                         } else {
                             player.closeInventory();
-                            int res = plugin.getShopRepo().startSettingLocation(player.getUniqueId().toString(), holder.getKey());
-                            if(res == -1)
-                                player.sendMessage(ChatColor.RED + "This shop doesn't exist");
-                            else
-                                plugin.gui.sendConfirmationMessage(player, "Do you want to move this shop to your current location?");
+                            plugin.getProcessHandler().startSettingLocation(player, holder.getKey());
                         }
                     }
                     else if (itemCheckEvent.getRawSlot() == 10) {
@@ -334,11 +294,7 @@ public class ItemEvents implements Listener {
                             plugin.gui.openShopEditMenu(player, holder.getKey());
                         } else {
                             player.closeInventory();
-                            int res = plugin.getShopRepo().startSettingDisplayItem(player.getUniqueId().toString(), holder.getKey());
-                            if(res == -1)
-                                player.sendMessage(ChatColor.RED + "This shop doesn't exist");
-                            else
-                                player.sendMessage(ChatColor.YELLOW + "Enter display item name (material name only, nil to cancel)");
+                            plugin.getProcessHandler().startSettingDisplayItem(player, holder.getKey());
                         }
                     }
                     if(itemCheckEvent.getRawSlot() == 13) {
@@ -348,24 +304,12 @@ public class ItemEvents implements Listener {
                             plugin.gui.openShopEditMenu(player, holder.getKey());
                         } else {
                             player.closeInventory();
-                            int res = plugin.getShopRepo().startAddingOwner(player.getUniqueId().toString(), holder.getKey());
-                            if(res == -1)
-                                player.sendMessage(ChatColor.RED + "This shop doesn't exist");
-                            else
-                                player.sendMessage(new String[]{ChatColor.GRAY + "Adding another owner...", ChatColor.YELLOW + "Enter player name (nil to cancel)"});
+                            plugin.getProcessHandler().startAddingOwner(player, holder.getKey());
                         }
                     }
                     else if(itemCheckEvent.getRawSlot() == 16) {
+                        plugin.getProcessHandler().startDeletingShop(player, holder.getKey());
                         player.closeInventory();
-                        if (plugin.getShopRepo().isShopLocked(holder.getShops().get(0).get("key"))) {
-                            itemCheckEvent.getWhoClicked().sendMessage(ChatColor.RED + "Shop under some operation. Try again later");
-                            return;
-                        }
-                        int res = plugin.getShopRepo().startRemovingShop(player.getUniqueId().toString(),holder.getKey());
-                        if(res == -1)
-                            player.sendMessage(ChatColor.RED + "This shop doesn't exist");
-                        else
-                            plugin.gui.sendConfirmationMessage(player,"Do you wish to remove this shop?");
                     }
                 }
             else if(type == InvType.ADD_ITEM) {
@@ -378,15 +322,7 @@ public class ItemEvents implements Listener {
                 if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-7) {
                     player.closeInventory();
                     ItemStack item = holder.getItem();
-                    player.sendMessage(ChatColor.GREEN + "Set quantity (in format shulker:stack:num)");
-                    int res = plugin.getShopRepo().initItemAddition(player.getUniqueId().toString(), holder.getKey(), item.getType().getKey().getKey().toUpperCase(), item);
-                    if (res == -1) {
-                        player.sendMessage(ChatColor.RED + "shop not found!");
-                    } else if (res == 0) {
-                        player.sendMessage(ChatColor.GRAY + "Cancelling addition of previous item");
-                    } else if (res == 2) {
-                        player.sendMessage(new String[]{ChatColor.YELLOW + " The enchanted item you're trying to add has illegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});                    
-                    }
+                    plugin.getProcessHandler().initItemAddition(player, holder.getKey(), item);
                 }
 
                 else if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-3) {

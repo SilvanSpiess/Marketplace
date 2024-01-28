@@ -3,6 +3,8 @@ package me.PSK1103.GUIMarketplaceDirectory.shoprepos;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList;
 import java.util.List;
 import java.util.Map;
 
@@ -17,63 +19,26 @@ public interface ShopRepo {
 
     String addShopAsOwner(String name, String desc, String owner, String uuid, String loc, String displayItem);
 
-    String addShop(String name, String desc, String owner, String uuid, String loc, String displayItem);
-
     String getOwner(String key);
 
-    boolean getIsInitOwner(String uuid);
-
-    void stopInitOwner(String uuid);
-
-    void stopShopEdit(String uuid);
-
-    void setDisplayItem(Player player, String materialName);
-    void setLocation(Player player, String location);    
-    void setDescription(Player player, String description);
-    void addOwner(String uuid, OfflinePlayer player);
-
-    int startSettingDescription(String uuid, String key);
-    int startSettingLocation(String uuid, String key);
-    int startAddingOwner(String uuid, String key);
-    int startSettingDisplayItem(String uuid, String key);
-    int startRemovingShop(String uuid, String key);
-
-    boolean getIsEditingShop(String uuid, String key);
-    boolean getIsAddingOwner(String key);
-    boolean getIsUserAddingOwner(String uuid);    
-    boolean isShopUnderEditOrAdd(String key);
+    boolean setDisplayItem(Player player, String shopKey, String materialName);
+    boolean setLocation(Player player, String ShopKey, String location);    
+    boolean setDescription(Player player, String key, String description);
+    void addOwner(String shopKey, OfflinePlayer player);
 
     void saveShops();
 
-    int initItemAddition(String uuid, String key, String name, ItemStack itemStack);
-
-    void initShopOwnerAddition(String uuid);
-
-    EditType getEditType(String uuid);
-
-    void setQty(String qty, String uuid);
-
-    void setPrice(int price, String uuid);
-
-    boolean isAddingItem(String uuid);
-
-    void stopEditing(String uuid);
+    boolean addItemToShop(ItemList item, String shopkey);
 
     boolean isShopOwner(String uuid, String key);
 
-    void approveChange(Player player, String uuid);
-    void rejectChange(String uuid);
-    boolean isChangeLocked(String key); 
-    boolean isChangeLocked(String key, ModerationType kind);
-    boolean hasUserLockedChanges(String uuid); 
-    boolean hasUserLockedChanges(String uuid, ModerationType kind); 
-    void unlockChange(String uuid);
-    void lockChange(String uuid, String key, ModerationType kind); 
+    boolean approveChange(Player player, String shopKey);
+    boolean rejectChange(String shopKey);
 
-    void submitNewDescription(String uuid, String newDesc);
-    void submitNewDisplayItem(String uuid, String newDisplayItem);
-    void submitNewLocation(String uuid, String newLoc);
-    void submitNewOwner(String uuid, String newUuid, String name);
+    void submitNewDescription(String uuid, String shopkey,  String newDesc);
+    void submitNewDisplayItem(String uuid, String shopkey, String newDisplayItem);
+    void submitNewLocation(String uuid, String shopKey, String newLoc);
+    void submitNewOwner(String shopKey, String newUuid, String name);
 
     void cancelNewDescription(String uuid, String key);
     void cancelNewDisplayItem(String uuid, String key);
@@ -81,23 +46,7 @@ public interface ShopRepo {
     void cancelNewOwner(String uuid, String key);
 
     void approveShop(Player player, String key);
-    void removeShop(Player player, String uuid);
-    void unlockShop(String uuid);
-    boolean isShopLocked(String key);
-    boolean hasUserLockedShop(String uuid);
-    void lockShop(String uuid, String key);
-    boolean isUserSettingMarkers(String uuid);
-    void unlockSettingMarkers(String uuid);
-
-    String addShopSet();
-    String deleteShopSet();
-    String addShopMarker(String key);
-    String deleteShopMarker(String key);
-    String appendShopMarkerDescription(String key);
-    String resetShopMarkerDescription(String key);
-    void addAllShopMarkers(Player player);
-    void updateShopMarker(Player player);
-    void initShopMarkerAddition(Player player);
+    boolean removeShop(Player player, String shopKey);
 
     Map<String, String> getSpecificShopDetails(String key);
     Map<String, String> getSpecificChangeDetails(String key);
@@ -126,4 +75,6 @@ public interface ShopRepo {
     void lookupShop(Player player, String key);
 
     void lookupAllShops(Player player);
+
+    boolean shopExist(String shopKey);
 }
