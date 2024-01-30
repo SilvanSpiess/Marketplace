@@ -77,7 +77,7 @@ public class DynmapMarkerHandler {
                                                               replaceAll("'", "").
                                                               replaceAll("&", "and") +
                " set:" + plugin.getCustomConfig().getShopSetName() +
-               " desc:\"Shop by " + shop.get("owner") +
+               " desc:\"Shop by " + shop.get("owners") +
                ", " + shop.get("desc") + "\"";
     }
 
