@@ -7,27 +7,13 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.AddItemProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.AddOwnerProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ApproveChangeProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChangeDescriptionProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChangeDisplayitemProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChangeLocationProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.NewShopProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.RejectChangeProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.RemoveShopProcess;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.UpdateAllMarkersProcess;
-import me.PSK1103.GUIMarketplaceDirectory.utils.DynmapMarkerHandler;
 import me.PSK1103.GUIMarketplaceDirectory.utils.CoreProtectLookup;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
 import org.bukkit.*;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Player;
-import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.json.simple.JSONArray;
@@ -51,7 +37,6 @@ class Shop {
     private String owner, uuid;
     private String key;
     private String displayItem;
-
     private List<ItemList> inv;
 
     public Shop() {

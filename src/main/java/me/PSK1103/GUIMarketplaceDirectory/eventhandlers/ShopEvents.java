@@ -3,10 +3,7 @@ package me.PSK1103.GUIMarketplaceDirectory.eventhandlers;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo.EditType;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo.ModerationType;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
-//import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.*;
@@ -17,7 +14,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -26,9 +22,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class ShopEvents implements Listener { 
 
@@ -90,12 +83,8 @@ public class ShopEvents implements Listener {
     }
 
     @EventHandler
-    public final void onJoin(PlayerJoinEvent e){
-        try {
-            if(this.plugin.getCustomConfig().usingDB()){ }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
+    public final void onJoin(PlayerJoinEvent e) {
+
     }
 
     @EventHandler

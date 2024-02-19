@@ -2,8 +2,6 @@ package me.PSK1103.GUIMarketplaceDirectory.guimd;
 
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo.ModerationType;
-//import me.PSK1103.GUIMarketplaceDirectory.shoprepos.mysql.MySQLShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
 import net.kyori.adventure.text.Component;
@@ -119,19 +117,14 @@ public class GUIMarketplaceCommands implements TabExecutor {
                                     plugin.gui.openShopDirectoryModerator((Player) commandSender, InvType.LOOKUP);
                                 return true;
 
-                            case "migrate":
-                            case "m":
-                                /* 
-                                if(plugin.getShopRepo() instanceof MySQLShopRepo) {
-                                    ((MySQLShopRepo) plugin.getShopRepo()).migrateJSONShops();
-                                }
-                                else commandSender.sendMessage(Component.text(ChatColor.RED + "Currenty using JSON shop repo, cannot migrate"));
-                                */
-                                commandSender.sendMessage(ChatColor.RED + "Migration is currently disabled");
-                                return true;
                             case "dynmap":
                             case "d":
-                                plugin.getProcessHandler().startAddingAllShopMarkers((Player) commandSender);
+                                if(plugin.getCustomConfig().getEnableDynmapMarkers())
+                                    plugin.getProcessHandler().startAddingAllShopMarkers((Player) commandSender);
+                                else {
+                                    commandSender.sendMessage(ChatColor.RED + "Dynmap markers are currently disabled");
+                                    commandSender.sendMessage(ChatColor.YELLOW + "Dynmap markers can be enabled in the config");
+                                }
                                 return true;
                         }
                         break;
@@ -141,7 +134,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                 switch (args[0]) {
                     case "help":
                         commandSender.sendMessage(ChatColor.LIGHT_PURPLE + "=============GUIMarketplaceDirectory v" + plugin.getDescription().getVersion() + "=============");
-                        commandSender.sendMessage(ChatColor.GOLD + "/guimd search [item/player/shop] (key): " + ChatColor.GREEN + "Search for items via item name or shops via shop name/player name");
+                        commandSender.sendMessage(ChatColor.GOLD + "/guimd search [item/player/shop] <key>: " + ChatColor.GREEN + "Search for items via item name or shops via shop name/player name");
                         if(commandSender.hasPermission("GUIMD.dir")) {
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd dir: " + ChatColor.GREEN + "Gives you a copy of the Marketplace Directory book");
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd tutorial: " + ChatColor.GREEN + "Shows link to the tutorial video");
@@ -151,6 +144,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate changes: " + ChatColor.GREEN + "Shows shop changes requiring acceptance");
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate review: " + ChatColor.GREEN + "Shows active shops for removal if deemed objectionable");
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate recover: " + ChatColor.GREEN + "Shows active shops for recovering a copy of the [shop init] book if the owner loses their copy");
+                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate dynmap: " + ChatColor.GREEN + "Updates the markers from all active shops on the dynmap");
                             commandSender.sendMessage(ChatColor.GOLD + "/guimd reload: " + ChatColor.GREEN + "Refreshes the plugin");  
                         }
                         return true;
@@ -228,7 +222,6 @@ public class GUIMarketplaceCommands implements TabExecutor {
                 } else {
                     if ("moderate".startsWith(args[0]) && commandSender.hasPermission("GUIMD.moderate")) {
                         if (args[0].equals("moderate")) {
-                            //hints.add("migrate");
                             //hints.add("lookup");
                             hints.add("approvals");
                             hints.add("changes");
@@ -259,7 +252,6 @@ public class GUIMarketplaceCommands implements TabExecutor {
                 if (args[0].equals("moderate") && commandSender.hasPermission("GUIMD.moderate")) {
                     if (args[1].length() == 0) {
                         //hints.add("lookup");
-                        //hints.add("migrate");
                         hints.add("approvals");
                         hints.add("changes");
                         hints.add("recover");
@@ -272,11 +264,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                                 hints.add("lookup");
                             }
                         }
-                        if ("migrate".startsWith(args[1])) {
-                            if (!args[1].equals("migrate")) {
-                                hints.add("migrate");
-                            }
-                        } */
+                        */
                         if ("approvals".startsWith(args[1])) {
                             if (!args[1].equals("approvals")) {
                                 hints.add("approvals");

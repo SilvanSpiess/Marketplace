@@ -2,11 +2,8 @@ package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList;
 
 public class ChangeDescriptionProcess implements ChatProcess {
     private int step = 0;
@@ -103,5 +100,10 @@ public class ChangeDescriptionProcess implements ChatProcess {
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
         player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
-    }    
+    }  
+    
+    @Override
+    public ShopRepo getShopRepo() {
+        return shopRepo;
+    }
 }

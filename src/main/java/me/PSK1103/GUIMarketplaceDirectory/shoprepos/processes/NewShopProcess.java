@@ -14,10 +14,8 @@ import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
 import net.kyori.adventure.text.Component;
 
-public class NewShopProcess implements ChatProcess{
+public class NewShopProcess implements ChatProcess {
     private String name = "making new shop";
-    private int step = 0;
-    private int maxStep = 0;
     private boolean finished = false;
     private boolean succesful = false;
 
@@ -40,9 +38,9 @@ public class NewShopProcess implements ChatProcess{
 
     public NewShopProcess(Player player, int shopDetailsLengthLimit, boolean multiOwnerEnabled, boolean directoryModerationEnabled, boolean customApprovalMessageEnabled, String customApprovalMessage, ShopRepo shopRepo, ProcessHandler processHandler) {
         this.player = player;
-        this.uuid = player.getUniqueId().toString();
+        //this.uuid = player.getUniqueId().toString();
         this.shopRepo = shopRepo;
-        this.processHandler = processHandler;
+        //this.processHandler = processHandler;
         this.shopDetailsLengthLimit = shopDetailsLengthLimit;
         this.multiOwnerEnabled = multiOwnerEnabled;
         this.directoryModerationEnabled = directoryModerationEnabled;
@@ -153,12 +151,12 @@ public class NewShopProcess implements ChatProcess{
 
     @Override
     public int isAtStep() {
-        return step;
+        return 0;
     }
 
     @Override
     public int maxStep() {
-        return step;
+        return 0;
     }
 
     @Override
@@ -176,6 +174,11 @@ public class NewShopProcess implements ChatProcess{
         //since this process currently doesn't take any chat input, it doesn't need to get added to the list of processes. 
         //instead it executes immediately.
         player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+    }
+
+    @Override
+    public ShopRepo getShopRepo() {
+        return shopRepo;
     }
     
 }

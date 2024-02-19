@@ -126,4 +126,8 @@ public class AddOwnerProcess implements ChatProcess {
         player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
     }
     
+    @Override
+    public ShopRepo getShopRepo() {
+        return shopRepo;
+    }
 }

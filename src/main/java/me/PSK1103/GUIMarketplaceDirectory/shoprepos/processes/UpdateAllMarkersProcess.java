@@ -61,5 +61,10 @@ public class UpdateAllMarkersProcess extends ConfirmationProcess {
         processHandler.discontinueProcessOfPlayer(this, uuid);
         player.sendMessage(ChatColor.GRAY + "Procedure of adding all Markers has been cancelled");
     }
+
+    @Override
+    public ShopRepo getShopRepo() {
+        return shopRepo;
+    }
     
 }

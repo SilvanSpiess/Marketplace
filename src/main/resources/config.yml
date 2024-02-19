@@ -55,25 +55,6 @@ allow-add-offline-players: false
 #while searching for alternatives to enchanted books the results will only show books with at least one type of enchant in common
 filter-alternatives-list: false
 
-#set this true if you have a db configured. if not, this plugin will store all details in a json file
-use-db: false
-
-#choose which db to use,currently only supports 'mysql' and 'mariadb', only relevant when use-db is true
-db:
-  type: mariadb
-  host: localhost
-  port: 3306
-  username: root
-  password: root
-
-#fill your mysql db details
-mysql-host: 127.0.0.1
-mysql-port: 3306
-mysql-database: SERVERNAME
-mysql-username: root
-mysql-password: root
-table-prefix: guimd_
-
 #to use with coreprotect, returns last n interactions
 use-coreprotect: false
 default-lookup-radius: 20

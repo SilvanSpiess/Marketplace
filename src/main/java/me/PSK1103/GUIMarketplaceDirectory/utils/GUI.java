@@ -18,8 +18,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.ChatPaginator;
 
-import de.tr7zw.nbtinjector.javassist.compiler.CompileError;
-
 import java.util.*;
 import java.util.logging.Logger;
 

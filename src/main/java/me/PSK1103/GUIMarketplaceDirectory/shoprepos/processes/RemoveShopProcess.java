@@ -86,4 +86,8 @@ public class RemoveShopProcess extends ConfirmationProcess{
         player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
     }
     
+    @Override
+    public ShopRepo getShopRepo() {
+        return shopRepo;
+    }
 }

@@ -48,18 +48,6 @@ public class Config {
 
     private boolean filterAlternatives;
 
-    private boolean use_db;
-
-    private String db;
-
-    private String DB_TYPE;
-    private String DB_HOST;
-    private String DB_PORT;
-    private String DB_DATABASE;
-    private String DB_USERNAME;
-    private String DB_PASSWORD;
-    private String DB_PREFIX;
-
     private boolean useCoreProtect;
     private int defaultLookupRadius;
     private String lookupTime;
@@ -145,17 +133,6 @@ public class Config {
             //while searching for alternatives to enchanted books the results will only show books with at least one type of enchant in common
             filterAlternatives = configFile.getBoolean("filter-alternatives-list",defaultConfig.getBoolean("filter-alternatives-list"));
 
-            //gets the database info
-            use_db = configFile.getBoolean("use-db", defaultConfig.getBoolean("use-db"));
-            db = configFile.getString("db", defaultConfig.getString("db"));
-
-            DB_HOST = configFile.getString("mysql-host", defaultConfig.getString("mysql-host"));
-            DB_PORT = configFile.getString("mysql-port", defaultConfig.getString("mysql-port"));
-            DB_DATABASE = configFile.getString("mysql-database", defaultConfig.getString("mysql-database"));
-            DB_USERNAME = configFile.getString("mysql-username", defaultConfig.getString("mysql-username"));
-            DB_PASSWORD = configFile.getString("mysql-password", defaultConfig.getString("mysql-password"));
-            DB_PREFIX = configFile.getString("table-prefix", defaultConfig.getString("table-prefix"));
-
             //core protect info
             useCoreProtect = configFile.getBoolean("use-coreprotect",defaultConfig.getBoolean("use-coreprotect", false));
             defaultLookupRadius = configFile.getInt("default-lookup-radius",defaultConfig.getInt("default-lookup-radius", 20));
@@ -231,17 +208,6 @@ public class Config {
             //while searching for alternatives to potions the results will only show potions with similar effects
             //while searching for alternatives to enchanted books the results will only show books with at least one type of enchant in common
             filterAlternatives = defaultConfig.getBoolean("filter-alternatives-list");
-
-            //gets the database info
-            use_db = defaultConfig.getBoolean("use-db");
-            db = defaultConfig.getString("db");
-
-            DB_HOST = defaultConfig.getString("mysql-host");
-            DB_PORT = defaultConfig.getString("mysql-port");
-            DB_DATABASE = defaultConfig.getString("mysql-database");
-            DB_USERNAME = defaultConfig.getString("mysql-username");
-            DB_PASSWORD = defaultConfig.getString("mysql-password");
-            DB_PREFIX = defaultConfig.getString("table-prefix", "guimd");
 
             //core protect info
             useCoreProtect = defaultConfig.getBoolean("use-coreprotect", false);
@@ -438,26 +404,6 @@ public class Config {
         return filterAlternatives;
     }
 
-    public boolean usingDB() {
-        return use_db;
-    }
-
-    public void initDB() {
-        //DBConfig.setDB(DB_TYPE, DB_PREFIX, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD);
-    }
-
-    public Map<String,String> getMySQLDetails() {
-        Map<String,String> details = new HashMap<>();
-        details.put("mysql-host",DB_HOST);
-        details.put("mysql-port",DB_PORT);
-        details.put("mysql-database",DB_DATABASE);
-        details.put("mysql-username",DB_USERNAME);
-        details.put("mysql-password",DB_PASSWORD);
-        details.put("table-prefix",DB_PREFIX);
-        details.put("db", db);
-        return  details;
-    }
-
     public boolean useCoreProtect() {
         return useCoreProtect;
     }
@@ -504,8 +450,4 @@ public class Config {
                 ", enable-bstats=" + enableBstats + "\n" +
                 '}';
     }
-    /* moderate-ShopDisplayItem: true
-moderate-ShopLocation: true
-moderate-ShopDescription: true
-moderate-ShopAddOwner: true*/
 }

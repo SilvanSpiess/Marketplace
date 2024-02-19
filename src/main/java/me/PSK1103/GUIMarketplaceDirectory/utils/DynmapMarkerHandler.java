@@ -82,7 +82,7 @@ public class DynmapMarkerHandler {
     }
 
     public String appendShopMarkerDescription(String shopKey) {
-        return appendShopMarkerDescription(shopRepo.getSpecificShopDetails(shopKey));
+        return appendShopMarkerDescription(shopRepo.getSpecificShopDetails(shopKey)); 
     }
     
 

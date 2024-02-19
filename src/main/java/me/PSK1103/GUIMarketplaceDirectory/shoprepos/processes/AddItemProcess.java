@@ -5,8 +5,6 @@ import java.util.List;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.ApiStatus.OverrideOnly;
-
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList;
@@ -155,5 +153,10 @@ public class AddItemProcess implements ChatProcess {
     @Override
     public boolean wasSuccesFul() {
         return succesful;
-    }    
+    }  
+    
+    @Override
+    public ShopRepo getShopRepo() {
+        return shopRepo;
+    }
 }
