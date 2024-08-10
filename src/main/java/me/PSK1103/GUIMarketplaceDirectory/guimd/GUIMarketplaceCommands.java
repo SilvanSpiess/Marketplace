@@ -167,7 +167,9 @@ public class GUIMarketplaceCommands implements TabExecutor {
                                 player.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                                 return true;
                             }
-                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "give " + player.getDisplayName() + " written_book{display:{Name:'{\"text\":\"Marketplace Directory\",\"color\":\"gold\",\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false}'},title:\"[Marketplace]\",author:\"Sil and Lonne\"} 1");
+                            //Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "give " + player.getDisplayName() + " written_book{display:{Name:'{\"text\":\"Marketplace Directory\",\"color\":\"gold\",\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false}'},title:\"[Marketplace]\",author:\"Sil and Lonne\"} 1");
+                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "give " + player.getDisplayName() + " written_book[written_book_content={pages:[],title:\"[Marketplace]\",author:\"§bSil §rand §dLonne\"},custom_name='[\"\",{\"text\":\"§6The Marketplace Book\",\"italic\":false}]']");
+                            
                             return true;
                         }
                         commandSender.sendMessage("Use this command as player");

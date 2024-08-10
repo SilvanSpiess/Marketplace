@@ -348,7 +348,7 @@ public class JSONShopRepo implements ShopRepo {
                 ItemList item = new ItemList(itemJSON.get("name").toString(), itemJSON.get("qty").toString(), Integer.parseInt(itemJSON.get("price").toString()), this.plugin);
                 if (itemJSON.get("customName") != null)
                     item.setCustomName(itemJSON.get("customName").toString());
-                if (itemJSON.containsKey("extraInfo") && itemJSON.containsKey("customType")) {
+                if (itemJSON.containsKey("extraInfo")) {
                     JSONObject extraData = ((JSONObject) itemJSON.get("extraInfo"));
                     HashMap<String, Object> headInfo = new Gson().fromJson(extraData.toString(), HashMap.class);
                     item.setExtraInfo(headInfo, itemJSON.getOrDefault("customType","").toString());
