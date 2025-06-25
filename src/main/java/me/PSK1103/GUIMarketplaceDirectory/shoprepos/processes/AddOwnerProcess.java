@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 
 public class AddOwnerProcess implements ChatProcess {
     private String name = "adding owner";
@@ -40,7 +40,7 @@ public class AddOwnerProcess implements ChatProcess {
         this.addingOfflinePlayerAllowed = addingOfflinePlayerAllowed;
         this.plugin = plugin;
 
-        player.sendMessage(new String[]{ChatColor.GRAY + "Adding another owner...", ChatColor.YELLOW + "Enter player name (nil to cancel)"});
+        player.sendMessage(new String[]{MyChatColor.GRAY + "Adding another owner...", MyChatColor.YELLOW + "Enter player name (nil to cancel)"});
     }
 
     @Override
@@ -57,25 +57,25 @@ public class AddOwnerProcess implements ChatProcess {
             try {
                 players = Arrays.stream(plugin.getServer().getOfflinePlayers()).filter(offlinePlayer -> offlinePlayer.getName().toUpperCase(Locale.ROOT).startsWith(playerName)).collect(Collectors.toList());
             } catch (NullPointerException e) {
-                player.sendMessage(ChatColor.RED + "Player data not found");
+                player.sendMessage(MyChatColor.RED + "Player data not found");
                 players = new ArrayList<>();
             }
         else
             players = plugin.getServer().matchPlayer(playerName).stream().map(player2 -> (OfflinePlayer) player2).collect(Collectors.toList());
 
         if (players.size() == 0) {
-            player.sendMessage(ChatColor.RED + "No player found, try again");
+            player.sendMessage(MyChatColor.RED + "No player found, try again");
             return true;
         } else if (players.size() > 1) {
-            player.sendMessage(ChatColor.YELLOW + "Multiple players found, be more specific");
+            player.sendMessage(MyChatColor.YELLOW + "Multiple players found, be more specific");
             return true;
         } else {
             if (moderateEnabled) {
                 shopRepo.submitNewOwner(shopKey, players.get(0).getUniqueId().toString(), players.get(0).getName());
-                player.sendMessage(ChatColor.GREEN + "submitted " + ChatColor.GOLD + players.get(0).getName() + ChatColor.GREEN + " for approval as co-owner! please open a shop ticket to notify staff!");
+                player.sendMessage(MyChatColor.GREEN + "Submitted " + MyChatColor.GOLD + players.get(0).getName() + MyChatColor.GREEN + " for approval as co-owner! please open a shop ticket to notify staff!");
             } else {
                 shopRepo.addOwner(shopKey, players.get(0));
-                player.sendMessage(ChatColor.GOLD + players.get(0).getName() + ChatColor.GREEN + " added as owner successfully");
+                player.sendMessage(MyChatColor.GOLD + players.get(0).getName() + MyChatColor.GREEN + " added as owner successfully");
             }
             processHandler.discontinueProcessOfPlayer(this, uuid);
             processHandler.discontinueProcessOfShop(this, shopKey);
@@ -123,7 +123,7 @@ public class AddOwnerProcess implements ChatProcess {
         finished = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }
     
     @Override

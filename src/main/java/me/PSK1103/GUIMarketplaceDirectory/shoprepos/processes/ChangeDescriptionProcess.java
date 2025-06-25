@@ -1,6 +1,6 @@
 package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.entity.Player;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
@@ -32,8 +32,8 @@ public class ChangeDescriptionProcess implements ChatProcess {
 
         this.moderateEnabled = moderateEnabled;
 
-        player.sendMessage(ChatColor.YELLOW + "Enter new description (nil to cancel)");
-        player.sendMessage(ChatColor.GRAY + "Do not use the '&' symbol");
+        player.sendMessage(MyChatColor.YELLOW + "Enter new description (nil to cancel)");
+        player.sendMessage(MyChatColor.GRAY + "Do not use the '&' symbol");
     }
 
     @Override
@@ -46,10 +46,10 @@ public class ChangeDescriptionProcess implements ChatProcess {
             description = chat;
             if (moderateEnabled) {
                 shopRepo.submitNewDescription(uuid, shopKey, description);
-                player.sendMessage(ChatColor.GREEN + "Shop description submitted for approval! Please open a shop ticket to notify staff!");
+                player.sendMessage(MyChatColor.GREEN + "Shop description submitted for approval! Please open a shop ticket to notify staff!");
             } else {
                 shopRepo.setDescription(player, shopKey, description);
-                player.sendMessage(ChatColor.GREEN + "Shop description has been changed!");  
+                player.sendMessage(MyChatColor.GREEN + "Shop description has been changed!");  
             }
             finished = true;
             succesful = true;
@@ -99,7 +99,7 @@ public class ChangeDescriptionProcess implements ChatProcess {
         finished = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }  
     
     @Override

@@ -3,7 +3,7 @@ package me.PSK1103.GUIMarketplaceDirectory.shoprepos;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.inventory.ItemStack;
@@ -79,7 +79,7 @@ public class ProcessHandler {
         //event is canceled if player is in a process.
         if(isPlayerInProcess(player.getUniqueId().toString())) { 
             ChatProcess process = getPlayerProcess(uuid);
-            player.sendMessage(ChatColor.RED + "Finish " + process.getName() + " first");
+            player.sendMessage(MyChatColor.RED + "Finish " + process.getName() + " first");
             return false;
         }
 
@@ -95,7 +95,7 @@ public class ProcessHandler {
         String uuid = player.getUniqueId().toString();
         if (playerProcesses.containsKey(player.getUniqueId().toString())) {
             ChatProcess process = playerProcesses.get(player.getUniqueId().toString());
-            player.sendMessage(ChatColor.GRAY + "Cancelling " + process.getName());
+            player.sendMessage(MyChatColor.GRAY + "Cancelling " + process.getName());
             process.cancel();
         }
         UpdateAllMarkersProcess updateAllMarkersProcess = new UpdateAllMarkersProcess(player, plugin.getDynmapMarkerHandler(), shopRepo, this);
@@ -152,18 +152,18 @@ public class ProcessHandler {
     private boolean checkProcessAvailabilityHighPrio(Player player, String shopKey) {
         String uuid = player.getUniqueId().toString();
         if (!shopRepo.shopExist(shopKey)) {
-            player.sendMessage(ChatColor.RED + "shop not found!");
+            player.sendMessage(MyChatColor.RED + "shop not found!");
             return false;
         }
         if (playerProcesses.containsKey(uuid)) {
             ChatProcess process = playerProcesses.get(uuid);
-            player.sendMessage(ChatColor.GRAY + "Cancelling " + process.getName());
+            player.sendMessage(MyChatColor.GRAY + "Cancelling " + process.getName());
             process.cancel();
         }
 
         if (shopProcesses.containsKey(shopKey)) {
             ChatProcess process = shopProcesses.get(shopKey);
-            player.sendMessage(ChatColor.GRAY + "canceled " + process.getName() + " by " + process.getPlayer().getName());
+            player.sendMessage(MyChatColor.GRAY + "canceled " + process.getName() + " by " + process.getPlayer().getName());
             process.cancel();
         }
         return true;
@@ -172,16 +172,16 @@ public class ProcessHandler {
     private boolean checkProcessAvailabilityLowPrio(Player player, String shopKey) {
         String uuid = player.getUniqueId().toString();
         if (!shopRepo.shopExist(shopKey)) {
-            player.sendMessage(ChatColor.RED + "shop not found!");
+            player.sendMessage(MyChatColor.RED + "shop not found!");
             return false;
         }
         if (playerProcesses.containsKey(uuid)) {
             ChatProcess process = playerProcesses.get(uuid);
-            player.sendMessage(ChatColor.GRAY + "Cancelling " + process.getName());
+            player.sendMessage(MyChatColor.GRAY + "Cancelling " + process.getName());
             process.cancel();
         }
         if (shopProcesses.containsKey(shopKey)) {
-            player.sendMessage(ChatColor.RED + "shop is already under some operation. Please try again later");
+            player.sendMessage(MyChatColor.RED + "shop is already under some operation. Please try again later");
             return false;
         }
         return true;

@@ -3,7 +3,7 @@ package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.Color;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -60,7 +60,7 @@ public class NewShopProcess implements ChatProcess {
         Pattern shopInitPattern = Pattern.compile("\\[([^\\[]*)\\]\\s*\\[([^\\[]*)\\](?:\\s*\\[([^\\[]*)\\])?");
         Matcher shopInitMatcher = shopInitPattern.matcher(data);
         if(!shopInitMatcher.matches()) { //if the patern doesn't match then event gets canceled
-            player.sendMessage(ChatColor.RED + "Incorrect shop initialisation, try again");
+            player.sendMessage(MyChatColor.RED + "Incorrect shop initialisation, try again");
             cancel();
             return false;
         }
@@ -74,7 +74,7 @@ public class NewShopProcess implements ChatProcess {
             shopDisplayItem = shopInitMatcher.group(3);
         // if there's a length limit AND the limit is exceeded, then the event gets canceled.
         if(shopDetailsLengthLimit > 0 && (shopName.length() + shopDescription.length()) > shopDetailsLengthLimit) {
-            player.sendMessage(ChatColor.YELLOW + "Shop name + description length is too long (limit " + shopDetailsLengthLimit + " characters)");
+            player.sendMessage(MyChatColor.YELLOW + "Shop name + description length is too long (limit " + shopDetailsLengthLimit + " characters)");
             cancel();
             return false;
         }
@@ -88,9 +88,9 @@ public class NewShopProcess implements ChatProcess {
             //initialize the shop and get a key based on that (key = System.currentTimeMillis() + uuid)
             if (makeShop(editBookEvent)) {
                 if(directoryModerationEnabled && customApprovalMessageEnabled) {
-                    editBookEvent.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('§', customApprovalMessage));
+                    editBookEvent.getPlayer().sendMessage(customApprovalMessage);
                 }
-                editBookEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop initialised successfully!");
+                editBookEvent.getPlayer().sendMessage(MyChatColor.GOLD + "Shop initialised successfully!");
                 return true;
             } else {
                 cancel();
@@ -101,9 +101,9 @@ public class NewShopProcess implements ChatProcess {
             shopOwner = player;
             if (makeShop(editBookEvent)) {
                 if(directoryModerationEnabled && customApprovalMessageEnabled) {
-                    editBookEvent.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('§', customApprovalMessage));
+                    editBookEvent.getPlayer().sendMessage(customApprovalMessage);
                 }
-                editBookEvent.getPlayer().sendMessage(ChatColor.GOLD + "Shop initialised successfully!");
+                editBookEvent.getPlayer().sendMessage(MyChatColor.GOLD + "Shop initialised successfully!");
                 return true;
             } else {
                 cancel();
@@ -124,7 +124,7 @@ public class NewShopProcess implements ChatProcess {
         // a page with the key for the shop gets added to the book
         bookmeta.addPage(shopKey);
         // a name gets set for the book keeping a potential player specified color in mind
-        bookmeta.setDisplayName(shopName.contains("&") ? ChatColor.translateAlternateColorCodes('&',shopName) : (ChatColor.GOLD + shopName));
+        bookmeta.setDisplayName(shopName.contains("&") ? (MyChatColor.GOLD + shopName.replace("&", "and")) : (MyChatColor.GOLD + shopName));
         editBookEvent.setNewBookMeta(bookmeta);
         return true;
     }
@@ -173,7 +173,7 @@ public class NewShopProcess implements ChatProcess {
     public void cancel() {
         //since this process currently doesn't take any chat input, it doesn't need to get added to the list of processes. 
         //instead it executes immediately.
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }
 
     @Override

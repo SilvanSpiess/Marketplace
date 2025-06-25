@@ -7,7 +7,6 @@ import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.utils.DynmapMarkerHandler;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
-import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.JSONShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList.BlockBuilder;
@@ -33,7 +32,6 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
     private ProcessHandler processHandler;
     private DynmapMarkerHandler dynmapMarkerHandler;
     private Config config;
-    public GUI gui;
     private Metrics metrics;
     private Logger logger;
     private Server server;
@@ -54,8 +52,6 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
         if (config.getEnableDynmapMarkers()) {
             dynmapMarkerHandler = new DynmapMarkerHandler(this, shopRepo);
         }
-         
-        this.gui = new GUI(this);
 
         getServer().getPluginManager().registerEvents(new ShopEvents(this),this);
         getServer().getPluginManager().registerEvents(new ItemEvents(this),this);

@@ -4,21 +4,23 @@ import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
+import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import java.util.List;
+import java.util.Map;
 
 public class ItemEvents implements Listener {
     final GUIMarketplaceDirectory plugin;
@@ -66,19 +68,19 @@ public class ItemEvents implements Listener {
             //checks whether an item can be added right now
             if (plugin.getProcessHandler().isPlayerInProcess(player.getUniqueId().toString())) {
                 ChatProcess process = this.plugin.getProcessHandler().getPlayerProcess(player.getUniqueId().toString());
-                player.sendMessage(ChatColor.RED + "Finish " + process.getName() + " first");
+                player.sendMessage(MyChatColor.RED + "Finish " + process.getName() + " first");
                 return;  
             }
 
             if (plugin.getProcessHandler().isShopInProcess(bookMeta.getPage(bookMeta.getPageCount()))) {
-                player.sendMessage(ChatColor.RED + "Shop is under some operation, try again later.");
+                player.sendMessage(MyChatColor.RED + "Shop is under some operation, try again later.");
                 return;  
             }
 
             List<ItemStack> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType().getKey().getKey().toUpperCase());
 
             if(matchingItems == null) {
-                player.sendMessage(ChatColor.RED + "Shop doesn't exist");
+                player.sendMessage(MyChatColor.RED + "Shop doesn't exist");
                 return;
             }
             //asks for quantity and the function addItemData will pick up when the player types the amount or price in chat.
@@ -87,7 +89,8 @@ public class ItemEvents implements Listener {
                 plugin.getProcessHandler().initItemAddition(player, bookMeta.getPage(bookMeta.getPageCount()), item);
             }
             else { //if shop owner has the item in shop already it opens a window displaying those items and giving multiple options to perceed. 
-                plugin.gui.openItemAddMenu(player,bookMeta.getPage(bookMeta.getPageCount()),matchingItems,item);
+                Inventory itemAddMenuInv = GUI.makeItemInventory("Adding Item...", bookMeta.getPage(bookMeta.getPageCount()), matchingItems, InvType.ADD_ITEM, plugin.getCustomConfig(), item.clone(), null);
+                player.openInventory(itemAddMenuInv);
             }
         }
     }
@@ -109,241 +112,146 @@ public class ItemEvents implements Listener {
     public final void checkForAlternatives(InventoryClickEvent itemCheckEvent) {
         if(itemCheckEvent.getInventory().getHolder() instanceof ShopInvHolder) {
             itemCheckEvent.setCancelled(true);
-            if(itemCheckEvent.getCurrentItem() == null || itemCheckEvent.getCurrentItem().getType() == Material.AIR)
-                return;
-
+            //shortcut variables
             ShopInvHolder holder = (ShopInvHolder)itemCheckEvent.getInventory().getHolder();
-
-            if(holder.getKey().length() == 0 && holder.getType() != InvType.SEARCH) {return;}
-
-            if(itemCheckEvent.getRawSlot() > itemCheckEvent.getInventory().getSize()) {return;}
-            InvType type = holder.getType();
-            Player player = ((Player) itemCheckEvent.getWhoClicked());
-
-            if(type == InvType.SEARCH) { 
-                int currPage = 1;
-                //if clicks in bottom 9 slots of the inventory AND the inventory size is 54 (double chest).
-                if(itemCheckEvent.getRawSlot() >= (itemCheckEvent.getInventory().getSize() - 9) && itemCheckEvent.getInventory().getSize() == 54) {
-                    //has multiple pages
-                    if(holder.isPaged()) {
-                        //clicks on next page
-                        if (itemCheckEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                            plugin.gui.nextInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
-                        }
-                        //clicks on previous page
-                        if (itemCheckEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                            plugin.gui.prevInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
-                        }
-                    }
-                    /* clicks on bottom right slot, which is going to open the normal shop directory if you're in normal view(0)? 
-                    if you were a moderator in mode (pending/review/recover) looking at a shops content, 
-                    it will put you back to that shop menu with that mode you were in */
-                    if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
+            int slotNum = itemCheckEvent.getRawSlot();
+            //get action
+            GUI.Action action = GUI.getButtonAction(itemCheckEvent.getInventory(), holder, slotNum, itemCheckEvent.getClick(), itemCheckEvent.getCurrentItem());
+            int currPage = 0;
+            Player player = (Player) itemCheckEvent.getWhoClicked();
+            try {
+                currPage = Integer.parseInt(((TextComponent) itemCheckEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5))-1;
+            } catch (Exception e) {}
+            String key = "";
+            String name = "";
+            try {
+                key = holder.getShops().get(slotNum + 45*currPage);
+                name = plugin.getShopRepo().getShopName(key);
+            } catch (Exception e) {}
+            
+            switch(action) {
+                case NOTHING: break;
+                case NEXT_PAGE:
+                    itemCheckEvent.getInventory().clear();
+                    GUI.fillItemInventory(itemCheckEvent.getInventory(), holder, plugin.getCustomConfig(), currPage+1);
+                    player.updateInventory();
+                break;
+                case PREVIOUS_PAGE:
+                    itemCheckEvent.getInventory().clear();
+                    GUI.fillItemInventory(itemCheckEvent.getInventory(), holder, plugin.getCustomConfig(), currPage-1);
+                    player.updateInventory();
+                break;
+                case GO_BACK: {
+                    Inventory backInventory = holder.makePreviousInventory();
+                    if (backInventory == null) 
+                        player.sendMessage("No back page found.");
+                    else {
                         player.closeInventory();
+                        player.openInventory(holder.makePreviousInventory());
                     }
-                    return;
-                }
-            }
-            if(type == InvType.NORMAL || type == InvType.PENDING_APPROVALS || type == InvType.REVIEW || type == InvType.RECOVER) { 
-                int currPage = 1;
-                //if clicks in bottom 9 slots of the inventory AND the inventory size is 54 (double chest).
-                if(itemCheckEvent.getRawSlot() >= (itemCheckEvent.getInventory().getSize() - 9) && itemCheckEvent.getInventory().getSize() == 54) {
-                    //has multiple pages
-                    if(holder.isPaged()) {
-                        //clicks on next page
-                        if (itemCheckEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                            plugin.gui.nextInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
-                        }
-                        //clicks on previous page
-                        if (itemCheckEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                            plugin.gui.prevInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
-                        }
-                    }
-                    /* clicks on bottom right slot, which is going to open the normal shop directory if you're in normal view(0)? 
-                    if you were a moderator in mode (pending/review/recover) looking at a shops content, 
-                    it will put you back to that shop menu with that mode you were in */
-                    if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
-                        player.closeInventory();
-                        if (type == InvType.NORMAL) plugin.gui.openShopDirectory(player);
-                        else plugin.gui.openShopDirectoryModerator(player, type);
-                    }
-                    return;
-                }
-                //if right click AND valid item AND not barrier AND top 5 rows 
-                if (itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getCurrentItem().getType() != Material.AIR && itemCheckEvent.getCurrentItem().getType() != Material.BARRIER && itemCheckEvent.getRawSlot()<45) {
-                    if(itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() != itemCheckEvent.getInventory().getSize() - 1) {
-                        //if fails, then currPage=1
-                        try {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                        }
-                        catch (Exception ignored) {}
-                        plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), holder.getItemId((currPage-1)*45 + itemCheckEvent.getRawSlot()));
-                    }
-                }
-                //returns to previous menu
-                if (itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
+                } break;
+                case OPEN_SHOP: {
                     player.closeInventory();
-                    if (type == InvType.NORMAL) plugin.gui.openShopDirectory(player);
-                    else plugin.gui.openShopDirectoryModerator(player, type);
-                } 
-                return;               
-            }
-            else if(type == InvType.INV_EDIT) {
-                int currPage = 1;
-                //if clicks in bottom 9 slots of the inventory AND the inventory size is 54 (double chest).
-                if(itemCheckEvent.getRawSlot() >= (itemCheckEvent.getInventory().getSize() - 9) && itemCheckEvent.getInventory().getSize() == 54) {
-                    //has multiple pages
-                    if(holder.isPaged()) {
-                        //clicks on next page
-                        if (itemCheckEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                            plugin.gui.nextInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
-                        }
-                        //clicks on previous page
-                        if (itemCheckEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                            plugin.gui.prevInvPage(((Player) itemCheckEvent.getWhoClicked()), currPage);
-                        }
+                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker());
+                    player.openInventory(shopInventory);
+                } break;
+                case OPEN_EDIT_SHOP_INV: {
+                    player.closeInventory();
+                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.INV_EDIT, plugin.getCustomConfig(), holder.getInventoryMaker());
+                    player.openInventory(shopInventory);
+                } break;
+                case DYNMAP: {
+                    String input = plugin.getShopRepo().getSpecificShopDetails(key).get("loc");
+                    String[] parts = input.split(",");
+                    String messageLink;
+                    if(parts.length == 2) {       
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
                     }
-                    //returns to previous menu
-                    if (itemCheckEvent.getClick() != ClickType.DROP && itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
-                        player.closeInventory();                      
-                        plugin.gui.openShopEditMenu(player, holder.getKey());
-                    }                    
-                    return;
-                }
-                else if(itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getCurrentItem().getType() != Material.AIR && itemCheckEvent.getCurrentItem().getType() != Material.BARRIER && itemCheckEvent.getRawSlot()<45) {
-                    if(itemCheckEvent.getClick()==ClickType.DROP) {
-                        plugin.getShopRepo().removeItem(holder.getKey(), itemCheckEvent.getCurrentItem());
-                        plugin.gui.openShopInventory(player, holder.getKey(), plugin.getShopRepo().getShopName(holder.getKey()), InvType.INV_EDIT);
+                    else {      
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
                     }
-                    else if(itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() != itemCheckEvent.getInventory().getSize() - 1){
-                        //if fails, then currPage=1
-                        try {
-                            currPage = Integer.parseInt(itemCheckEvent.getInventory().getItem(49).getItemMeta().getDisplayName().substring(5));
-                        }
-                        catch (Exception ignored) {}
-                        plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), holder.getItemId((currPage-1)*45 + itemCheckEvent.getRawSlot()));   
-                    }
-                }
-                //returns to previous menu
-                if(itemCheckEvent.getClick() != ClickType.DROP && itemCheckEvent.getCurrentItem() != null && itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize() - 1) {
-                    player.closeInventory();                        
-                    plugin.gui.openShopEditMenu(player, holder.getKey());
-                }
-                return;
-            }
-            else if(type == InvType.SHOP_MENU) {
-                    /* this is your shop edit menu, where you can:
-                     * (1) set description
-                     * (4) see shop
-                     * (7) set location
-                     * (10) set display item
-                     * (13) add owner
-                     * (16) delete shop
-                     */
-                    if(itemCheckEvent.getRawSlot() == 1) {
-                        if(itemCheckEvent.getClick() == ClickType.DROP) {
-                            player.closeInventory();
-                            plugin.getShopRepo().cancelNewDescription(player.getUniqueId().toString(), holder.getKey());
-                            plugin.gui.openShopEditMenu(player, holder.getKey());
-                        } else {
-                            //TODO
-                            player.closeInventory();
-                            plugin.getProcessHandler().startSettingDescription(player, holder.getKey());
-                        }
-                    }
-                    if(itemCheckEvent.getRawSlot() == 4) {
-                        if(itemCheckEvent.isRightClick()) {
-                            String input = holder.getShops().get(0).get("loc");
-                            String[] parts = input.split(",");
-                            String messageLink;
-                            if(parts.length == 2) {       
-                                messageLink = "https://map.projectnebula.network/#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
-                            }
-                            else {      
-                                messageLink = "https://map.projectnebula.network/#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
-                            }
-                            var mm = MiniMessage.miniMessage();
-                            Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
-                            itemCheckEvent.getWhoClicked().sendMessage(parsed);
-                        }
-                        else {
-                            player.closeInventory();
-                            plugin.gui.openShopInventory(player, holder.getKey(), plugin.getShopRepo().getShopName(holder.getKey()), InvType.INV_EDIT);
-                        }                        
-                    }                    
-                    if(itemCheckEvent.getRawSlot() == 7) {
-                        if(itemCheckEvent.getClick() == ClickType.DROP) {
-                            player.closeInventory();
-                            plugin.getShopRepo().cancelNewLocation(player.getUniqueId().toString(), holder.getKey());
-                            plugin.gui.openShopEditMenu(player, holder.getKey());
-                        } else {
-                            player.closeInventory();
-                            plugin.getProcessHandler().startSettingLocation(player, holder.getKey());
-                        }
-                    }
-                    else if (itemCheckEvent.getRawSlot() == 10) {
-                        if(itemCheckEvent.getClick() == ClickType.DROP) {
-                            player.closeInventory();
-                            plugin.getShopRepo().cancelNewDisplayItem(player.getUniqueId().toString(), holder.getKey());
-                            plugin.gui.openShopEditMenu(player, holder.getKey());
-                        } else {
-                            player.closeInventory();
-                            plugin.getProcessHandler().startSettingDisplayItem(player, holder.getKey());
-                        }
-                    }
-                    if(itemCheckEvent.getRawSlot() == 13) {
-                        if(itemCheckEvent.getClick() == ClickType.DROP) {
-                            player.closeInventory();
-                            plugin.getShopRepo().cancelNewOwner(player.getUniqueId().toString(), holder.getKey());
-                            plugin.gui.openShopEditMenu(player, holder.getKey());
-                        } else {
-                            player.closeInventory();
-                            plugin.getProcessHandler().startAddingOwner(player, holder.getKey());
-                        }
-                    }
-                    else if(itemCheckEvent.getRawSlot() == 16) {
-                        plugin.getProcessHandler().startDeletingShop(player, holder.getKey());
-                        player.closeInventory();
-                    }
-                }
-            else if(type == InvType.ADD_ITEM) {
-                /* this is the menu that opens when you wanna add an item that you already sell in your shop.
-                 * it gives you the options to:
-                 * continue adding the item
-                 * remove all matching items
-                 * remove 1 of the matching items
-                 */
-                if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-7) {
+                    var mm = MiniMessage.miniMessage();
+                    Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
+                    player.sendMessage(parsed);
+                } break;
+                case FIND_BETTER_ALTERNATIVE:
+                    plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), currPage*45 + slotNum);
+                break;
+                case DELETE_ITEM:
+                    plugin.getShopRepo().removeItem(key, itemCheckEvent.getCurrentItem());
+                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), holder.getKey(), inv, holder.getType(), plugin.getCustomConfig(), holder.getPreviousInventoryMaker());
+                    player.openInventory(shopInventory);
+                break;
+                case ADD_ITEM:
                     player.closeInventory();
                     ItemStack item = holder.getItem();
                     plugin.getProcessHandler().initItemAddition(player, holder.getKey(), item);
-                }
-
-                else if(itemCheckEvent.getRawSlot() == itemCheckEvent.getInventory().getSize()-3) {
+                break;
+                case REMOVE_MATCHING_ITEMS:
                     player.closeInventory();
                     plugin.getShopRepo().removeMatchingItems(holder.getKey(),holder.getItem().getType().getKey().getKey().toUpperCase());
                     player.closeInventory();
-                    player.sendMessage(ChatColor.YELLOW + "All matching items removed");
-                }
-
-                else if(itemCheckEvent.getRawSlot()<itemCheckEvent.getInventory().getSize()-9 && itemCheckEvent.getCurrentItem()!=null && itemCheckEvent.isRightClick() && itemCheckEvent.getCurrentItem().getType()!= Material.AIR) {
-                    plugin.getShopRepo().removeItem(holder.getKey(), itemCheckEvent.getCurrentItem());
-                    List<ItemStack> matchingItems = plugin.getShopRepo().getMatchingItems(holder.getKey(), itemCheckEvent.getCurrentItem().getType().getKey().getKey().toUpperCase());
+                    player.sendMessage(MyChatColor.YELLOW + "All matching items removed");
+                break;
+                case DELETE_SHOP:
+                    plugin.getProcessHandler().startDeletingShop(player, holder.getKey());
                     player.closeInventory();
-                    plugin.gui.openItemAddMenu(player, holder.getKey(), matchingItems, itemCheckEvent.getCurrentItem());
-                }
-            } 
-            else if(type == InvType.SEARCH && itemCheckEvent.isRightClick() && itemCheckEvent.getRawSlot() < Math.min(itemCheckEvent.getInventory().getSize(),holder.getShops().size())) {
-                /* this is the menu that opens when you search for items */
-                player.closeInventory();
-                plugin.gui.openShopInventory(player,holder.getShops().get(itemCheckEvent.getRawSlot()).get("id"),holder.getShops().get(itemCheckEvent.getRawSlot()).get("name"),InvType.NORMAL);
-            }            
+                break;
+                case SET_DESCRIPTION:
+                    player.closeInventory();
+                    plugin.getProcessHandler().startSettingDescription(player, holder.getKey());
+                break;
+                case CANCEL_DESCRIPTION: {
+                    player.closeInventory();
+                    plugin.getShopRepo().cancelNewDescription(player.getUniqueId().toString(), holder.getKey());
+                    Map<String,String> thisShop = plugin.getShopRepo().getSpecificShopDetails(holder.getKey());
+                    Map<String,String> pendingChangesShop = plugin.getShopRepo().getSpecificChangeDetails(holder.getKey());
+                    Inventory shopEditMenuInv = GUI.makeShopEditMenu(plugin.getShopRepo().getShopTitle(holder.getKey()), holder.getKey(), thisShop, pendingChangesShop, plugin.getCustomConfig(), holder.getPreviousInventoryMaker());
+                    player.openInventory(shopEditMenuInv);
+                } break;
+                case SET_LOCATION:
+                    player.closeInventory();
+                    plugin.getProcessHandler().startSettingLocation(player, holder.getKey());
+                break;
+                case CANCEL_LOCATION: {
+                    player.closeInventory();
+                    plugin.getShopRepo().cancelNewLocation(player.getUniqueId().toString(), holder.getKey());
+                    Map<String,String> thisShop = plugin.getShopRepo().getSpecificShopDetails(holder.getKey());
+                    Map<String,String> pendingChangesShop = plugin.getShopRepo().getSpecificChangeDetails(holder.getKey());
+                    Inventory shopEditMenuInv = GUI.makeShopEditMenu(plugin.getShopRepo().getShopTitle(holder.getKey()), holder.getKey(), thisShop, pendingChangesShop, plugin.getCustomConfig(), holder.getPreviousInventoryMaker());
+                    player.openInventory(shopEditMenuInv);
+                } break;
+                case SET_DISPLAYITEM:
+                    player.closeInventory();
+                    plugin.getProcessHandler().startSettingDisplayItem(player, holder.getKey());
+                break;
+                case CANCEL_DISPLAYITEM: {
+                    player.closeInventory();
+                    plugin.getShopRepo().cancelNewDisplayItem(player.getUniqueId().toString(), holder.getKey());
+                    Map<String,String> thisShop = plugin.getShopRepo().getSpecificShopDetails(holder.getKey());
+                    Map<String,String> pendingChangesShop = plugin.getShopRepo().getSpecificChangeDetails(holder.getKey());
+                    Inventory shopEditMenuInv = GUI.makeShopEditMenu(plugin.getShopRepo().getShopTitle(holder.getKey()), holder.getKey(), thisShop, pendingChangesShop, plugin.getCustomConfig(), holder.getPreviousInventoryMaker());
+                    player.openInventory(shopEditMenuInv);
+                } break;
+                case ADD_OWNER:
+                    player.closeInventory();
+                    plugin.getProcessHandler().startAddingOwner(player, holder.getKey());
+                break;
+                case CANCEL_OWNER: {
+                    player.closeInventory();
+                    plugin.getShopRepo().cancelNewOwner(player.getUniqueId().toString(), holder.getKey());
+                    Map<String,String> thisShop = plugin.getShopRepo().getSpecificShopDetails(holder.getKey());
+                    Map<String,String> pendingChangesShop = plugin.getShopRepo().getSpecificChangeDetails(holder.getKey());
+                    Inventory shopEditMenuInv = GUI.makeShopEditMenu(plugin.getShopRepo().getShopTitle(holder.getKey()), holder.getKey(), thisShop, pendingChangesShop, plugin.getCustomConfig(), holder.getPreviousInventoryMaker());
+                    player.openInventory(shopEditMenuInv);
+                } break;
+                default:
+                    System.out.println("error: " + action.toString() + " was unsuccesful");
+                break;
+            }
         }
     }
 }

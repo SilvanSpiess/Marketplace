@@ -1,17 +1,15 @@
 package me.PSK1103.GUIMarketplaceDirectory.utils;
 
-import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.TextComponent;
+
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 
-import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -19,39 +17,31 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.ChatPaginator;
 
 import java.util.*;
-import java.util.logging.Logger;
-
-/*
- * we skimmed down GUI.java from 533 lines to 442 by making 2 functions that handle repeating logic.
- */
+import java.util.stream.Collectors;
 
 public class GUI {
-    private final GUIMarketplaceDirectory plugin;
-    private final HashMap<String,String> colors;
-    private final Logger logger;
-
-    public GUI(GUIMarketplaceDirectory plugin) {
-        this.plugin = plugin;
-        logger = plugin.getLogger();
-        colors = new HashMap<>();
-        colors.put("name",plugin.getCustomConfig().getDefaultShopNameColor());
-        colors.put("desc",plugin.getCustomConfig().getDefaultShopDescColor());
-        colors.put("owner",plugin.getCustomConfig().getDefaultShopOwnerColor());
-        colors.put("loc",plugin.getCustomConfig().getDefaultShopLocColor());
-        colors.put("u-loc",plugin.getCustomConfig().getDefaultShopULocColor());
-        colors.put("dynmap",plugin.getCustomConfig().getDefaultShopDynmapColor());
+    public enum Action {
+        NOTHING, 
+        PREVIOUS_PAGE, NEXT_PAGE, GO_BACK, 
+        OPEN_SHOP, OPEN_EDIT_SHOP_INV, DELETE_ITEM, REMOVE_MATCHING_ITEMS, ADD_ITEM,
+        DYNMAP, FIND_BETTER_ALTERNATIVE,
+        CANCEL_DESCRIPTION, SET_DESCRIPTION,
+        CANCEL_LOCATION, SET_LOCATION,
+        CANCEL_DISPLAYITEM, SET_DISPLAYITEM,
+        CANCEL_OWNER, ADD_OWNER,
+        //moderation
+        DELETE_SHOP, GET_SHOP_BOOK,
+        APPROVE_SHOP, REJECT_SHOP,
+        REJECT_CHANGES, APPROVE_CHANGES,
+        SHOW_CHANGES, UNSHOW_CHANGES;
     }
 
-    /*
-     * checks if the player sent a confirmation message
-     */
-    public void sendConfirmationMessage(Player player, String msg) {
-        Component yes = Component.text(ChatColor.GOLD + "" + ChatColor.BOLD + "Y").clickEvent(net.kyori.adventure.text.event.ClickEvent.clickEvent(net.kyori.adventure.text.event.ClickEvent.Action.RUN_COMMAND,"Y"));
-        Component no = Component.text(ChatColor.GOLD + "" + ChatColor.BOLD + "N").clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND,"N"));
-        player.sendMessage(Component.text(msg + " (").color(NamedTextColor.YELLOW).append(yes).append(Component.text("/")).append(no).append(Component.text(")")).color(NamedTextColor.YELLOW));
+    public interface InventoryMaker {
+        public void setPage(int page);
+        public Inventory makeInventory();
     }
 
-    private ItemStack makeShopDisplayItem(Map<String, String> shop, boolean hasPendingTag, Component... clicks) {
+    private static ItemStack makeShopDisplayItem(Map<String, String> shop, Config config, boolean hasPendingTag, Component... clicks) {
         ItemStack shopItem;
         try {
             shopItem = new ItemStack(Material.getMaterial(shop.get("displayItem")));
@@ -62,64 +52,38 @@ public class GUI {
         //Adds lore (info) to the shop display items
         ItemMeta shopMeta = shopItem.getItemMeta();
         //shopname
-        shopMeta.displayName(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("name") + shop.get("name"))));
-        List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("desc") + shop.get("desc")),30)));
+        shopMeta.displayName(Component.text(config.getDefaultShopNameColor() + shop.get("name")));
+        List<String> l = new ArrayList<>(Arrays.asList(ChatPaginator.wordWrap(config.getDefaultShopDescColor() + shop.get("desc"),30)));
         List<Component> lore = new ArrayList<>();
         //pending tag
-        if (hasPendingTag) lore.add(Component.text(ChatColor.RED + "[Pending changes]"));
+        if (hasPendingTag) lore.add(Component.text(MyChatColor.RED + "[Pending changes]"));
         //owner
-        lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("owner") + shop.get("owners"))));
+        lore.add(Component.text(config.getDefaultShopOwnerColor() + shop.get("owners")));
         //description
         l.forEach(s -> lore.add(Component.text(s)));
         //location
         String[] parts = shop.get("loc").split(",");
-        if(Integer.parseInt(parts[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && parts.length >= 3) {
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + parts[0] + ", " + colors.get("u-loc") + parts[1] + colors.get("loc") + ", " + parts[2])));    
+        if(Integer.parseInt(parts[1]) < config.getMaxUndergroundMarketLevel() && parts.length >= 3) {
+            lore.add(Component.text(config.getDefaultShopLocColor() + parts[0] + ", " + config.getDefaultShopULocColor() + parts[1] + config.getDefaultShopLocColor() + ", " + parts[2]));    
         }
         else {
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + shop.get("loc"))));
+            lore.add(Component.text(config.getDefaultShopLocColor() + shop.get("loc")));
         }
         for (Component click: clicks) {
             lore.add(click);
         }
         shopMeta.lore(lore);
         shopMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        shopMeta.addItemFlags(ItemFlag.HIDE_ITEM_SPECIFICS);
+        shopMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
         shopItem.setItemMeta(shopMeta);
         return shopItem;
     }
 
-    private ItemStack makeShopDisplayItem(Map<String, String> shop, Component... clicks) {
-        return makeShopDisplayItem(shop, false, clicks);
+    private static ItemStack makeShopDisplayItem(Map<String, String> shop, Config config, Component... clicks) {
+        return makeShopDisplayItem(shop, config, false, clicks);
     }
-
-    /*
-     * Opens the directory of all/ the selected shops
-     */
-    public void openShopDirectory(Player player) {
-        List<Map<String,String>> shops = plugin.getShopRepo().getShopDetails();
-        //Creates the directory of all the selected shops (first page)
-        Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops), Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), Component.text("Marketplace Directory"));
-        for(int i=0;i<(shops.size() > 54 ? 45 : shops.size());i++) {
-            ItemStack shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            shopDirectory.setItem(i,shopItem);
-        }
-        if(shops.size() > 54) {
-            ((MarketplaceBookHolder) shopDirectory.getHolder()).setPaged();
-            //nextPage button
-            ItemStack nextPage = makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page"));
-            shopDirectory.setItem(50,nextPage);
-            //prevPage button
-            ItemStack prevPage = makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
-            shopDirectory.setItem(48,prevPage);
-            //namPage display
-            ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
-            shopDirectory.setItem(49,pageNum);
-        }
-        player.openInventory(shopDirectory);
-    }
-
-    private ItemStack addItemLore(ItemStack item, Component... lore) {        
+    
+    private static ItemStack addItemLore(ItemStack item, Component... lore) {        
         ItemMeta itemMeta = item.getItemMeta();
         List<Component> allLore = itemMeta.lore();
         if (allLore==null) allLore = new LinkedList<>();
@@ -129,117 +93,7 @@ public class GUI {
         return item;
     }
 
-    /*
-     * Opens the inventory of the selected shop
-     */
-    public void openShopInventory(Player player, String key,String name,InvType type) {
-        List<Object> res = plugin.getShopRepo().getShopInv(key);
-        List<ItemStack> inv = (List<ItemStack>) res.get(0);
-        List<Integer> itemIds = (List<Integer>) res.get(1);
-        //Adding lore to all the items in this the shop
-        inv.forEach(item -> {
-            if(type == InvType.INV_EDIT) {
-                addItemLore(item, Component.text(ChatColor.GOLD + "§oRight click to find a better deal"), 
-                                  Component.text(ChatColor.RED + "Press 'drop' key to delete this item"));
-            }
-            else addItemLore(item, Component.text(ChatColor.GOLD + "§oRight click to find a better deal"));
-        });
-        //Creates the inventory of a shop with the items listed (first page)
-        Inventory shopInventory;
-        if(plugin.getShopRepo().getPendingShopDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
-            shopInventory = Bukkit.createInventory(new ShopInvHolder(key,type,inv, itemIds),Math.min(9*(inv.size()/9),45) + 9, Component.text(name+" §5§o(pending)"));
-        }
-        else shopInventory = Bukkit.createInventory(new ShopInvHolder(key,type,inv, itemIds),Math.min(9*(inv.size()/9),45) + 9, Component.text(name));
-        for(int i=0;i<Math.min(inv.size(),45);i++) {            
-            shopInventory.setItem(i,inv.get(i));            
-        }
-        if(inv.size() == 0) {
-            //empty shop display
-            ItemStack empty = makeDisplayItem(Material.BARRIER, Component.text(ChatColor.RED + "This shop is empty!"));
-            shopInventory.setItem(4,empty);
-        }
-        //goBack button
-        ItemStack back = makeDisplayItem(Material.ARROW, Component.text(ChatColor.YELLOW + "Go Back"));
-        shopInventory.setItem(Math.min(9*(inv.size()/9),45) + 8,back);
-        if(inv.size()>45) {
-            ((ShopInvHolder) shopInventory.getHolder()).setPaged();
-            //nextPage button
-            ItemStack nextPage = makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page"));
-            shopInventory.setItem(50,nextPage);
-            //prevPage button
-            ItemStack prevPage = makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
-            shopInventory.setItem(48,prevPage);
-            //numPage display
-            ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
-            shopInventory.setItem(49,pageNum);
-        }
-        player.openInventory(shopInventory);
-    }
-
-
-    
-    //calls updateInvPage to load next inventory page
-    public void nextInvPage(Player player, int currPage) {
-        updateInvPage(player, currPage);
-    }
-
-    //calls updateInvPage to load previous inventory page
-    public void prevInvPage(Player player, int currPage) {
-        currPage-=2;
-        updateInvPage(player, currPage);
-    }
-
-    /*
-     * loads the next OR previous page of the inventory of a shop
-     */
-    public void updateInvPage(Player player, int currPage) {        
-        //Creates the inventory of a shop with the items listed (any page)
-        Inventory pageInv = player.getOpenInventory().getTopInventory();
-        ShopInvHolder holder = (ShopInvHolder) pageInv.getHolder();
-        List<ItemStack> inv = holder.getInv();
-        
-        //int type = holder.getType();
-        pageInv.clear();
-        for(int i=0;i<Math.min(inv.size(),(currPage+1)*45)-currPage*45;i++) {
-            pageInv.setItem(i,inv.get(i+currPage*45));
-        }
-        //nextPage button
-        //ItemStack nextPage = makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page"));
-        ItemStack nextPage = inv.size() > (currPage+1)*45 ? makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page")): makeDisplayItem(Material.BARRIER, Component.text("Next Page"));  
-        pageInv.setItem(50,nextPage);
-        //prevPage button
-        //ItemStack prevPage = makeDisplayItem(Material.ORANGE_STAINED_GLASS_PANE, Component.text("Previous Page"));
-        ItemStack prevPage = currPage > 0 ? makeDisplayItem(Material.ORANGE_STAINED_GLASS_PANE, Component.text("Previous Page")) : makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
-        pageInv.setItem(48,prevPage);
-        //currPage display
-        ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (currPage+1)));
-        pageInv.setItem(49,pageNum);
-        //goBack Button
-        ItemStack back = makeDisplayItem(Material.ARROW, Component.text(ChatColor.YELLOW + "Go Back"));
-        pageInv.setItem(53,back);
-        player.updateInventory();
-    }
-
-    public void switchShopVersion(Inventory inventory, int invSlot, String key, boolean isNew) {
-        if (isNew) {
-            inventory.setItem(invSlot, makeShopDisplayItem(plugin.getShopRepo().getSpecificChangeDetails(key),
-                                                           Component.text(ChatColor.WHITE + "Left click to see old shop"), 
-                                                           Component.text(ChatColor.AQUA + "Right click to see new shop"),
-                                                           Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
-                                                           Component.text(ChatColor.RED + "Press 'drop' key to reject")));
-        } else {
-            inventory.setItem(invSlot, makeShopDisplayItem(plugin.getShopRepo().getSpecificShopDetails(key),
-                                                           Component.text(ChatColor.WHITE + "Left click to see old shop"), 
-                                                           Component.text(ChatColor.AQUA + "Right click to see new shop"),
-                                                           Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
-                                                           Component.text(ChatColor.RED + "Press 'drop' key to reject")));
-        }
-    }
-
-    /*
-     * function that makes an ItemStack displayItem, which makes it ready to be added as DiplayItem in calling function
-     */
-    private ItemStack makeDisplayItem(Material material, Component displayName){
+    private static ItemStack makeDisplayItem(Material material, Component displayName) {
         ItemStack displayItem = new ItemStack(material);
         ItemMeta meta = displayItem.getItemMeta();
         meta.displayName(displayName);     
@@ -248,340 +102,436 @@ public class GUI {
         return displayItem;
     }
 
-    /*
-     * loads the next page of shops in the inventory
-     */
-    public void updatePage(Player player, int page) {
-        //Creates the inventory of a certain page with the shops listed
-        Inventory pageInv = player.getOpenInventory().getTopInventory();
-        MarketplaceBookHolder holder = (MarketplaceBookHolder) pageInv.getHolder();
-        List<Map<String,String>> shops = holder.getShops();
-        InvType type = holder.getType();
-        pageInv.clear();
-        for(int i=0;i<Math.min(shops.size(),(page+1)*45)-page*45;i++) {
-            ItemStack shopItem;
-            if(type == InvType.NORMAL) {
-                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            } else if(type == InvType.PENDING_APPROVALS) {
-                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.AQUA + "Shift click to view"),
-                                                                     Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
-                                                                     Component.text(ChatColor.RED + "Press 'drop' key to reject"));
-            } else if(type == InvType.PENDING_CHANGES) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.WHITE + "Left click to see old shop"), 
-                                                             Component.text(ChatColor.AQUA + "Right click to see new shop"),
-                                                             Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
-                                                             Component.text(ChatColor.RED + "Press 'drop' key to reject"));
-            } else if (type == InvType.REVIEW) {
-                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.RED + "Press 'drop' key to delete"));
-            } else if(type == InvType.RECOVER) {
-                shopItem = makeShopDisplayItem(shops.get(i+page*45), Component.text(ChatColor.AQUA + "Right click to recover"));
-            } else {
-                shopItem = makeShopDisplayItem(shops.get(i+page*45));
-            }
-            pageInv.setItem(i,shopItem);
-        }
-        //nextPage button
-        ItemStack nextPage = shops.size() > (page+1)*45 ? makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page")): makeDisplayItem(Material.BARRIER, Component.text("Next Page"));
-        pageInv.setItem(50,nextPage);
-        //prevPage button
-        ItemStack prevPage = page > 0 ? makeDisplayItem(Material.ORANGE_STAINED_GLASS_PANE, Component.text("Previous Page")) : makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
-        pageInv.setItem(48,prevPage);
-        //currPage display
-        ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (page+1)));
-        pageInv.setItem(49,pageNum);
-        player.updateInventory();
-    }
-
-    /*
-     * loads the next page of shops in the inventory
-     */
-    public void nextPage(Player player, int currPage) {
-        //Creates the inventory of the next page with the shops listed
-        updatePage(player, currPage);
-    }
-
-    /*
-     * loads the previous page of shops in the inventory
-     */
-    public void prevPage(Player player, int currPage) {
-        updatePage(player, currPage-2);
-    }
-
-    /*
-    * With type 6, the searched shops are being listed in the inventory
-    */
-    public void openRefinedShopPageByName(Player player,String searchKey) {
-
-        List<Map<String,String>> refinedShops = plugin.getShopRepo().getRefinedShopsByName(searchKey);
-        //Checks if any shops were found
-        if(refinedShops.size() == 0) {
-            player.sendMessage(ChatColor.RED + "No shops with matching name found");
-            return;
-        }
-        //Creates the inventory with the shops listed
-        Inventory refinedShopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(refinedShops),Math.min(9*(refinedShops.size()/9 + (refinedShops.size() % 9 == 0 ? 0 : 1)),54), Component.text("Search results"));
-        for(int i=0;i< (Math.min(refinedShops.size(), 54));i++) {
-            ItemStack shopItem = makeShopDisplayItem(refinedShops.get(i), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            refinedShopDirectory.setItem(i,shopItem);
-        }
-        player.openInventory(refinedShopDirectory);
-    }
-
-    /*
-    * With type 6, the shops owned by a player are being listed in the inventory
-    */
-    public void openRefinedShopPageByPlayer(Player player,String searchKey) {
-
-        List<Map<String,String>> refinedShops = plugin.getShopRepo().getRefinedShopsByPlayer(searchKey);
-        //Checks if any players with shops in the directory were found
-        if(refinedShops.size() == 0) {
-            player.sendMessage(ChatColor.RED + "No shops with matching name found");
-            return;
-        }
-        //Creates the inventory with the shops listed
-        Inventory refinedShopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(refinedShops),Math.min(9*(refinedShops.size()/9 + (refinedShops.size() % 9 == 0 ? 0 : 1)),54), Component.text("Search results"));
-        for(int i=0;i< (Math.min(refinedShops.size(), 54));i++) {
-            ItemStack shopItem = makeShopDisplayItem(refinedShops.get(i), Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-            refinedShopDirectory.setItem(i,shopItem);
-        }
-        player.openInventory(refinedShopDirectory);
-    }
-
-    /*
-     * With type 6, searched items get listed in the inventory
-     */
-    public void openRefinedItemInventory(Player player, String searchKey) {
-        Map<String,Object> searchResults = plugin.getShopRepo().findItem(searchKey);
-        List<ItemStack> refinedItems = (List<ItemStack>) searchResults.get("items");
-        List<Map<String,String>> shops = (List<Map<String,String>>) searchResults.get("shops");
-        if(refinedItems.size() == 0) {
-            player.sendMessage(ChatColor.RED + "No items with matching name found");
-            return;
-        }
-        Inventory refinedItemInv = Bukkit.createInventory(new ShopInvHolder("", InvType.SEARCH, refinedItems,null, searchKey).setShops(shops),Math.min(9*(refinedItems.size()/9 + ((refinedItems.size()%9) == 0 ? 0 : 1)),54), Component.text("Search results"));
-        for(int i=0;i<Math.min(refinedItems.size(),45);i++) {
-            refinedItemInv.setItem(i,refinedItems.get(i));
-        }
-        if(refinedItems.size()>45) {
-            ((ShopInvHolder) refinedItemInv.getHolder()).setPaged();
-            //nextPage button
-            ItemStack nextPage = makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page"));
-            refinedItemInv.setItem(50,nextPage);
-            //prevPage button
-            ItemStack prevPage = makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
-            refinedItemInv.setItem(48,prevPage);
-            //numPage display
-            ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
-            refinedItemInv.setItem(49,pageNum);
-        }
-        player.openInventory(refinedItemInv);
-    }
-
-    /*
-     * Opens the Shop directory, with different lore/funcionality added to the shopItems, depending on the command used
-     * - (type 1) pending -> shows all pending shops
-     * - (type 2) review -> removes shops
-     * - (type 3) recover -> recovers shopOwner book
-     * - (type 4) lookup -> coreprotect -> ShopEvents.java ln 348
-     * - (type 5) seems to be inactive -> ShopEvents.java ln 365
-     */
-    public void openShopDirectoryModerator(Player moderator,InvType type) {
-        List<Map<String,String>> shops;
-        String name;
+    private static Component[] getItemShopTextFor(InvType type, Config config) {
+        ArrayList<Component> texts = new ArrayList<>();
         switch(type) {
-            case PENDING_APPROVALS:
-                shops = plugin.getShopRepo().getPendingShopDetails();
-                name = "GMD pending approvals";
-                break;
+            case NORMAL:
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+            break;
+            case PENDING_APPROVALS: 
+                texts.add(Component.text(MyChatColor.AQUA + "Shift click to view")); 
+                texts.add(Component.text(MyChatColor.GREEN + "Press 'swap-offhand' key to approve"));
+                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to reject"));
+            break;
             case PENDING_CHANGES:
-                shops = plugin.getShopRepo().getPendingChangesDetails();
-                name = "GMD pending changes";
-                break;
-            case RECOVER:
-                shops = plugin.getShopRepo().getShopDetails();
-                name = "GMD recover shop book";
-                break;
-            case REVIEW:
-                shops = plugin.getShopRepo().getShopDetails();
-                name = "GMD review shops";
-                break;
+                texts.add(Component.text(MyChatColor.WHITE + "Left click to see old shop"));
+                texts.add(Component.text(MyChatColor.AQUA + "Right click to see new shop"));
+                texts.add(Component.text(MyChatColor.GREEN + "Press 'swap-offhand' key to approve"));
+                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to reject"));
+            break;
+            case REVIEW: 
+                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to delete"));
+            break;
+            case RECOVER: 
+                texts.add(Component.text(MyChatColor.AQUA + "Right click to recover"));
+            break;
+            case SEARCH:
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+            break;
             default:
-                shops = plugin.getShopRepo().getShopDetails();
-                name = "Marketplace Directory";
-                break;
         }
-        Inventory shopDirectory = Bukkit.createInventory(new MarketplaceBookHolder(shops, type), 
-                                                         Math.min(9*(shops.size()/9 + (shops.size()%9 == 0 ? 0 : 1)),54) + (shops.size() == 0 ? 9 : 0), 
-                                                         Component.text(name));
-        for(int i=0;i<(shops.size() > 54 ? 45 : shops.size());i++) {
-            ItemStack shopItem;
-            if(type == InvType.PENDING_APPROVALS) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Shift click to view"), 
-                                                             Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
-                                                             Component.text(ChatColor.RED + "Press 'drop' key to reject"));
-            } 
-            else if (type == InvType.PENDING_CHANGES) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.WHITE + "Left click to see old shop"), 
-                                                             Component.text(ChatColor.AQUA + "Right click to see new shop"),
-                                                             Component.text(ChatColor.GREEN + "Press 'swap-offhand' key to approve"), 
-                                                             Component.text(ChatColor.RED + "Press 'drop' key to reject"));
-            }
-            else if (type == InvType.REVIEW) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.RED + "Press 'drop' key to delete"));
-            }
-            else if(type == InvType.RECOVER) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to recover")); //Maybe send recovering message in chat, to notify player
-            }
-            else if(type == InvType.ADD_ITEM) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to set lookup radius")); //confusing, todo later
+        return texts.toArray(new Component[0]);
+    }
+
+    private static Component[] getItemTextFor(InvType type, Config config) {
+        ArrayList<Component> texts = new ArrayList<>();
+        switch(type) {
+            case INV_EDIT: 
+                texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
+                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to delete this item"));
+            break;
+            case SEARCH:
+                texts.add(Component.text(MyChatColor.YELLOW + "Left-click to view this shop"));
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+            break;
+            case ADD_ITEM:
+                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to remove"));
+            break;
+            default:
+                texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
+        }
+        return texts.toArray(new Component[0]);
+    }
+
+    private static int getInvSize(int contents, boolean hasBackButton) {
+        if (contents == 0) {
+            return 9;
+        }
+        if (hasBackButton) {
+            if (contents<54) {
+                return (contents/9)*9+9;
             } else {
-                shopItem = makeShopDisplayItem(shops.get(i));
+                return 54;
             }
+        } else {
+            if (contents<=54) {
+                return 9*((int) Math.ceil(((double) contents)/9));
+            } else {
+                return 54;
+            }
+        }
+    }
+
+    public static void switchShopVersion(Inventory inventory, int invSlot, Map<String, String> shop, Config config) {
+        inventory.setItem(invSlot, makeShopDisplayItem(shop, config, getItemShopTextFor(InvType.PENDING_CHANGES, config)));
+    }
+
+    public static void fillShopInventory(Inventory shopDirectory, MarketplaceBookHolder holder, int page, Config config) {
+        fillShopInventory(shopDirectory, holder, holder.getShops(), holder.getType(), page, config);
+    }
+
+    public static void fillShopInventory(Inventory shopDirectory, MarketplaceBookHolder holder, List<Map<String,String>> shops, InvType type, int page, Config config) {
+        holder.getInventoryMaker().setPage(page);
+        for(int i=0;i<(shops.size() > 54 ? Math.min(45, shops.size()-45*page) : shops.size());i++) {
+            ItemStack shopItem = makeShopDisplayItem(shops.get(page*45+i), config, getItemShopTextFor(type, config));
             shopDirectory.setItem(i,shopItem);
         }
 
-        //if there are more than 54 pending shops, the shops get put on additional pages
         if(shops.size() > 54) {
             ((MarketplaceBookHolder) shopDirectory.getHolder()).setPaged();
             //nextPage button
-            ItemStack nextPage = makeDisplayItem(Material.LIME_STAINED_GLASS_PANE, Component.text("Next Page"));
+            ItemStack nextPage = makeDisplayItem(shops.size() > (page+1)*45 ? Material.LIME_STAINED_GLASS_PANE : Material.BARRIER, Component.text("Next Page"));
             shopDirectory.setItem(50,nextPage);
             //prevPage button
-            ItemStack prevPage = makeDisplayItem(Material.BARRIER, Component.text("Previous Page"));
+            ItemStack prevPage = makeDisplayItem(page>0 ?  Material.ORANGE_STAINED_GLASS_PANE : Material.BARRIER, Component.text("Previous Page"));
             shopDirectory.setItem(48,prevPage);
-            //currPage display
-            ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page 1"));
+            //numPage display
+            ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (page+1)));
             shopDirectory.setItem(49,pageNum);
         }
-        if(shops.size() == 0) {
-            logger.info("No pending shop");
-        }
-        moderator.openInventory(shopDirectory);
     }
 
-    /*
-     * Opens the inventory, that lets the shopownwer do the following:
-     * - add another owner
-     * - set a new display item
-     * - delete the shop
-     */
-    public void openShopEditMenu(Player player, String key) {
-        String name;
-        if(plugin.getShopRepo().getPendingShopDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
-            name = plugin.getShopRepo().getShopName(key) + " §5§o(pending approvals)";
+    public static Inventory makeShopInventory(String title, List<Map<String,String>> shops, InvType type, Config config, InventoryMaker previousWindow) {
+        return makeShopInventory(Component.text(title), shops, type, config, 0, previousWindow);
+    }
+
+    public static Inventory makeShopInventory(Component title, List<Map<String,String>> shops, InvType type, Config config, InventoryMaker previousWindow) {
+        return makeShopInventory(title, shops, type, config, 0, previousWindow);
+    }
+
+    public static Inventory makeShopInventory(Component title, List<Map<String,String>> shops, InvType type, Config config, int page, InventoryMaker previousWindow) {
+        InventoryMaker instructions = new shopInventoryMaker(title, shops, type, config, page, previousWindow);
+        MarketplaceBookHolder holder = new MarketplaceBookHolder(shops, type, instructions);
+        holder.setPreviousInventoryMaker(previousWindow);
+        Inventory shopDirectory = Bukkit.createInventory(holder, getInvSize(shops.size(), previousWindow!=null), title);
+        //Creates the directory of all the selected shops 
+        fillShopInventory(shopDirectory, holder, shops, type, page, config);
+
+        return shopDirectory;
+    }
+
+    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, Config config, int page) {
+        fillItemInventory(shopInventory, holder, holder.getInv(), holder.getType(), config, page, holder.getPreviousInventoryMaker() != null);
+    }
+
+    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, List<ItemStack> items, InvType type, Config config, int page, boolean backButton) {
+        holder.getInventoryMaker().setPage(page);
+        List<ItemStack> inv = items.stream().map(item -> addItemLore(item.clone(), getItemTextFor(type, config))).collect(Collectors.toList());
+        //int i=0;i<(shops.size() > 54 ? Math.min(45, shops.size()-45*page) : shops.size());i++
+        for(int i=0;i< Math.min(45, inv.size()-page*45);i++) {            
+            shopInventory.setItem(i,inv.get(i + page*45));
         }
-        else if(plugin.getShopRepo().getPendingChangesDetails().stream().map(m->m.get("key").equals(key)).reduce(false, (x, y) -> x || y)) {
-            name = plugin.getShopRepo().getShopName(key) + " §5§o(pending changes)";
+        if(inv.size() == 0) {
+            //empty shop display
+            ItemStack empty = makeDisplayItem(Material.BARRIER, Component.text(MyChatColor.RED + "This shop is empty!"));
+            shopInventory.setItem(4,empty);
         }
-        else name = plugin.getShopRepo().getShopName(key);
-               
+        //goBack button
+        if (backButton) {
+            ItemStack back = makeDisplayItem(Material.ARROW, Component.text(MyChatColor.YELLOW + "Go Back"));
+            shopInventory.setItem(shopInventory.getSize()-1,back);
+        }
+        if(inv.size()>45) {
+            ((ShopInvHolder) shopInventory.getHolder()).setPaged();
+            //nextPage button
+            ItemStack nextPage = makeDisplayItem(inv.size() > (page+1)*45 ? Material.LIME_STAINED_GLASS_PANE : Material.BARRIER, Component.text("Next Page"));
+            shopInventory.setItem(50,nextPage);
+            //prevPage button
+            ItemStack prevPage = makeDisplayItem(page>0 ?  Material.ORANGE_STAINED_GLASS_PANE : Material.BARRIER, Component.text("Previous Page"));
+            shopInventory.setItem(48,prevPage);
+            //numPage display
+            ItemStack pageNum = makeDisplayItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, Component.text("Page " + (page+1)));
+            shopInventory.setItem(49,pageNum);
+        }
+        if(type==InvType.ADD_ITEM) {
+            //addItem button
+            ItemStack addItem = makeDisplayItem(Material.ENDER_PEARL, Component.text(MyChatColor.GREEN + "" + MyChatColor.ITALIC + "Add item"));
+            shopInventory.setItem(shopInventory.getSize()-7,addItem);
+            //removeAllItems button
+            ItemStack removeAllItems = makeDisplayItem(Material.FLINT_AND_STEEL, Component.text(MyChatColor.RED + "" + MyChatColor.ITALIC + "Remove all items"));
+            shopInventory.setItem(shopInventory.getSize()-3,removeAllItems);
+        }
+    }
+
+    public static Inventory makeItemInventory(String title, String key, List<ItemStack> items, InvType type, Config config, ItemStack item, InventoryMaker previousWindow) {
+        return makeItemInventory(Component.text(title), key, items, Collections.nCopies(items.size(), key), type, config, item, 0, previousWindow);
+    }
+
+    public static Inventory makeItemInventory(Component title, String key, List<ItemStack> items, InvType type, Config config, InventoryMaker previousWindow) {
+        return makeItemInventory(title, key, items, Collections.nCopies(items.size(), key), type, config, null, 0, previousWindow);
+    }
+    
+    public static Inventory makeItemInventory(String title, String key, List<ItemStack> items, List<String> shops, InvType type, Config config, InventoryMaker previousWindow) {
+        return makeItemInventory(Component.text(title), key, items, shops, type, config, null, 0, previousWindow);
+    }
+
+    public static Inventory makeItemInventory(Component title, String key, List<ItemStack> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, InventoryMaker previousWindow) {
+        InventoryMaker instructions = new itemInventoryMaker(title, key, items, shops, type, config, itemToAdd, page, previousWindow);
+        ShopInvHolder holder = new ShopInvHolder(key,type,items, instructions);
+        holder.setPreviousInventoryMaker(previousWindow);
+        holder.setShops(shops);
+        holder.setItem(itemToAdd); //itemToAdd is null unless type=ADD_ITEM
+        Inventory shopInventory = Bukkit.createInventory(holder,getInvSize(items.size(), previousWindow != null), title);
+        fillItemInventory(shopInventory, holder, items, type, config, page, previousWindow != null);
+        return shopInventory;
+    }
+
+    public static Inventory makeShopEditMenu(String title, String key, Map<String, String> shop, Map<String, String> pendingChanges, Config config, InventoryMaker previousWindow) {
+        InventoryMaker instructions = new shopEditMenuMaker(title, key, shop, pendingChanges, config, previousWindow);
         //creates the inventory for this menu
-        ShopInvHolder currentShopView = new ShopInvHolder(key, InvType.SHOP_MENU, null, null);
+        ShopInvHolder currentShopView = new ShopInvHolder(key, InvType.SHOP_MENU, instructions);
         //Adds this shop to a list with one entry, to open its inventory if rawSloth 4 is clicked
-        List<Map<String,String>> shop = new LinkedList<>();
-        shop.add(plugin.getShopRepo().getSpecificShopDetails(key));
-        currentShopView.setShops(shop);
-        Map<String,String> thisShop = plugin.getShopRepo().getSpecificShopDetails(key);
-        Map<String,String> pendingChangesShop = plugin.getShopRepo().getSpecificChangeDetails(key);
-        boolean hasPendingChanges = pendingChangesShop!=null;
-        Inventory shopEditMenuInv = Bukkit.createInventory(currentShopView,18, Component.text(name));
+        currentShopView.setShops(Collections.nCopies(18, key));
+        boolean hasPendingChanges = pendingChanges!=null;
+        Inventory shopEditMenuInv = Bukkit.createInventory(currentShopView,18, Component.text(title));
         //setDescription button
-        ItemStack setDescription = makeDisplayItem(Material.PAPER, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set description"));
-        if (hasPendingChanges && !thisShop.get("desc").equals(pendingChangesShop.get("desc"))) {
+        ItemStack setDescription = makeDisplayItem(Material.PAPER, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Set description"));
+        if (hasPendingChanges && !shop.get("desc").equals(pendingChanges.get("desc"))) {
             List<Component> descriptionLore = new LinkedList<>();
-            descriptionLore.add(Component.text(ChatColor.DARK_PURPLE + "[Old]"));
-            descriptionLore.addAll(Arrays.asList(ChatPaginator.wordWrap(ChatColor.GREEN + thisShop.get("desc"),30)).stream().map(x -> Component.text(ChatColor.GREEN + x)).toList());
-            descriptionLore.add(Component.text(ChatColor.LIGHT_PURPLE + "[New]"));
-            descriptionLore.addAll(Arrays.asList(ChatPaginator.wordWrap(ChatColor.GREEN + pendingChangesShop.get("desc"),30)).stream().map(x -> Component.text(ChatColor.GREEN + x)).toList());
-            descriptionLore.add(Component.text(ChatColor.DARK_PURPLE + " "));
-            descriptionLore.add(Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+            descriptionLore.add(Component.text(MyChatColor.DARK_PURPLE + "[Old]"));
+            descriptionLore.addAll(Arrays.asList(ChatPaginator.wordWrap(MyChatColor.GREEN + shop.get("desc"),30)).stream().map(x -> Component.text(MyChatColor.GREEN + x)).toList());
+            descriptionLore.add(Component.text(MyChatColor.LIGHT_PURPLE + "[New]"));
+            descriptionLore.addAll(Arrays.asList(ChatPaginator.wordWrap(MyChatColor.GREEN + pendingChanges.get("desc"),30)).stream().map(x -> Component.text(MyChatColor.GREEN + x)).toList());
+            descriptionLore.add(Component.text(MyChatColor.DARK_PURPLE + " "));
+            descriptionLore.add(Component.text(MyChatColor.RED + "Press 'drop' key to revert the change"));
             setDescription = addItemLore(setDescription, descriptionLore.toArray(new Component[descriptionLore.size()]));
         }
-        setDescription = addItemLore(setDescription, Component.text(ChatColor.DARK_AQUA + "Left click to change your description"));
+        setDescription = addItemLore(setDescription, Component.text(MyChatColor.DARK_AQUA + "Left click to change your description"));
         shopEditMenuInv.setItem(1,setDescription);
         //see shop button
         ItemStack seeShop;
-        if (hasPendingChanges) seeShop = makeShopDisplayItem(pendingChangesShop, true, 
-                                                             Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
-        else seeShop = makeShopDisplayItem(thisShop, false, 
-                                           Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("dynmap") + "§oRight click to see this shop on Dynmap")));
+        if (hasPendingChanges) seeShop = makeShopDisplayItem(pendingChanges, config, true,
+                                                             Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+        else seeShop = makeShopDisplayItem(shop, config, false, 
+                                           Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
         shopEditMenuInv.setItem(4,seeShop);
         //setLocation button
-        ItemStack setLocation = makeDisplayItem(Material.COMPASS, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set location"));
-        if (hasPendingChanges && !thisShop.get("loc").equals(pendingChangesShop.get("loc"))) {
-            String[] partsOld = thisShop.get("loc").split(",");
-            String[] partsNew = pendingChangesShop.get("loc").split(",");
+        ItemStack setLocation = makeDisplayItem(Material.COMPASS, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Set location"));
+        if (hasPendingChanges && !shop.get("loc").equals(pendingChanges.get("loc"))) {
+            String[] partsOld = shop.get("loc").split(",");
+            String[] partsNew = pendingChanges.get("loc").split(",");
             List<Component> locationLore = new LinkedList<>();
-            locationLore.add(Component.text(ChatColor.DARK_PURPLE + "[Old]"));
-            if(Integer.parseInt(partsOld[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && partsOld.length >= 3) {
-                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + partsOld[0] + "," + colors.get("u-loc") + partsOld[1] + colors.get("loc") + "," + partsOld[2])));
+            locationLore.add(Component.text(MyChatColor.DARK_PURPLE + "[Old]"));
+            if(Integer.parseInt(partsOld[1]) < config.getMaxUndergroundMarketLevel() && partsOld.length >= 3) {
+                locationLore.add(Component.text(config.getDefaultShopLocColor() + partsOld[0] + "," + config.getDefaultShopULocColor() + partsOld[1] + config.getDefaultShopLocColor() + "," + partsOld[2]));
             } else {
-                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + thisShop.get("loc"))));
+                locationLore.add(Component.text(config.getDefaultShopLocColor() + shop.get("loc")));
             }
-            locationLore.add(Component.text(ChatColor.LIGHT_PURPLE + "[New]"));
-            if(Integer.parseInt(partsNew[1]) < plugin.getCustomConfig().getMaxUndergroundMarketLevel() && partsNew.length >= 3) {
-                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + partsNew[0] + "," + colors.get("u-loc") + partsNew[1] + colors.get("loc") + "," + partsNew[2])));
+            locationLore.add(Component.text(MyChatColor.LIGHT_PURPLE + "[New]"));
+            if(Integer.parseInt(partsNew[1]) < config.getMaxUndergroundMarketLevel() && partsNew.length >= 3) {
+                locationLore.add(Component.text(config.getDefaultShopLocColor() + partsNew[0] + "," + config.getDefaultShopULocColor() + partsNew[1] + config.getDefaultShopLocColor() + "," + partsNew[2]));
             } else {
-                locationLore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,colors.get("loc") + pendingChangesShop.get("loc"))));
+                locationLore.add(Component.text(config.getDefaultShopLocColor() + pendingChanges.get("loc")));
             }
-            locationLore.add(Component.text(ChatColor.DARK_PURPLE + " "));
-            locationLore.add(Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+            locationLore.add(Component.text(MyChatColor.DARK_PURPLE + " "));
+            locationLore.add(Component.text(MyChatColor.RED + "Press 'drop' key to revert the change"));
             setLocation = addItemLore(setLocation, locationLore.toArray(new Component[locationLore.size()]));
         }
-        setLocation = addItemLore(setLocation, Component.text(ChatColor.DARK_AQUA + "Left click to move your shop"));
+        setLocation = addItemLore(setLocation, Component.text(MyChatColor.DARK_AQUA + "Left click to move your shop"));
         shopEditMenuInv.setItem(7,setLocation);
         //setDisplayItem button
-        ItemStack setDisplayItem = makeDisplayItem(Material.WRITABLE_BOOK, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Set display item"));
-        if (hasPendingChanges && !thisShop.get("displayItem").equals(pendingChangesShop.get("displayItem"))) {
-            setDisplayItem = addItemLore(setDisplayItem, Component.text(ChatColor.DARK_PURPLE + "[Old]"),
-                                                         Component.text(ChatColor.GREEN + thisShop.get("displayItem")),
-                                                         Component.text(ChatColor.LIGHT_PURPLE + "[New]"),
-                                                         Component.text(ChatColor.GREEN + pendingChangesShop.get("displayItem")),
-                                                         Component.text(ChatColor.DARK_PURPLE + " "),
-                                                         Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+        ItemStack setDisplayItem = makeDisplayItem(Material.WRITABLE_BOOK, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Set display item"));
+        if (hasPendingChanges && !shop.get("displayItem").equals(pendingChanges.get("displayItem"))) {
+            setDisplayItem = addItemLore(setDisplayItem, Component.text(MyChatColor.DARK_PURPLE + "[Old]"),
+                                                         Component.text(MyChatColor.GREEN + shop.get("displayItem")),
+                                                         Component.text(MyChatColor.LIGHT_PURPLE + "[New]"),
+                                                         Component.text(MyChatColor.GREEN + pendingChanges.get("displayItem")),
+                                                         Component.text(MyChatColor.DARK_PURPLE + " "),
+                                                         Component.text(MyChatColor.RED + "Press 'drop' key to revert the change"));
         }
-        setDisplayItem = addItemLore(setDisplayItem, Component.text(ChatColor.DARK_AQUA + "Left click to change display item"));
+        setDisplayItem = addItemLore(setDisplayItem, Component.text(MyChatColor.DARK_AQUA + "Left click to change display item"));
         shopEditMenuInv.setItem(10,setDisplayItem);
         //addOwner button
-        ItemStack addOwner = makeDisplayItem(Material.BEACON, Component.text(ChatColor.GOLD + "" + ChatColor.ITALIC + "Add owner"));
-        if (hasPendingChanges && !thisShop.get("owners").equals(pendingChangesShop.get("owners"))) {
-            addOwner = addItemLore(addOwner, Component.text(ChatColor.DARK_PURPLE + "[Old]"),
-                                             Component.text(ChatColor.GREEN + thisShop.get("owners")),
-                                             Component.text(ChatColor.LIGHT_PURPLE + "[New]"),
-                                             Component.text(ChatColor.GREEN + pendingChangesShop.get("owners")),
-                                             Component.text(ChatColor.DARK_PURPLE + " "),
-                                             Component.text(ChatColor.RED + "Press 'drop' key to revert the change"));
+        ItemStack addOwner = makeDisplayItem(Material.BEACON, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Add owner"));
+        if (hasPendingChanges && !shop.get("owners").equals(pendingChanges.get("owners"))) {
+            addOwner = addItemLore(addOwner, Component.text(MyChatColor.DARK_PURPLE + "[Old]"),
+                                             Component.text(MyChatColor.GREEN + shop.get("owners")),
+                                             Component.text(MyChatColor.LIGHT_PURPLE + "[New]"),
+                                             Component.text(MyChatColor.GREEN + pendingChanges.get("owners")),
+                                             Component.text(MyChatColor.DARK_PURPLE + " "),
+                                             Component.text(MyChatColor.RED + "Press 'drop' key to revert the change"));
         }
-        addOwner = addItemLore(addOwner, Component.text(ChatColor.DARK_AQUA + "Left click to add a new owner"));
+        addOwner = addItemLore(addOwner, Component.text(MyChatColor.DARK_AQUA + "Left click to add a new owner"));
         shopEditMenuInv.setItem(13,addOwner);
         //removeShop button
-        ItemStack removeShop = makeDisplayItem(Material.FLINT_AND_STEEL, Component.text(ChatColor.RED + "" + ChatColor.ITALIC + "Delete shop"));
+        ItemStack removeShop = makeDisplayItem(Material.FLINT_AND_STEEL, Component.text(MyChatColor.RED + "" + MyChatColor.ITALIC + "Delete shop"));
         shopEditMenuInv.setItem(16,removeShop);
-        player.openInventory(shopEditMenuInv);
+        return shopEditMenuInv;
     }
 
-    /*
-     * For adding same item that already exists in shop, show ItemAddMenu
-     */
-    public void openItemAddMenu(Player player, String key, List<ItemStack> matchingItems, ItemStack itemToAdd) {
-        //creates the inventory for this menu, adjustable to the amount of same items in the shop
-        Inventory itemAddMenuInv = Bukkit.createInventory(new ShopInvHolder(key, itemToAdd.clone(), InvType.ADD_ITEM),Math.min(54,9 + 9*(matchingItems.size()/9 + (matchingItems.size()%9 == 0 ? 0 : 1))),Component.text("Adding Item..."));
-        for(int i = 0;i<Math.min(matchingItems.size(),45);i++) {
-            ItemStack iTA = matchingItems.get(i).clone();
-            ItemMeta meta = iTA.getItemMeta();
-            List<Component> lore = meta.lore();
-            if(lore!=null)
-                lore.add(Component.text(ChatColor.RED + "Right click to remove"));
-            meta.lore(lore);
-            iTA.setItemMeta(meta);
-            itemAddMenuInv.setItem(i,iTA);
+    public static Action getButtonAction(Inventory shopInventory, ShopInvHolder holder, int slotNum, ClickType click, ItemStack clickedItem) {
+        if (clickedItem == null || clickedItem.getType() == Material.AIR || slotNum<0 || slotNum>=shopInventory.getSize()) 
+            return Action.NOTHING;
+
+        int currPage = 0;
+        if (holder.isPaged() && slotNum>=shopInventory.getSize()-9) {
+            if (clickedItem.getType() == Material.LIME_STAINED_GLASS_PANE) return Action.NEXT_PAGE;
+            if (clickedItem.getType() == Material.ORANGE_STAINED_GLASS_PANE) return Action.PREVIOUS_PAGE;
+            currPage = Integer.parseInt(((TextComponent) shopInventory.getItem(49).getItemMeta().displayName()).content().substring(5))-1;
         }
-        //addItem button
-        ItemStack addItem = makeDisplayItem(Material.ENDER_PEARL, Component.text(ChatColor.GREEN + "" + ChatColor.ITALIC + "Add item"));
-        itemAddMenuInv.setItem(itemAddMenuInv.getSize()-7,addItem);
-        //removeAllItems button
-        ItemStack removeAllItems = makeDisplayItem(Material.FLINT_AND_STEEL, Component.text(ChatColor.RED + "" + ChatColor.ITALIC + "Remove all items"));
-        itemAddMenuInv.setItem(itemAddMenuInv.getSize()-3,removeAllItems);
-        player.openInventory(itemAddMenuInv);
+        if (slotNum == shopInventory.getSize()-1 && clickedItem.displayName().toString().contains("Go Back")) {
+            return Action.GO_BACK;
+        }
+        if (holder.getType() == InvType.SHOP_MENU) {
+            if (slotNum == 1 && click != ClickType.DROP) return Action.SET_DESCRIPTION;
+            if (slotNum == 1 && click == ClickType.DROP) return Action.CANCEL_DESCRIPTION;
+            if (slotNum == 7 && click != ClickType.DROP) return Action.SET_LOCATION;
+            if (slotNum == 7 && click == ClickType.DROP) return Action.CANCEL_LOCATION;
+            if (slotNum == 10 && click != ClickType.DROP) return Action.SET_DISPLAYITEM;
+            if (slotNum == 10 && click == ClickType.DROP) return Action.CANCEL_DISPLAYITEM;
+            if (slotNum == 13 && click != ClickType.DROP) return Action.ADD_OWNER;
+            if (slotNum == 13 && click == ClickType.DROP) return Action.CANCEL_OWNER;
+            if (slotNum == 16) return Action.DELETE_SHOP;
+            if (slotNum == 4 && click.isRightClick()) return Action.DYNMAP;
+            if (slotNum == 4 && !click.isRightClick()) return Action.OPEN_EDIT_SHOP_INV;
+            return Action.NOTHING;
+        } else if (holder.getType() == InvType.ADD_ITEM) {
+            if (slotNum == shopInventory.getSize()-3) return Action.REMOVE_MATCHING_ITEMS;
+            if (slotNum == shopInventory.getSize()-7) return Action.ADD_ITEM;
+            if (click == ClickType.DROP && slotNum + 45*currPage < holder.getInv().size()) return Action.DELETE_ITEM;
+            return Action.NOTHING;
+        } else if (slotNum + 45*currPage < holder.getInv().size()) {
+            if (click.isShiftClick() && holder.getType() != InvType.ADD_ITEM && holder.getType() != InvType.SEARCH) return Action.FIND_BETTER_ALTERNATIVE;
+            if (click.isLeftClick() && holder.getType() == InvType.SEARCH) return Action.OPEN_SHOP;
+            if (click.isRightClick() && holder.getType() == InvType.SEARCH) return Action.DYNMAP;
+            if (click == ClickType.DROP && holder.getType() == InvType.INV_EDIT) return Action.DELETE_ITEM;
+        }
+        return Action.NOTHING;
+    }
+
+    public static Action getButtonAction(Inventory itemInventory, MarketplaceBookHolder holder, int slotNum, ClickType click, ItemStack clickedItem) {
+        //was something clicked
+        if (clickedItem == null || clickedItem.getType() == Material.AIR || slotNum<0 || slotNum>=itemInventory.getSize()) 
+            return Action.NOTHING;
+        InvType type = holder.getType();
+        //if holder is paged
+        int currPage = 0;
+        if (holder.isPaged() && slotNum>=itemInventory.getSize()-9) {
+            if (clickedItem.getType() == Material.LIME_STAINED_GLASS_PANE) return Action.NEXT_PAGE;
+            if (clickedItem.getType() == Material.ORANGE_STAINED_GLASS_PANE) return Action.PREVIOUS_PAGE;
+            currPage = Integer.parseInt(((TextComponent) itemInventory.getItem(49).getItemMeta().displayName()).content().substring(5))-1;
+        }
+        if (slotNum == itemInventory.getSize()-1 && clickedItem.displayName().toString().contains("Go Back")) {
+            return Action.GO_BACK;
+        }
+        //if a shop was clicked
+        if (slotNum + 45*currPage < holder.getShops().size()) {
+            if (click.isShiftClick()) return Action.OPEN_SHOP;
+            //pending approvals
+            if (click == ClickType.SWAP_OFFHAND && type==InvType.PENDING_APPROVALS) return Action.APPROVE_SHOP;
+            if (click == ClickType.DROP && type==InvType.PENDING_APPROVALS) return Action.REJECT_SHOP;
+            //pending changes
+            if (click == ClickType.SWAP_OFFHAND && type==InvType.PENDING_CHANGES) return Action.APPROVE_CHANGES;
+            if (click == ClickType.DROP && type==InvType.PENDING_CHANGES) return Action.REJECT_CHANGES;
+            if (click.isLeftClick() && type==InvType.PENDING_CHANGES) return Action.UNSHOW_CHANGES;
+            if (click.isRightClick() && type==InvType.PENDING_CHANGES) return Action.SHOW_CHANGES;
+            //review
+            if (click == ClickType.DROP && type==InvType.REVIEW) return Action.DELETE_SHOP;
+            //recover
+            if (click.isRightClick() && type==InvType.RECOVER) return Action.GET_SHOP_BOOK;
+            //normal and search window
+            if (click.isRightClick() && (type == InvType.NORMAL || type == InvType.SEARCH)) return Action.DYNMAP;
+            if (click.isLeftClick() && (type == InvType.NORMAL || type == InvType.SEARCH)) return Action.OPEN_SHOP;
+        }
+        return Action.NOTHING;
+    }
+
+    public static class shopInventoryMaker implements InventoryMaker {
+        Component title;
+        List<Map<String,String>> shops;
+        InvType type;
+        Config config;
+        int page;
+        InventoryMaker instructions;
+        public shopInventoryMaker(Component title, List<Map<String,String>> shops, InvType type, Config config, int page, InventoryMaker instructions) {
+            this.title = title;
+            this.shops = shops;
+            this.type = type;
+            this.config = config;
+            this.page = page;
+            this.instructions = instructions;
+        }
+        @Override
+        public void setPage(int page) {
+            this.page = page;
+        }
+
+        @Override
+        public Inventory makeInventory() {
+            return makeShopInventory(title, shops, type, config, page, instructions);
+        }
+    
+    }
+
+    public static class itemInventoryMaker implements InventoryMaker {
+        Component title;
+        String key;
+        List<ItemStack> items;
+        List<String> shops;
+        InvType type;
+        Config config;
+        ItemStack itemToAdd;
+        int page;
+        InventoryMaker instructions;
+        public itemInventoryMaker(Component title, String key, List<ItemStack> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, InventoryMaker instructions) {
+            this.title = title;
+            this.key = key;
+            this.items = items;
+            this.shops = shops;
+            this.type = type;
+            this.config = config;
+            this.itemToAdd = itemToAdd;
+            this.page = page;
+            this.instructions = instructions;
+        }
+
+        @Override
+        public void setPage(int page) {
+            this.page = page;
+        }
+
+        @Override
+        public Inventory makeInventory() {
+            return makeItemInventory(title, key, items, shops, type, config, itemToAdd, page, instructions);
+        }
+        
+    }
+
+    public static class shopEditMenuMaker implements InventoryMaker {
+        String title;
+        String key;
+        Map<String, String> shop;
+        Map<String, String> pendingChanges;
+        Config config;
+        InventoryMaker instructions;
+        public shopEditMenuMaker(String title, String key, Map<String, String> shop, Map<String, String> pendingChanges, Config config, InventoryMaker instructions) {
+            this.title = title;
+            this.key = key;
+            this.shop = shop;
+            this.pendingChanges = pendingChanges;
+            this.config = config;
+            this.instructions = instructions;
+        }
+
+        @Override
+        public void setPage(int page) {
+            //the shop menu (so far) isn't paged thus this is ignored.
+        }
+
+        @Override
+        public Inventory makeInventory() {
+            return makeShopEditMenu(title, key, shop, pendingChanges, config, instructions);
+        }
+        
     }
 }

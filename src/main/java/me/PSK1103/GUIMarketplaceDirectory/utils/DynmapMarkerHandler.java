@@ -112,7 +112,7 @@ public class DynmapMarkerHandler {
     }
 
     public void addAllShopMarkers(Player player) {
-        player.sendMessage(ChatColor.GREEN + "Starting to create all dynmap shop markers");
+        player.sendMessage(MyChatColor.GREEN + "Starting to create all dynmap shop markers");
         CommandExecutor commandExecutor0 = new CommandExecutor(player, deleteShopSet(), addShopSet());
         Bukkit.getScheduler().runTask(plugin, commandExecutor0);
         

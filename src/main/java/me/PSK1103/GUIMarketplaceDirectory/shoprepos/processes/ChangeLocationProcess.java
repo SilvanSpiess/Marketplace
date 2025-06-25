@@ -1,7 +1,7 @@
 package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
 import org.bukkit.entity.Player;
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
@@ -34,20 +34,20 @@ public class ChangeLocationProcess extends ConfirmationProcess{
         this.location = player.getLocation().getBlockX() + "," + 
                         player.getLocation().getBlockY() + "," + 
                         player.getLocation().getBlockZ();
-        player.sendMessage(ChatColor.YELLOW + "Do you want to move this shop to your current location? (" +
-                           ChatColor.GOLD + ChatColor.BOLD + "Y" + ChatColor.YELLOW + "/" + ChatColor.GOLD + ChatColor.BOLD + "N" + ChatColor.YELLOW + ")");
+        player.sendMessage(MyChatColor.YELLOW + "Do you want to move this shop to your current location? (" +
+                           MyChatColor.GOLD + MyChatColor.BOLD + "Y" + MyChatColor.YELLOW + "/" + MyChatColor.GOLD + MyChatColor.BOLD + "N" + MyChatColor.YELLOW + ")");
 
     }
     @Override
     public void executeTask(Player player) {
         if (moderateEnabled) {
             shopRepo.submitNewLocation(uuid, shopKey, location);
-            player.sendMessage(ChatColor.GOLD + "Shop relocation submitted successfully! Please open a shop ticket to notify staff!");
+            player.sendMessage(MyChatColor.GOLD + "Shop relocation submitted successfully! Please open a shop ticket to notify staff!");
         } else {
             if (shopRepo.setLocation(player, shopKey, location)) 
-                player.sendMessage(ChatColor.GOLD + "Shop relocated successfully!");
+                player.sendMessage(MyChatColor.GOLD + "Shop relocated successfully!");
             else
-                player.sendMessage(ChatColor.GOLD + "Something went wrong");
+                player.sendMessage(MyChatColor.GOLD + "Something went wrong");
         }
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
@@ -78,7 +78,7 @@ public class ChangeLocationProcess extends ConfirmationProcess{
         finished = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }
 
     @Override

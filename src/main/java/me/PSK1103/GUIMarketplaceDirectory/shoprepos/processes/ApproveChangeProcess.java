@@ -1,10 +1,10 @@
 package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 
 public class ApproveChangeProcess extends ConfirmationProcess{
     private String name = "approving change"; //this can be changed to either delete or reject
@@ -31,13 +31,13 @@ public class ApproveChangeProcess extends ConfirmationProcess{
     @Override 
     public void executeTask(Player player) {
         if (shopRepo.approveChange(player, shopKey)) {
-            player.sendMessage(ChatColor.GREEN + "Change approved!");
+            player.sendMessage(MyChatColor.GREEN + "Change approved!");
             finished = true;
             succesful = true;
             processHandler.discontinueProcessOfPlayer(this, uuid);
             processHandler.discontinueProcessOfShop(this, shopKey);
         } else {
-            player.sendMessage(ChatColor.RED + "Something went wrong");
+            player.sendMessage(MyChatColor.RED + "Something went wrong");
             cancel();
         }
     }
@@ -67,7 +67,7 @@ public class ApproveChangeProcess extends ConfirmationProcess{
         finished = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }
 
     @Override

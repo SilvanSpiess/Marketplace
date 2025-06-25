@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
@@ -199,6 +200,14 @@ public class JSONShopRepo implements ShopRepo {
         return shops.containsKey(shopKey) || pendingShops.containsKey(shopKey);
     }
 
+    public boolean isPendingShop(String shopKey) {
+        return pendingShops.containsKey(shopKey);
+    }
+
+    public boolean hasPendingChanges(String shopKey) {
+        return pendingChanges.containsKey(shopKey);
+    }
+
     
 
     @Override
@@ -239,7 +248,7 @@ public class JSONShopRepo implements ShopRepo {
         shop.setLoc(location);        
         if(plugin.getCustomConfig().getEnableDynmapMarkers()) {          
             plugin.getDynmapMarkerHandler().updateShopMarkerCommand(player, shopKey);
-            player.sendMessage(ChatColor.GREEN + "Updated Dynmap marker");
+            player.sendMessage(MyChatColor.GREEN + "Updated Dynmap marker");
         }
             
         saveShops();
@@ -259,7 +268,7 @@ public class JSONShopRepo implements ShopRepo {
         shop.setDesc(description);        
         if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
             plugin.getDynmapMarkerHandler().updateShopMarkerCommand(player, shopKey);
-            player.sendMessage(ChatColor.GREEN + "Updated Dynmap marker");
+            player.sendMessage(MyChatColor.GREEN + "Updated Dynmap marker");
         }    
         
         saveShops();
@@ -480,7 +489,7 @@ public class JSONShopRepo implements ShopRepo {
         officialShop.setDisplayItem(pendingChanges.get(shopKey).getDisplayItem());
         if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
             plugin.getDynmapMarkerHandler().updateShopMarkerCommand(player, shopKey);
-            player.sendMessage(ChatColor.GREEN + "Dynmap marker updated");
+            player.sendMessage(MyChatColor.GREEN + "Dynmap marker updated");
         }
         pendingChanges.remove(shopKey);
         saveShops();
@@ -667,9 +676,9 @@ public class JSONShopRepo implements ShopRepo {
             shops.put(shopKey, pendingShops.get(shopKey));
             if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
                 plugin.getDynmapMarkerHandler().addShopMarkerCommand(player, shopKey);
-                player.sendMessage(ChatColor.GREEN + "Shop approved and Dynmap marker created");      
+                player.sendMessage(MyChatColor.GREEN + "Shop approved and Dynmap marker created");      
             } 
-            else player.sendMessage(ChatColor.GREEN + "Shop approved");
+            else player.sendMessage(MyChatColor.GREEN + "Shop approved");
             pendingShops.remove(shopKey);
             saveShops();
         }
@@ -680,7 +689,7 @@ public class JSONShopRepo implements ShopRepo {
             pendingChanges.remove(shopKey);          
         if(shops.containsKey(shopKey)) {            
             if(plugin.getCustomConfig().getEnableDynmapMarkers()) {
-                player.sendMessage(ChatColor.GRAY + "removing dynmap marker");
+                player.sendMessage(MyChatColor.GRAY + "removing dynmap marker");
                 plugin.getDynmapMarkerHandler().deleteShopMarkerCommand(player, shopKey);  
             }    
             shops.remove(shopKey);
@@ -762,18 +771,16 @@ public class JSONShopRepo implements ShopRepo {
         return detailsList;
     }
 
-    public List<Object> getShopInv(String key) {
+    public List<ItemStack> getShopInv(String key) {
         Shop shop = null;
         if (shops.containsKey(key))
             shop = shops.get(key);
         else if (pendingShops.containsKey(key))
             shop = pendingShops.get(key);
 
-        List<Object> data = new ArrayList<>();
         List<ItemStack> inv = new ArrayList<>();
-        List<Integer> itemIds = new ArrayList<>();
 
-        if (shop == null) return data;
+        if (shop == null) return inv;
 
         shop.getInv().forEach(itemList -> {
             ItemStack item = itemList.item.clone();
@@ -782,16 +789,21 @@ public class JSONShopRepo implements ShopRepo {
             meta.lore(lore);
             item.setItemMeta(meta);
             inv.add(item);
-            itemIds.add(-1);
 
         });
-        data.add(inv);
-        data.add(itemIds);
-        return data;
+        return inv;
     }
-
     public void findBetterAlternative(Player player, String key, int pos) {
-        ItemList item = shops.get(key).getInv().get(pos);
+        ItemList item;
+        if (shops.containsKey(key)) {
+            item = shops.get(key).getInv().get(pos);
+        } else if (pendingShops.containsKey(key)) {
+            item = pendingShops.get(key).getInv().get(pos);
+        } else {
+            player.sendMessage(MyChatColor.RED + "Error: Shop not found.");
+            return;
+        }
+        
         String name = item.name;
         double value = 0;
         if(item.price<=0) {
@@ -833,7 +845,7 @@ public class JSONShopRepo implements ShopRepo {
                         }
 
                         if (val > finalValue) {
-                            player.sendMessage(ChatColor.GOLD + shop.getName() + ChatColor.WHITE + " has a better deal: " + ((TextComponent) itemList.getItem().lore().get(0)).content());
+                            player.sendMessage(MyChatColor.GOLD + shop.getName() + MyChatColor.WHITE + " has a better deal: " + ((TextComponent) itemList.getItem().lore().get(0)).content());
                             found[0] = true;
                         }
                     }
@@ -846,6 +858,15 @@ public class JSONShopRepo implements ShopRepo {
 
     public String getShopName(String key) {
         return shops.containsKey(key) ? shops.get(key).getName() : pendingShops.containsKey(key) ? pendingShops.get(key).getName() : "";
+    }
+
+    public String getShopTitle(String key) {
+        if(isPendingShop(key))
+            return getShopName(key) + " §5§o(pending approvals)";
+        else if(hasPendingChanges(key))
+            return getShopName(key) + " §5§o(pending changes)";
+        else 
+            return getShopName(key);
     }
 
     public List<Map<String, String>> getRefinedShopsByName(String searchKey) {
@@ -884,7 +905,7 @@ public class JSONShopRepo implements ShopRepo {
 
     public Map<String, Object> findItem(String searchKey) {
         List<ItemStack> items = new ArrayList<>();
-        List<Map<String,String>> shopIds = new ArrayList<>();
+        List<String> shopKeys = new ArrayList<>();
         shops.forEach((s, shop) -> {
             List<ItemList> inv = shop.getInv();
             inv.forEach(itemList -> {
@@ -892,35 +913,28 @@ public class JSONShopRepo implements ShopRepo {
                     ItemStack itemToAdd = itemList.item.clone();
                     ItemMeta meta = itemToAdd.getItemMeta();
                     List<Component> lore = meta.lore() != null ? meta.lore() : new ArrayList<>();
-                    lore.add(Component.text(ChatColor.GREEN + "From " + shop.getName()));
-                    lore.add(Component.text(ChatColor.translateAlternateColorCodes(ChatColor.COLOR_CHAR,plugin.getCustomConfig().getDefaultShopLocColor() + shop.getLoc())));
-                    lore.add(Component.text(ChatColor.YELLOW + "Right-click to view this shop"));
+                    lore.add(Component.text(MyChatColor.GREEN + "From " + shop.getName()));
+                    lore.add(Component.text(plugin.getCustomConfig().getDefaultShopLocColor() + shop.getLoc()));
                     meta.lore(lore);
                     itemToAdd.setItemMeta(meta);
                     items.add(itemToAdd);
-                    Map<String,String> shopData = new HashMap<>();
-                    shopData.put("name",shop.getName());
-                    shopData.put("id",shop.getKey());
-                    shopIds.add(shopData);
+                    shopKeys.add(shop.getKey());
                 } else if (itemList.customName.length() > 0 && itemList.customName.toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
                     ItemStack itemToAdd = itemList.item.clone();
                     ItemMeta meta = itemToAdd.getItemMeta();
                     List<Component> lore = meta.lore() != null ? meta.lore() : new ArrayList<>();
-                    lore.add(Component.text(ChatColor.GREEN + "From " + shop.getName()));
-                    lore.add(Component.text(ChatColor.YELLOW + "Right-click to view this shop"));
+                    lore.add(Component.text(MyChatColor.GREEN + "From " + shop.getName()));
+                    lore.add(Component.text(plugin.getCustomConfig().getDefaultShopLocColor() + shop.getLoc()));
                     meta.lore(lore);
                     itemToAdd.setItemMeta(meta);
                     items.add(itemToAdd);
-                    Map<String,String> shopData = new HashMap<>();
-                    shopData.put("name",shop.getName());
-                    shopData.put("id",shop.getKey());
-                    shopIds.add(shopData);
+                    shopKeys.add(shop.getKey());
                 }
             });
         });
         Map<String,Object> searchResults = new HashMap<>();
         searchResults.put("items",items);
-        searchResults.put("shops",shopIds);
+        searchResults.put("shops",shopKeys);
         return searchResults;
     }
 

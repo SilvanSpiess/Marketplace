@@ -26,6 +26,7 @@ import java.net.URL;
 import java.util.*;
 
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 
 public class ItemList {
 
@@ -69,13 +70,13 @@ public class ItemList {
 
         if(price < 0) {
             this.price = -1;
-            lore.add(Component.text(ChatColor.GRAY + "Price hidden or variable"));
+            lore.add(Component.text(MyChatColor.GRAY + "Price hidden or variable"));
         }
         else if(price == 0) {
-            lore.add(Component.text(ChatColor.GREEN + "Free!"));
+            lore.add(Component.text(MyChatColor.GREEN + "Free!"));
         }
         else {
-            lore.add(Component.text(ChatColor.translateAlternateColorCodes('&', "&6" + qtyString + " &ffor &3" + price + " diamond" + (price == 1 ? "" : "s"))));
+            lore.add(Component.text("§6" + qtyString + " §ffor §3" + price + " diamond" + (price == 1 ? "" : "s")));
         }
 
         meta.lore(lore);
@@ -656,13 +657,13 @@ public class ItemList {
 
         if(price < 0) {
             this.price = -1;
-            l.add(ChatColor.GRAY + "Price hidden or variable");
+            l.add(MyChatColor.GRAY + "Price hidden or variable");
         }
         else if(price == 0) {
-            l.add(ChatColor.GREEN + "Free!");
+            l.add(MyChatColor.GREEN + "Free!");
         }
         else {
-            l.add(ChatColor.translateAlternateColorCodes('&', "&6" + qtyString + " &ffor &3" + price + " diamond" + (price == 1 ? "" : "s")));
+            l.add("§6" + qtyString + " §ffor §3" + price + " diamond" + (price == 1 ? "" : "s"));
         }
         /*List<String> oldLore = meta.getLore();
         if(oldLore!=null)

@@ -1,6 +1,6 @@
 package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.entity.Player;
 
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
@@ -26,13 +26,13 @@ public class UpdateAllMarkersProcess extends ConfirmationProcess {
 
 
         ConfirmationProcess.sendConfirmationMessage(player, "Do you want to (re-)create all Dynmap Shop markers?");
-        player.sendMessage(ChatColor.GRAY + "This is a time and memory costly operation");
+        player.sendMessage(MyChatColor.GRAY + "This is a time and memory costly operation");
     }
 
     @Override
     public void executeTask(Player player) {
         dynmapMarkerHandler.addAllShopMarkers(player);
-        player.sendMessage(ChatColor.GREEN + "Markers of all shops have been created successfully!");  
+        player.sendMessage(MyChatColor.GREEN + "Markers of all shops have been created successfully!");  
         processHandler.discontinueProcessOfPlayer(this, uuid);      
     }
 
@@ -59,7 +59,7 @@ public class UpdateAllMarkersProcess extends ConfirmationProcess {
     @Override
     public void cancel() {
         processHandler.discontinueProcessOfPlayer(this, uuid);
-        player.sendMessage(ChatColor.GRAY + "Procedure of adding all Markers has been cancelled");
+        player.sendMessage(MyChatColor.GRAY + "Procedure of adding all Markers has been cancelled");
     }
 
     @Override

@@ -4,6 +4,8 @@ import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
+import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.*;
@@ -12,12 +14,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
@@ -41,17 +43,28 @@ public class ShopEvents implements Listener {
         BookMeta bookMeta = (BookMeta) itemInHand.getItemMeta();
         if(bookMeta.getTitle() != null && (playerInteractEvent.getAction() == Action.RIGHT_CLICK_AIR || playerInteractEvent.getAction() == Action.RIGHT_CLICK_BLOCK)) {
             if (bookMeta.getTitle().equalsIgnoreCase("[Marketplace]")) {
-                Bukkit.getScheduler().runTask(plugin,()-> ShopEvents.this.plugin.gui.openShopDirectory(player));
+                Bukkit.getScheduler().runTask(plugin,()-> {
+                    List<Map<String,String>> shops = plugin.getShopRepo().getShopDetails();
+                    //Creates the directory of all the shops (first page)
+                    Inventory shopDirectory = GUI.makeShopInventory("Marketplace Directory", shops, InvType.NORMAL, plugin.getCustomConfig(), null);
+                    player.openInventory(shopDirectory);
+                });
             }
             else if (bookMeta.getTitle().equalsIgnoreCase("[shop init]") || bookMeta.getTitle().equalsIgnoreCase("[init shop]")) {
                 if (!ShopEvents.this.plugin.getCustomConfig().multiOwnerEnabled()) {return;}
                 if (ShopEvents.this.plugin.getShopRepo().isShopOwner(player.getUniqueId().toString(), bookMeta.getPage(bookMeta.getPageCount()))) {
                     if (ShopEvents.this.plugin.getProcessHandler().isPlayerInProcess(player.getUniqueId().toString())) {
                         ChatProcess process = this.plugin.getProcessHandler().getPlayerProcess(player.getUniqueId().toString());
-                        player.sendMessage(ChatColor.RED + "Finish " + process.getName() + " first");
+                        player.sendMessage(MyChatColor.RED + "Finish " + process.getName() + " first");
                         return; 
                     }
-                    Bukkit.getScheduler().runTask(plugin,()->plugin.gui.openShopEditMenu(player,bookMeta.getPage(bookMeta.getPageCount())));
+                    Bukkit.getScheduler().runTask(plugin,()->{
+                        String key = bookMeta.getPage(bookMeta.getPageCount());
+                        Map<String,String> thisShop = plugin.getShopRepo().getSpecificShopDetails(key);
+                        Map<String,String> pendingChangesShop = plugin.getShopRepo().getSpecificChangeDetails(key);
+                        Inventory shopEditMenuInv = GUI.makeShopEditMenu(plugin.getShopRepo().getShopTitle(key), key, thisShop, pendingChangesShop, plugin.getCustomConfig(), null);
+                        player.openInventory(shopEditMenuInv);
+                    });
                 }
             }
             return;
@@ -70,14 +83,14 @@ public class ShopEvents implements Listener {
                 editBookEvent.setCancelled(true);
         }
         else if(bookmeta.getTitle().equalsIgnoreCase("[Marketplace]")) {
-            bookmeta.setDisplayName(ChatColor.GOLD + "Marketplace Directory");
+            bookmeta.setDisplayName(MyChatColor.GOLD + "Marketplace Directory");
             editBookEvent.setNewBookMeta(bookmeta);
             //easter eggs
             if(bookmeta.getPage(1).contains("PSK is the best")) {
-                editBookEvent.getPlayer().sendMessage(ChatColor.AQUA + "Gee thanks!");
+                editBookEvent.getPlayer().sendMessage(MyChatColor.AQUA + "Gee thanks!");
             }
             if(bookmeta.getPage(1).contains("hello there") || bookmeta.getPage(1).contains("Hello there")) {
-                editBookEvent.getPlayer().sendMessage(ChatColor.GRAY + "General Kenobi!");
+                editBookEvent.getPlayer().sendMessage(MyChatColor.GRAY + "General Kenobi!");
             }
         }
     }
@@ -99,44 +112,47 @@ public class ShopEvents implements Listener {
     @EventHandler
     public final void selectShop(InventoryClickEvent shopSelectEvent) {
         if(shopSelectEvent.getInventory().getHolder() instanceof MarketplaceBookHolder) {
-            MarketplaceBookHolder holder = ((MarketplaceBookHolder) shopSelectEvent.getInventory().getHolder());
             shopSelectEvent.setCancelled(true);
+            MarketplaceBookHolder holder = ((MarketplaceBookHolder) shopSelectEvent.getInventory().getHolder());
+            int slotNum = shopSelectEvent.getRawSlot();
 
-            if(shopSelectEvent.getRawSlot() > shopSelectEvent.getInventory().getSize() || shopSelectEvent.getRawSlot() < 0) {
-                shopSelectEvent.setCancelled(true);
-                return;
-            }
-
-            int currPage = 1;
-
-            if(shopSelectEvent.getRawSlot() > 44 && holder.isPaged()) {
-                if(shopSelectEvent.getCurrentItem() != null && shopSelectEvent.getCurrentItem().getType() == Material.LIME_STAINED_GLASS_PANE) {
-                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5));
-                    plugin.gui.nextPage(((Player) shopSelectEvent.getWhoClicked()),currPage);
-                }
-                if(shopSelectEvent.getCurrentItem() != null && shopSelectEvent.getCurrentItem().getType() == Material.ORANGE_STAINED_GLASS_PANE) {
-                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5));
-                    plugin.gui.prevPage(((Player) shopSelectEvent.getWhoClicked()),currPage);
-                }
-                return;
-            }
-
-            if(shopSelectEvent.getInventory().getSize() == 54) {
-                if(shopSelectEvent.getInventory().getItem(49) != null && shopSelectEvent.getInventory().getItem(49).getType() == Material.LIGHT_GRAY_STAINED_GLASS_PANE) {
-                    currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5));
-                }
-            }
-            
-            if(holder.getType() == InvType.NORMAL) {
-                //View the shop
-                if(shopSelectEvent.isLeftClick() && shopSelectEvent.getRawSlot() + 45*(currPage - 1) < holder.getShops().size()) {
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
-                    return;
-                }
-                //sends the link of the Dynmap with the location of the selected shop to the player
-                else if(shopSelectEvent.isRightClick() && shopSelectEvent.getRawSlot() + 45*(currPage - 1) < holder.getShops().size()) {                    
-                    String input = holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("loc");
+            GUI.Action action = GUI.getButtonAction(shopSelectEvent.getInventory(), holder, slotNum, shopSelectEvent.getClick(), shopSelectEvent.getCurrentItem());
+            int currPage = 0;
+            Player player = (Player) shopSelectEvent.getWhoClicked();
+            try {
+                currPage = Integer.parseInt(((TextComponent) shopSelectEvent.getInventory().getItem(49).getItemMeta().displayName()).content().substring(5))-1;
+            } catch (Exception e) {}
+            switch (action) {
+                case NOTHING: break;
+                case NEXT_PAGE:
+                    shopSelectEvent.getInventory().clear();
+                    GUI.fillShopInventory(shopSelectEvent.getInventory(), holder, currPage+1, plugin.getCustomConfig());
+                    player.updateInventory();
+                break;
+                case PREVIOUS_PAGE:
+                    shopSelectEvent.getInventory().clear();
+                    GUI.fillShopInventory(shopSelectEvent.getInventory(), holder, currPage-1, plugin.getCustomConfig());
+                    player.updateInventory();
+                break;
+                case GO_BACK:
+                    Inventory backInventory = holder.makePreviousInventory();
+                    if (backInventory == null) 
+                        player.sendMessage("No back page found.");
+                    else {
+                        player.closeInventory();
+                        player.openInventory(holder.makePreviousInventory());
+                    }
+                break;
+                case OPEN_SHOP:
+                    player.closeInventory();
+                    String key = holder.getShops().get(slotNum + 45*currPage).get("key");
+                    String name = holder.getShops().get(slotNum + 45*currPage).get("name");
+                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker());
+                    player.openInventory(shopInventory);
+                break;
+                case DYNMAP:
+                    String input = holder.getShops().get(slotNum + 45*currPage).get("loc");
                     String[] parts = input.split(",");
                     String messageLink;
                     if(parts.length == 2) {       
@@ -147,123 +163,66 @@ public class ShopEvents implements Listener {
                     }
                     var mm = MiniMessage.miniMessage();
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
-                    shopSelectEvent.getWhoClicked().sendMessage(parsed);
-                    return;
-                }
-            }           
-
-            else if (holder.getType() == InvType.PENDING_APPROVALS) {
-                //View the shop
-                if(shopSelectEvent.isShiftClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()){
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
-                }
-                //Approval of shop
-                else if(shopSelectEvent.getClick() == ClickType.SWAP_OFFHAND && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    if (plugin.getProcessHandler().isPlayerInProcess(shopSelectEvent.getWhoClicked().getUniqueId().toString())) {
-                        ChatProcess process = this.plugin.getProcessHandler().getPlayerProcess(shopSelectEvent.getWhoClicked().getUniqueId().toString());
-                        shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Finish " + process.getName() + " first");
+                    player.sendMessage(parsed);
+                break;
+                case APPROVE_SHOP: {
+                    if (plugin.getProcessHandler().isPlayerInProcess(player.getUniqueId().toString())) {
+                        ChatProcess process = this.plugin.getProcessHandler().getPlayerProcess(player.getUniqueId().toString());
+                        player.sendMessage(MyChatColor.RED + "Finish " + process.getName() + " first");
                         return;  
                     }
 
-                    if (plugin.getProcessHandler().isShopInProcess(holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"))) {
-                        shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Shop is under some operation, try again later.");
+                    if (plugin.getProcessHandler().isShopInProcess(holder.getShops().get(slotNum + 45 * currPage).get("key"))) {
+                        player.sendMessage(MyChatColor.RED + "Shop is under some operation, try again later.");
                         return;  
                     }
-                    plugin.getShopRepo().approveShop((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"));                    
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopDirectoryModerator(((Player) shopSelectEvent.getWhoClicked()),InvType.PENDING_APPROVALS);
-                    return;
-                }
-                //Rejection of shop
-                else if(shopSelectEvent.getClick() == ClickType.DROP && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    plugin.getProcessHandler().startRejectingShop((Player)shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"));
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    return;
-                }
-            }
-            else if (holder.getType() == InvType.PENDING_CHANGES) {
-                //leftclick to switch to old shop
-                if(shopSelectEvent.getClick() == ClickType.LEFT && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()){
-                    plugin.gui.switchShopVersion(shopSelectEvent.getInventory(), shopSelectEvent.getRawSlot(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"), false);
-                    return;
-                }
-                //rightclick to switch to new shop
-                else if (shopSelectEvent.getClick() == ClickType.RIGHT && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    plugin.gui.switchShopVersion(shopSelectEvent.getInventory(), shopSelectEvent.getRawSlot(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"), true);
-                    return;
-                }
-                //drop key to reject changes
-                else if (shopSelectEvent.getClick() == ClickType.DROP && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    plugin.getProcessHandler().startRejectingChange((Player)shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"));
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    return;  
-                }
-                //swap_offhand key to approve changes
-                else if (shopSelectEvent.getClick() == ClickType.SWAP_OFFHAND && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    plugin.getProcessHandler().startApprovingChange((Player)shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"));
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    return;
-                }
-            }
-            else if(holder.getType() == InvType.REVIEW) {
-                //delete the shop
-                if(shopSelectEvent.getClick() == ClickType.DROP && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    plugin.getProcessHandler().startDeletingShop((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"));
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    return;
-                }
-                //open the shop inventory
-                else if(shopSelectEvent.getClick() != ClickType.DROP && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
-                }
-                return;
-            }
-            else if(holder.getType() == InvType.RECOVER) {
-                if(shopSelectEvent.isRightClick() && shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
+                    plugin.getShopRepo().approveShop(player, holder.getShops().get(slotNum + 45 * currPage).get("key"));                    
+                    player.closeInventory();
+                    Inventory shopDirectory = GUI.makeShopInventory("GMD pending approvals", plugin.getShopRepo().getPendingShopDetails(), InvType.PENDING_APPROVALS, plugin.getCustomConfig(), holder.getPreviousInventoryMaker());
+                    player.openInventory(shopDirectory);
+                } break;
+                case REJECT_SHOP:
+                    plugin.getProcessHandler().startRejectingShop(player, holder.getShops().get(slotNum + 45 * currPage).get("key"));
+                    player.closeInventory();
+                break;
+                case APPROVE_CHANGES:
+                    plugin.getProcessHandler().startApprovingChange(player, holder.getShops().get(slotNum + 45 * currPage).get("key"));
+                    player.closeInventory();
+                break;
+                case REJECT_CHANGES:
+                    plugin.getProcessHandler().startRejectingChange(player, holder.getShops().get(slotNum + 45 * currPage).get("key"));
+                    player.closeInventory();
+                break;
+                case SHOW_CHANGES: {
+                    String shopKey = holder.getShops().get(slotNum + 45 * currPage).get("key");
+                    GUI.switchShopVersion(shopSelectEvent.getInventory(), slotNum, plugin.getShopRepo().getSpecificChangeDetails(shopKey), plugin.getCustomConfig());
+                } break;
+                case UNSHOW_CHANGES:{
+                    String shopKey = holder.getShops().get(slotNum + 45 * currPage).get("key");
+                    GUI.switchShopVersion(shopSelectEvent.getInventory(), slotNum, plugin.getShopRepo().getSpecificShopDetails(shopKey), plugin.getCustomConfig());
+                } break;
+                case DELETE_SHOP:
+                    plugin.getProcessHandler().startDeletingShop(player, holder.getShops().get(slotNum + 45*currPage).get("key"));
+                    player.closeInventory();
+                break;
+                case GET_SHOP_BOOK:
                     ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
                     BookMeta meta = (BookMeta) book.getItemMeta();
-                    Map<String,String> shopDetails = holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage-1));
-                    meta.setDisplayName(ChatColor.GOLD + shopDetails.get("name"));
+                    Map<String,String> shopDetails = holder.getShops().get(slotNum + 45*currPage);
+                    meta.setDisplayName(MyChatColor.GOLD + shopDetails.get("name"));
                     meta.setTitle("[shop init]");
                     meta.setPages("[" + shopDetails.get("name") + "]\n[" + shopDetails.get("desc") + "]",shopDetails.get("key"));
                     meta.setAuthor(plugin.getShopRepo().getOwner(shopDetails.get("key")));
                     meta.setGeneration(BookMeta.Generation.COPY_OF_ORIGINAL);
                     book.setItemMeta(meta);
-                    Player player = ((Player) shopSelectEvent.getWhoClicked());
                     if(player.getInventory().firstEmpty() != -1)
                         player.getInventory().setItem(player.getInventory().firstEmpty(),book);
                     else
                         shopSelectEvent.setCursor(book);
-                }
-
-                else if(shopSelectEvent.getRawSlot() + 45 * (currPage-1) < holder.getShops().size()) {
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
-                }
-            }
-            else if (holder.getType() == InvType.ADD_ITEM) {
-                if(shopSelectEvent.isRightClick()) {
-                    String uuid = shopSelectEvent.getWhoClicked().getUniqueId().toString();
-                    if (plugin.getProcessHandler().isPlayerInProcess(uuid)) {
-                        ChatProcess process = this.plugin.getProcessHandler().getPlayerProcess(uuid);
-                        shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Finish " + process.getName() + " first");
-                        return;  
-                    }
-
-                    if (plugin.getProcessHandler().isShopInProcess(holder.getShops().get(shopSelectEvent.getRawSlot() + 45 * (currPage-1)).get("key"))) {
-                        shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "Shop is under some operation, try again later.");
-                        return;  
-                    }
-
-                    shopSelectEvent.getWhoClicked().sendMessage(ChatColor.RED + "This feature only works when using a db and CoreProtect integration is on");
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                }
-                else {
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
-                }
+                break;
+                default:
+                    System.out.println("error: " + action.toString() + " was unsuccesful");
+                break;
             }
         }
     }

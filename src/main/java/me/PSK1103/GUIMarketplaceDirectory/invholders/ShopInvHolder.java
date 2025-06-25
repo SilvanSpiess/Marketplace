@@ -5,19 +5,22 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import me.PSK1103.GUIMarketplaceDirectory.utils.GUI.InventoryMaker;
+
 import java.util.List;
-import java.util.Map;
 
 public class ShopInvHolder implements InventoryHolder {
     final String key;
-    final ItemStack item;
-    List<Map<String,String>> shops;
+    ItemStack item;
+    List<String> shops;
     List<ItemStack> items;
-    List<Integer> itemIds;
     final InvType type;
     boolean paged;
     boolean filtered;
     String searchKey;
+    InventoryMaker pageMaker;
+    InventoryMaker backMaker;
+
     @Override
     public @NotNull Inventory getInventory() {
         return null;
@@ -26,65 +29,56 @@ public class ShopInvHolder implements InventoryHolder {
     public String getKey() {
         return key;
     }
-    public int getItemId(int pos) {
-        return itemIds.get(pos) == -1 ? pos : itemIds.get(pos);
-    }
 
-    public ShopInvHolder(String key) {
+    public ShopInvHolder(String key, InventoryMaker makeInstructions) {
         super();
         this.key = key;
         this.type = InvType.NORMAL;
         this.item = null;
         shops = null;
         paged = false;
-        filtered = false;        
+        filtered = false;
+        this.pageMaker = makeInstructions;
     }
 
-    public ShopInvHolder(String key, InvType type, List<ItemStack> items, List<Integer> itemIds, String searchKey) {
+    public ShopInvHolder(String key, InvType type, InventoryMaker makeInstructions) {
+        super();
+        this.key = key;
+        this.type = type;
+        this.item = null;
+        shops = null;
+        paged = false;
+        filtered = false;
+        this.pageMaker = makeInstructions;   
+    }
+
+    public ShopInvHolder(String key, InvType type, List<ItemStack> items, InventoryMaker makeInstructions) {
         super();
         this.key = key;
         this.type = type;
         this.items = items;
-        this.itemIds = itemIds;
         this.item = null;
         shops = null;
         paged = false;
-        filtered = true;  
-        this.searchKey = searchKey;
+        filtered = false;
+        this.pageMaker = makeInstructions;
     }
 
-    public ShopInvHolder(String key, InvType type, List<ItemStack> items, List<Integer> itemIds) {
-        super();
-        this.key = key;
-        this.type = type;
-        this.items = items;
-        this.itemIds = itemIds;
-        this.item = null;
-        shops = null;
-        paged = false;
-        filtered = false;  
-    }
-
-    public ShopInvHolder(String key, ItemStack item, InvType type) {
-        this.key = key;
-        this.item = item;
-        this.type = type;
-        shops = null;
-        paged = false;
-        filtered = false;  
-    }
-
-    public ShopInvHolder setShops(List<Map<String,String>> shops) {
+    public ShopInvHolder setShops(List<String> shops) {
         this.shops = shops;
         return this;
     }
 
-    public List<Map<String, String>> getShops() {
+    public List<String> getShops() {
         return shops;
     }
 
     public InvType getType() {
         return type;
+    }
+
+    public void setItem(ItemStack item) {
+        this.item = item;
     }
 
     public ItemStack getItem() {
@@ -102,12 +96,29 @@ public class ShopInvHolder implements InventoryHolder {
     public boolean isPaged() {
         return paged;
     }
-    
+
     public boolean getFiltered() {
         return filtered;
     }
 
     public String getSearchKey() {
         return searchKey;
+    }
+
+    public Inventory makePreviousInventory() {
+        if (backMaker != null) return backMaker.makeInventory();
+        else return null;
+    }
+
+    public InventoryMaker getPreviousInventoryMaker() {
+        return backMaker;
+    } 
+
+    public void setPreviousInventoryMaker(InventoryMaker maker) {
+        backMaker = maker;
+    } 
+
+    public InventoryMaker getInventoryMaker() {
+        return pageMaker;
     }
 }

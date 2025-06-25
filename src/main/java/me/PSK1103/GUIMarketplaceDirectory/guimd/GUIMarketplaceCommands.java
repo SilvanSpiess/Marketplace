@@ -3,23 +3,26 @@ package me.PSK1103.GUIMarketplaceDirectory.guimd;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
 import me.PSK1103.GUIMarketplaceDirectory.utils.GUI;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class GUIMarketplaceCommands implements TabExecutor {
 
@@ -40,36 +43,75 @@ public class GUIMarketplaceCommands implements TabExecutor {
             if (args.length >= 3) {
                 if (args[0].equals("search") || args[0].equals("s")) {
                     if(commandSender instanceof ConsoleCommandSender) {
-                        commandSender.sendMessage(ChatColor.RED + "You do not have permissions to use this command");
+                        commandSender.sendMessage(MyChatColor.RED + "You do not have permissions to use this command");
                         return true;
                     }
                     switch (args[1]) {
                         case "shop":
-                        case "s":
+                        case "s": {
+                            //construct searchkey
                             StringBuilder key = new StringBuilder();
                             for (int i = 2; i < args.length - 1; i++) {
                                 key.append(args[i]);
                                 key.append(' ');
                             }
                             key.append(args[args.length - 1]);
-                            plugin.gui.openRefinedShopPageByName(((Player) commandSender), key.toString());
-                            return true;
-
-                        case "item":
-                        case "i":
-                            StringBuilder key1 = new StringBuilder();
-                            for (int i = 2; i < args.length - 1; i++) {
-                                key1.append(args[i]);
-                                key1.append(' ');
+                            String searchKey = key.toString();
+                            //get shops and display
+                            Player player = (Player) commandSender;
+                            List<Map<String,String>> refinedShops = plugin.getShopRepo().getRefinedShopsByName(searchKey);
+                            if(refinedShops.size() == 0) {
+                                player.sendMessage(MyChatColor.RED + "No shops with matching name found");
+                                return true;
                             }
-                            key1.append(args[args.length - 1]);
-                            plugin.gui.openRefinedItemInventory(((Player) commandSender), key1.toString());
+                            Inventory refinedShopDirectory = GUI.makeShopInventory("Search results", refinedShops, InvType.SEARCH, plugin.getCustomConfig(), null);
+                            player.openInventory(refinedShopDirectory);
                             return true;
-
+                        }
+                        case "item":
+                        case "i": {
+                            //construct searchkey
+                            StringBuilder key = new StringBuilder();
+                            for (int i = 2; i < args.length - 1; i++) {
+                                key.append(args[i]);
+                                key.append(' ');
+                            }
+                            key.append(args[args.length - 1]);
+                            String searchKey = key.toString();
+                            //get shops and display
+                            Player player = (Player) commandSender;
+                            Map<String,Object> searchResults = plugin.getShopRepo().findItem(searchKey);
+                            List<ItemStack> refinedItems = (List<ItemStack>) searchResults.get("items");
+                            List<String> shops = ((List<String>) searchResults.get("shops"));
+                            if(refinedItems.size() == 0) {
+                                player.sendMessage(MyChatColor.RED + "No shops with matching name found");
+                                return true;
+                            }
+                            Inventory refinedItemInv = GUI.makeItemInventory("Search results", "", refinedItems, shops, InvType.SEARCH, plugin.getCustomConfig(), null);
+                            player.openInventory(refinedItemInv);
+                            return true;
+                        }
                         case "player":
-                        case "p":
-                            plugin.gui.openRefinedShopPageByPlayer(((Player) commandSender), args[2]);
+                        case "p": {
+                            //construct searchkey
+                            StringBuilder key = new StringBuilder();
+                            for (int i = 2; i < args.length - 1; i++) {
+                                key.append(args[i]);
+                                key.append(' ');
+                            }
+                            key.append(args[args.length - 1]);
+                            String searchKey = key.toString();
+                            //get shops and display
+                            Player player = (Player) commandSender;
+                            List<Map<String,String>> refinedShops = plugin.getShopRepo().getRefinedShopsByPlayer(searchKey);
+                            if(refinedShops.size() == 0) {
+                                player.sendMessage(MyChatColor.RED + "No shops with matching name found");
+                                return true;
+                            }
+                            Inventory refinedShopDirectory = GUI.makeShopInventory("Search results", refinedShops, InvType.SEARCH, plugin.getCustomConfig(), null);
+                            player.openInventory(refinedShopDirectory);
                             return true;
+                        }
                     }
                 }
             }
@@ -78,37 +120,43 @@ public class GUIMarketplaceCommands implements TabExecutor {
                     case "moderate":
                     case "m":
                         if (!commandSender.hasPermission("GUIMD.moderate") || commandSender instanceof ConsoleCommandSender) {
-                            commandSender.sendMessage(ChatColor.RED + "You do not have permissions to use this command");
+                            commandSender.sendMessage(MyChatColor.RED + "You do not have permissions to use this command");
                             return true;
                         }
                         if (!plugin.getCustomConfig().directoryModerationEnabled()) {
-                            commandSender.sendMessage(ChatColor.RED + "This feature is not enabled! Enable it from the config");
+                            commandSender.sendMessage(MyChatColor.RED + "This feature is not enabled! Enable it from the config");
                             return true;
                         }
                         switch (args[1]) {
                             case "approvals":
-                            case "a":
-                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.PENDING_APPROVALS);
+                            case "a": {
+                                Inventory shopDirectory = GUI.makeShopInventory("GMD pending approvals", plugin.getShopRepo().getPendingShopDetails(), InvType.PENDING_APPROVALS, plugin.getCustomConfig(), null);
+                                ((Player) commandSender).openInventory(shopDirectory);
                                 return true;
+                            }
                             case "changes":
-                            case "c":
-                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.PENDING_CHANGES);
+                            case "c": {
+                                Inventory shopDirectory = GUI.makeShopInventory("GMD pending changes", plugin.getShopRepo().getPendingChangesDetails(), InvType.PENDING_CHANGES, plugin.getCustomConfig(), null);
+                                ((Player) commandSender).openInventory(shopDirectory);
                                 return true;
-
-                            case "review":
-                                plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.REVIEW);
+                            }
+                            case "review": {
+                                Inventory shopDirectory = GUI.makeShopInventory("GMD review shops", plugin.getShopRepo().getShopDetails(), InvType.REVIEW, plugin.getCustomConfig(), null);
+                                ((Player) commandSender).openInventory(shopDirectory);
                                 return true;
-
-                            case "recover":
-                                plugin.gui.openShopDirectoryModerator((Player) commandSender, InvType.RECOVER);
+                            }
+                            case "recover": {
+                                Inventory shopDirectory = GUI.makeShopInventory("GMD recover shop book", plugin.getShopRepo().getShopDetails(), InvType.RECOVER, plugin.getCustomConfig(), null);
+                                ((Player) commandSender).openInventory(shopDirectory);
                                 return true;
+                            }
                             case "dynmap":
                             case "d":
                                 if(plugin.getCustomConfig().getEnableDynmapMarkers())
                                     plugin.getProcessHandler().startAddingAllShopMarkers((Player) commandSender);
                                 else {
-                                    commandSender.sendMessage(ChatColor.RED + "Dynmap markers are currently disabled");
-                                    commandSender.sendMessage(ChatColor.YELLOW + "Dynmap markers can be enabled in the config");
+                                    commandSender.sendMessage(MyChatColor.RED + "Dynmap markers are currently disabled");
+                                    commandSender.sendMessage(MyChatColor.YELLOW + "Dynmap markers can be enabled in the config");
                                 }
                                 return true;
                         }
@@ -118,30 +166,29 @@ public class GUIMarketplaceCommands implements TabExecutor {
             if (args.length == 1) {
                 switch (args[0]) {
                     case "help":
-                        commandSender.sendMessage(ChatColor.LIGHT_PURPLE + "=============GUIMarketplaceDirectory v" + plugin.getDescription().getVersion() + "=============");
-                        commandSender.sendMessage(ChatColor.GOLD + "/guimd search [item/player/shop] <key>: " + ChatColor.GREEN + "Search for items via item name or shops via shop name/player name");
+                        commandSender.sendMessage(MyChatColor.LIGHT_PURPLE + "=============GUIMarketplaceDirectory v" + plugin.getDescription().getVersion() + "=============");
+                        commandSender.sendMessage(MyChatColor.GOLD + "/guimd search [item/player/shop] <key>: " + MyChatColor.GREEN + "Search for items via item name or shops via shop name/player name");
                         if(commandSender.hasPermission("GUIMD.dir")) {
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd dir: " + ChatColor.GREEN + "Gives you a copy of the Marketplace Directory book");
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd tutorial: " + ChatColor.GREEN + "Shows link to the tutorial video");
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd dir: " + MyChatColor.GREEN + "Gives you a copy of the Marketplace Directory book");
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd tutorial: " + MyChatColor.GREEN + "Shows link to the tutorial video");
                         }
                         if(commandSender.hasPermission("GUIMD.moderate")) {
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate approvals: " + ChatColor.GREEN + "Shows shops requiring approval");
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate changes: " + ChatColor.GREEN + "Shows shop changes requiring acceptance");
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate review: " + ChatColor.GREEN + "Shows active shops for removal if deemed objectionable");
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate recover: " + ChatColor.GREEN + "Shows active shops for recovering a copy of the [shop init] book if the owner loses their copy");
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd moderate dynmap: " + ChatColor.GREEN + "Updates the markers from all active shops on the dynmap");
-                            commandSender.sendMessage(ChatColor.GOLD + "/guimd reload: " + ChatColor.GREEN + "Refreshes the plugin");  
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd moderate approvals: " + MyChatColor.GREEN + "Shows shops requiring approval");
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd moderate changes: " + MyChatColor.GREEN + "Shows shop changes requiring acceptance");
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd moderate review: " + MyChatColor.GREEN + "Shows active shops for removal if deemed objectionable");
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd moderate recover: " + MyChatColor.GREEN + "Shows active shops for recovering a copy of the [shop init] book if the owner loses their copy");
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd moderate dynmap: " + MyChatColor.GREEN + "Updates the markers from all active shops on the dynmap");
+                            commandSender.sendMessage(MyChatColor.GOLD + "/guimd reload: " + MyChatColor.GREEN + "Refreshes the plugin");  
                         }
                         return true;
 
                     case "r":
                     case "reload":
                         if (!(commandSender instanceof ConsoleCommandSender) && !commandSender.hasPermission("GUIMD.moderate")) {
-                            commandSender.sendMessage(ChatColor.RED + "You do not have permissions to reload the marketplace directory config");
+                            commandSender.sendMessage(MyChatColor.RED + "You do not have permissions to reload the marketplace directory config");
                             return true;
                         }
                         plugin.getCustomConfig().reloadConfig();
-                        plugin.gui = new GUI(plugin);
                         return true;
                     case "dir":
                     case "d":
@@ -149,7 +196,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             Player player = (Player) commandSender;
 
                             if(!commandSender.hasPermission("GUIMD.dir")) {
-                                player.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                                player.sendMessage(MyChatColor.RED + "You do not have permission to use this command!");
                                 return true;
                             }
                             //Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "give " + player.getDisplayName() + " written_book{display:{Name:'{\"text\":\"Marketplace Directory\",\"color\":\"gold\",\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false}'},title:\"[Marketplace]\",author:\"Sil and Lonne\"} 1");
@@ -169,7 +216,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         String tutorialLink = this.config.getTutorialLink();
                         String modTutorialLink = this.config.getModTutorialLink();
                         if(tutorialLink.length() <= 5 && modTutorialLink.length() <= 5){
-                            commandSender.sendMessage(ChatColor.RED + "No tutorial video links were provided ");
+                            commandSender.sendMessage(MyChatColor.RED + "No tutorial video links were provided ");
                             return true;
                         }
                         else {

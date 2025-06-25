@@ -1,6 +1,6 @@
 package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.entity.Player;
 
 import net.kyori.adventure.text.Component;
@@ -33,8 +33,8 @@ public abstract class ConfirmationProcess implements ChatProcess{
     }
 
     public static void sendConfirmationMessage(Player player, String msg) {
-        Component yes = Component.text(ChatColor.GOLD + "" + ChatColor.BOLD + "Y").clickEvent(net.kyori.adventure.text.event.ClickEvent.clickEvent(net.kyori.adventure.text.event.ClickEvent.Action.RUN_COMMAND,"Y"));
-        Component no = Component.text(ChatColor.GOLD + "" + ChatColor.BOLD + "N").clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND,"N"));
+        Component yes = Component.text(MyChatColor.GOLD + "" + MyChatColor.BOLD + "Y").clickEvent(net.kyori.adventure.text.event.ClickEvent.clickEvent(net.kyori.adventure.text.event.ClickEvent.Action.RUN_COMMAND,"Y"));
+        Component no = Component.text(MyChatColor.GOLD + "" + MyChatColor.BOLD + "N").clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND,"N"));
         player.sendMessage(Component.text(msg + " (").color(NamedTextColor.YELLOW).append(yes).append(Component.text("/")).append(no).append(Component.text(")")).color(NamedTextColor.YELLOW));
     }
 

@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Locale;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
@@ -50,7 +50,7 @@ public class ChangeDisplayitemProcess implements ChatProcess{
 
         this.moderateEnabled = moderateEnabled;
 
-        player.sendMessage(ChatColor.YELLOW + "Enter display item name (material name only, nil to cancel)");
+        player.sendMessage(MyChatColor.YELLOW + "Enter display item name (material name only, nil to cancel)");
     }
 
     @Override
@@ -66,10 +66,10 @@ public class ChangeDisplayitemProcess implements ChatProcess{
                 displayitem = materialName;
                 if (moderateEnabled) {
                     shopRepo.submitNewDisplayItem(uuid, shopKey, displayitem);
-                    player.sendMessage(ChatColor.GREEN + "Submitted new display item " + ChatColor.GOLD + "\"" + material.getKey().getKey() + "\"" + ChatColor.GREEN + " for approval! Please open a shop ticket to notify staff!");
+                    player.sendMessage(MyChatColor.GREEN + "Submitted new display item " + MyChatColor.GOLD + "\"" + material.getKey().getKey() + "\"" + MyChatColor.GREEN + " for approval! Please open a shop ticket to notify staff!");
                 } else {
                     shopRepo.setDescription(player, shopKey, displayitem);
-                    player.sendMessage(ChatColor.GREEN + "Set shop display item to " + ChatColor.GOLD + material.getKey().getKey());
+                    player.sendMessage(MyChatColor.GREEN + "Set shop display item to " + MyChatColor.GOLD + material.getKey().getKey());
                 }
                 finished = true;
                 succesful = true;
@@ -78,8 +78,8 @@ public class ChangeDisplayitemProcess implements ChatProcess{
                 return true;
             }
             else {
-                player.sendMessage(ChatColor.RED + "Item name doesn't match to a proper material name. Try again");
-                player.sendMessage(ChatColor.YELLOW + "Enter display item name (material name only, nil to cancel)");
+                player.sendMessage(MyChatColor.RED + "Item name doesn't match to a proper material name. Try again");
+                player.sendMessage(MyChatColor.YELLOW + "Enter display item name (material name only, nil to cancel)");
                 return true;
             }
         }
@@ -125,7 +125,7 @@ public class ChangeDisplayitemProcess implements ChatProcess{
         finished = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }
 
     @Override

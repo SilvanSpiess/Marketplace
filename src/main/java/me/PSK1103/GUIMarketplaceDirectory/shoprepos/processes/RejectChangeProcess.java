@@ -1,6 +1,6 @@
 package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.entity.Player;
 
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
@@ -31,13 +31,13 @@ public class RejectChangeProcess extends ConfirmationProcess {
     @Override 
     public void executeTask(Player player) {
         if (shopRepo.rejectChange(shopKey)) {
-            player.sendMessage(ChatColor.GREEN + "Change rejected!");
+            player.sendMessage(MyChatColor.GREEN + "Change rejected!");
             finished = true;
             succesful = true;
             processHandler.discontinueProcessOfPlayer(this, uuid);
             processHandler.discontinueProcessOfShop(this, shopKey);
         } else {
-            player.sendMessage(ChatColor.RED + "Something went wrong");
+            player.sendMessage(MyChatColor.RED + "Something went wrong");
             cancel();
         }
     }
@@ -67,7 +67,7 @@ public class RejectChangeProcess extends ConfirmationProcess {
         finished = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }
 
     @Override

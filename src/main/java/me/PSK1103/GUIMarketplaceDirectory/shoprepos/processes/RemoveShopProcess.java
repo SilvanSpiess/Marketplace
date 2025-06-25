@@ -1,6 +1,6 @@
 package me.PSK1103.GUIMarketplaceDirectory.shoprepos.processes;
 
-import org.bukkit.ChatColor;
+import me.PSK1103.GUIMarketplaceDirectory.utils.MyChatColor;
 import org.bukkit.entity.Player;
 
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
@@ -38,22 +38,20 @@ public class RemoveShopProcess extends ConfirmationProcess{
         ConfirmationProcess.sendConfirmationMessage(player, "Do you wish to " + removeKind + " this shop?");
     }
 
-
-
     @Override 
     public void executeTask(Player player) {
         if (shopRepo.removeShop(player, shopKey)) {
             if (removeKind.charAt(removeKind.length()-1) == 'e') {
-                player.sendMessage(ChatColor.GREEN + "Shop " + removeKind + "d succesfully!");
+                player.sendMessage(MyChatColor.GREEN + "Shop " + removeKind + "d succesfully!");
             } else {
-                player.sendMessage(ChatColor.GREEN + "Shop " + removeKind + "ed succesfully!");
+                player.sendMessage(MyChatColor.GREEN + "Shop " + removeKind + "ed succesfully!");
             }
             finished = true;
             succesful = true;
             processHandler.discontinueProcessOfPlayer(this, uuid);
             processHandler.discontinueProcessOfShop(this, shopKey);
         } else {
-            player.sendMessage(ChatColor.RED + "Something went wrong");
+            player.sendMessage(MyChatColor.RED + "Something went wrong");
             cancel();
         }
     }
@@ -83,7 +81,7 @@ public class RemoveShopProcess extends ConfirmationProcess{
         finished = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
-        player.sendMessage(ChatColor.GRAY + "Canceled " + getName());
+        player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());
     }
     
     @Override
