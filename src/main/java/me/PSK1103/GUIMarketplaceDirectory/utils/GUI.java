@@ -24,7 +24,7 @@ public class GUI {
         NOTHING, 
         PREVIOUS_PAGE, NEXT_PAGE, GO_BACK, 
         OPEN_SHOP, OPEN_EDIT_SHOP_INV, DELETE_ITEM, REMOVE_MATCHING_ITEMS, ADD_ITEM,
-        DYNMAP, FIND_BETTER_ALTERNATIVE,
+        DYNMAP, WAYPOINT, FIND_BETTER_ALTERNATIVE,
         CANCEL_DESCRIPTION, SET_DESCRIPTION,
         CANCEL_LOCATION, SET_LOCATION,
         CANCEL_DISPLAYITEM, SET_DISPLAYITEM,
@@ -106,27 +106,31 @@ public class GUI {
         ArrayList<Component> texts = new ArrayList<>();
         switch(type) {
             case NORMAL:
-                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+                texts.add(Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"));
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on " + MyChatColor.LIGHT_PURPLE + "§oDynmap"));
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oShift click to get the " + MyChatColor.AQUA + "§oXaero waypoint"));
             break;
             case PENDING_APPROVALS: 
-                texts.add(Component.text(MyChatColor.AQUA + "Shift click to view")); 
-                texts.add(Component.text(MyChatColor.GREEN + "Press 'swap-offhand' key to approve"));
-                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to reject"));
+                texts.add(Component.text(MyChatColor.AQUA + "§oShift click to view")); 
+                texts.add(Component.text(MyChatColor.GREEN + "§oPress 'swap-offhand' key to approve"));
+                texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to reject"));
             break;
             case PENDING_CHANGES:
-                texts.add(Component.text(MyChatColor.WHITE + "Left click to see old shop"));
-                texts.add(Component.text(MyChatColor.AQUA + "Right click to see new shop"));
-                texts.add(Component.text(MyChatColor.GREEN + "Press 'swap-offhand' key to approve"));
-                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to reject"));
+                texts.add(Component.text(MyChatColor.WHITE + "§oLeft click to see old shop"));
+                texts.add(Component.text(MyChatColor.AQUA + "§oRight click to see new shop"));
+                texts.add(Component.text(MyChatColor.GREEN + "§oPress 'swap-offhand' key to approve"));
+                texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to reject"));
             break;
             case REVIEW: 
-                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to delete"));
+                texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to delete"));
             break;
             case RECOVER: 
-                texts.add(Component.text(MyChatColor.AQUA + "Right click to recover"));
+                texts.add(Component.text(MyChatColor.AQUA + "§oRight click to recover"));
             break;
             case SEARCH:
-                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+                texts.add(Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"));
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on " + MyChatColor.LIGHT_PURPLE + "§oDynmap"));
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oShift click to get the " + MyChatColor.AQUA + "§oXaero waypoint"));
             break;
             default:
         }
@@ -138,14 +142,15 @@ public class GUI {
         switch(type) {
             case INV_EDIT: 
                 texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
-                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to delete this item"));
+                texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to delete this item"));
             break;
             case SEARCH:
-                texts.add(Component.text(MyChatColor.YELLOW + "Left-click to view this shop"));
-                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+                texts.add(Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"));
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on " + MyChatColor.LIGHT_PURPLE + "§oDynmap"));
+                texts.add(Component.text(config.getDefaultShopDynmapColor() + "§oShift click to get the " + MyChatColor.AQUA + "§oXaero waypoint"));
             break;
             case ADD_ITEM:
-                texts.add(Component.text(MyChatColor.RED + "Press 'drop' key to remove"));
+                texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to remove"));
             break;
             default:
                 texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
@@ -311,9 +316,13 @@ public class GUI {
         //see shop button
         ItemStack seeShop;
         if (hasPendingChanges) seeShop = makeShopDisplayItem(pendingChanges, config, true,
-                                                             Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+                                                             Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"),
+                                                             Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on " + MyChatColor.LIGHT_PURPLE + "§oDynmap"),
+                                                             Component.text(config.getDefaultShopDynmapColor() + "§oShift click to get the " + MyChatColor.AQUA + "§oXaero waypoint"));
         else seeShop = makeShopDisplayItem(shop, config, false, 
-                                           Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on Dynmap"));
+                                           Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"),
+                                           Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on " + MyChatColor.LIGHT_PURPLE + "§oDynmap"),
+                                           Component.text(config.getDefaultShopDynmapColor() + "§oShift click to get the " + MyChatColor.AQUA + "§oXaero waypoint"));
         shopEditMenuInv.setItem(4,seeShop);
         //setLocation button
         ItemStack setLocation = makeDisplayItem(Material.COMPASS, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Set location"));
@@ -392,6 +401,7 @@ public class GUI {
             if (slotNum == 13 && click != ClickType.DROP) return Action.ADD_OWNER;
             if (slotNum == 13 && click == ClickType.DROP) return Action.CANCEL_OWNER;
             if (slotNum == 16) return Action.DELETE_SHOP;
+            if (slotNum == 4 && click.isShiftClick()) return Action.WAYPOINT;
             if (slotNum == 4 && click.isRightClick()) return Action.DYNMAP;
             if (slotNum == 4 && !click.isRightClick()) return Action.OPEN_EDIT_SHOP_INV;
             return Action.NOTHING;
@@ -402,6 +412,7 @@ public class GUI {
             return Action.NOTHING;
         } else if (slotNum + 45*currPage < holder.getInv().size()) {
             if (click.isShiftClick() && holder.getType() != InvType.ADD_ITEM && holder.getType() != InvType.SEARCH) return Action.FIND_BETTER_ALTERNATIVE;
+            if (click.isShiftClick() && holder.getType() == InvType.SEARCH) return Action.WAYPOINT;
             if (click.isLeftClick() && holder.getType() == InvType.SEARCH) return Action.OPEN_SHOP;
             if (click.isRightClick() && holder.getType() == InvType.SEARCH) return Action.DYNMAP;
             if (click == ClickType.DROP && holder.getType() == InvType.INV_EDIT) return Action.DELETE_ITEM;
@@ -426,7 +437,7 @@ public class GUI {
         }
         //if a shop was clicked
         if (slotNum + 45*currPage < holder.getShops().size()) {
-            if (click.isShiftClick()) return Action.OPEN_SHOP;
+            if (click.isShiftClick() && (type != InvType.SEARCH && type != InvType.NORMAL)) return Action.OPEN_SHOP;
             //pending approvals
             if (click == ClickType.SWAP_OFFHAND && type==InvType.PENDING_APPROVALS) return Action.APPROVE_SHOP;
             if (click == ClickType.DROP && type==InvType.PENDING_APPROVALS) return Action.REJECT_SHOP;
@@ -440,6 +451,7 @@ public class GUI {
             //recover
             if (click.isRightClick() && type==InvType.RECOVER) return Action.GET_SHOP_BOOK;
             //normal and search window
+            if (click.isShiftClick() && (type == InvType.NORMAL || type == InvType.SEARCH)) return Action.WAYPOINT;
             if (click.isRightClick() && (type == InvType.NORMAL || type == InvType.SEARCH)) return Action.DYNMAP;
             if (click.isLeftClick() && (type == InvType.NORMAL || type == InvType.SEARCH)) return Action.OPEN_SHOP;
         }

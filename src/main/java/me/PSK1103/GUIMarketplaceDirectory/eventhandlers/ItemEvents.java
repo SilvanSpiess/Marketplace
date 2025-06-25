@@ -176,6 +176,20 @@ public class ItemEvents implements Listener {
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
                     player.sendMessage(parsed);
                 } break;
+                case WAYPOINT: {
+                    //xaero waypoint link
+                    String input = plugin.getShopRepo().getSpecificShopDetails(key).get("loc");
+                    String[] parts = input.split(",");
+                    String shopname = plugin.getShopRepo().getSpecificShopDetails(key).get("name");
+                    String messageWaypointLink;
+                    if(parts.length == 2) {       
+                        messageWaypointLink = "xaero-waypoint:%s:X:%s:%s:%s:11:false:0:Internal-overworld-waypoints".formatted(shopname, parts[0], "64", parts[1]);
+                    }
+                    else {      
+                        messageWaypointLink = "xaero-waypoint:%s:X:%s:%s:%s:11:false:0:Internal-overworld-waypoints".formatted(shopname, parts[0], parts[1], parts[2]);
+                    }
+                    player.sendMessage(messageWaypointLink);
+                } break;
                 case FIND_BETTER_ALTERNATIVE:
                     plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), currPage*45 + slotNum);
                 break;

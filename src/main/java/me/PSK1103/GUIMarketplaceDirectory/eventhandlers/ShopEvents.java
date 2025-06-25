@@ -151,20 +151,34 @@ public class ShopEvents implements Listener {
                     Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker());
                     player.openInventory(shopInventory);
                 break;
-                case DYNMAP:
+                case DYNMAP: {
                     String input = holder.getShops().get(slotNum + 45*currPage).get("loc");
                     String[] parts = input.split(",");
-                    String messageLink;
+                    String messageDynmapLink;
                     if(parts.length == 2) {       
-                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
+                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
                     }
                     else {      
-                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
+                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
                     }
                     var mm = MiniMessage.miniMessage();
-                    Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
+                    Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageDynmapLink + "</underlined>'><click:OPEN_URL:'" + messageDynmapLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
                     player.sendMessage(parsed);
-                break;
+                } break;
+                case WAYPOINT: {
+                    //xaero waypoint link
+                    String input = holder.getShops().get(slotNum + 45*currPage).get("loc");
+                    String[] parts = input.split(",");
+                    String shopname = holder.getShops().get(slotNum + 45*currPage).get("name");
+                    String messageWaypointLink;
+                    if(parts.length == 2) {       
+                        messageWaypointLink = "xaero-waypoint:%s:X:%s:%s:%s:11:false:0:Internal-overworld-waypoints".formatted(shopname, parts[0], "64", parts[1]);
+                    }
+                    else {      
+                        messageWaypointLink = "xaero-waypoint:%s:X:%s:%s:%s:11:false:0:Internal-overworld-waypoints".formatted(shopname, parts[0], parts[1], parts[2]);
+                    }
+                    player.sendMessage(messageWaypointLink);
+                } break;
                 case APPROVE_SHOP: {
                     if (plugin.getProcessHandler().isPlayerInProcess(player.getUniqueId().toString())) {
                         ChatProcess process = this.plugin.getProcessHandler().getPlayerProcess(player.getUniqueId().toString());
