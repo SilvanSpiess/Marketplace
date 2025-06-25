@@ -432,9 +432,6 @@ public class GUI {
             else if(type == InvType.RECOVER) {
                 shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to recover")); //Maybe send recovering message in chat, to notify player
             }
-            else if(type == InvType.LOOKUP) {
-                shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to check activity")); //confusing, todo later
-            }
             else if(type == InvType.ADD_ITEM) {
                 shopItem = makeShopDisplayItem(shops.get(i), Component.text(ChatColor.AQUA + "Right click to set lookup radius")); //confusing, todo later
             } else {

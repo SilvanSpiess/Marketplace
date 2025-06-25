@@ -10,5 +10,5 @@ package me.PSK1103.GUIMarketplaceDirectory.invholders;
      * - (type 6) search -> search menu
      */
 public enum InvType {
-    NORMAL, SHOP_MENU, INV_EDIT, PENDING_APPROVALS, PENDING_CHANGES, REVIEW, RECOVER, LOOKUP, ADD_ITEM, SEARCH;
+    NORMAL, SHOP_MENU, INV_EDIT, PENDING_APPROVALS, PENDING_CHANGES, REVIEW, RECOVER, ADD_ITEM, SEARCH;
 }

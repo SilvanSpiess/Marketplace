@@ -72,9 +72,5 @@ public interface ShopRepo {
 
     Map<String, Object> findItem(String searchKey);
 
-    void lookupShop(Player player, String key);
-
-    void lookupAllShops(Player player);
-
     boolean shopExist(String shopKey);
 }

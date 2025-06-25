@@ -46,7 +46,7 @@
         <dependency> <!-- TODO maybe -->
             <groupId>de.tr7zw</groupId>
             <artifactId>item-nbt-api-plugin</artifactId>
-            <version>2.11.1-SNAPSHOT</version>
+            <version>2.14.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -65,12 +65,6 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.87.Final</version>
         </dependency>
-        <dependency> <!-- TODO -->
-            <groupId>net.coreprotect</groupId>
-            <artifactId>coreprotect</artifactId>
-            <version>21.3</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency> <!-- 1.20.1 -->
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot</artifactId>
@@ -80,15 +74,14 @@
         <dependency> <!-- 1.20.1 -->
             <groupId>net.kyori</groupId>
             <artifactId>adventure-api</artifactId>
-            <version>4.14.0</version>
+            <version>4.17.0</version>
         </dependency>
         <dependency> <!-- 1.20.1 -->
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-minimessage</artifactId>
-            <version>4.14.0</version>
+            <version>4.17.0</version>
         </dependency>
     </dependencies>
-
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

@@ -72,15 +72,6 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             return true;
                     }
                 }
-                else if((args[0].equals("moderate") || args[0].equals("m")) && (args[1].equals("lookup") || args[1].equals("l"))) {
-                    if((args[2].equals("set") || args[2].equals("s"))) {
-                        if (plugin.getCustomConfig().useCoreProtect())
-                            plugin.gui.openShopDirectoryModerator(((Player) commandSender), InvType.ADD_ITEM);
-                    }
-                    else if((args[2].equals("all") || args[2].equals("a")))
-                        plugin.getShopRepo().lookupAllShops(((Player) commandSender));
-                    return true;
-                }
             }
             if (args.length == 2) {
                 switch (args[0]) {
@@ -111,12 +102,6 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             case "recover":
                                 plugin.gui.openShopDirectoryModerator((Player) commandSender, InvType.RECOVER);
                                 return true;
-
-                            case "lookup": //very interesting can't find explanation about this on github and it doesn't really make sense to be the 'edit your shop' menu
-                                if(plugin.getCustomConfig().useCoreProtect())
-                                    plugin.gui.openShopDirectoryModerator((Player) commandSender, InvType.LOOKUP);
-                                return true;
-
                             case "dynmap":
                             case "d":
                                 if(plugin.getCustomConfig().getEnableDynmapMarkers())
@@ -260,13 +245,6 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         hints.add("review");
                         hints.add("dynmap");
                     } else {
-                        /*
-                        if ("lookup".startsWith(args[1])) {
-                            if (!args[1].equals("lookup")) {
-                                hints.add("lookup");
-                            }
-                        }
-                        */
                         if ("approvals".startsWith(args[1])) {
                             if (!args[1].equals("approvals")) {
                                 hints.add("approvals");

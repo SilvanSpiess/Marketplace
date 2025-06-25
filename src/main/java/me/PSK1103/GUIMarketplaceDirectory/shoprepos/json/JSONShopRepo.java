@@ -7,7 +7,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import me.PSK1103.GUIMarketplaceDirectory.utils.CoreProtectLookup;
 import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -23,10 +22,7 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 class Shop {
@@ -931,73 +927,5 @@ public class JSONShopRepo implements ShopRepo {
     private void addShopCountMetric() {
         plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shop_items", () -> shops.values().stream().mapToInt(shop -> shop.getInv().size()).sum()));
         plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shops", shops::size));
-    }
-
-    @Override
-    public void lookupShop(Player player, String key) {
-        String timeString = plugin.getCustomConfig().getLookupTime();
-        java.util.regex.Pattern timePattern = java.util.regex.Pattern.compile("(\\d+[m|h|s|d|M])");
-        Matcher timeMatcher = timePattern.matcher(timeString);
-        int time = 0;
-        try {
-            while(timeMatcher.find()) {
-                String type = timeMatcher.group(2);
-                int value = Integer.parseInt(timeMatcher.group(1));
-                time += value *
-                        switch (type) {
-                            case "s" -> 1;
-                            case "m" -> 60;
-                            case "h" -> 3600;
-                            case "d" -> 86400;
-                            case "M" -> 3592000;
-                            default -> throw new IllegalStateException("Unexpected value: " + type);
-                        };
-            }
-        }
-        catch (Exception ignored) {
-            time = 604800;
-        }
-        Shop shop = shops.get(key);
-        String loc = shop.getLoc();
-        Matcher locMatcher = java.util.regex.Pattern.compile("(-?\\d+),(-?\\d+),(-?\\d+)").matcher(loc);
-        int x,y,z;
-        if(locMatcher.find()) {            
-            if(locMatcher.group(3)==null) {
-                x = Integer.parseInt(locMatcher.group(1));
-                y = 64;
-                z = Integer.parseInt(locMatcher.group(2));
-            }
-            else {
-                x = Integer.parseInt(locMatcher.group(1));
-                y = Integer.parseInt(locMatcher.group(2));
-                z = Integer.parseInt(locMatcher.group(3));
-            }                
-        }
-        else {
-            x = player.getLocation().getBlockX();            
-            y = player.getLocation().getBlockY();
-            z = player.getLocation().getBlockZ();
-        }        
-        Location location = new Location(player.getWorld(), x, y, z);
-        int radius = plugin.getCustomConfig().getDefaultLookupRadius();
-        //int interactions = plugin.getCustomConfig().getInteractions();
-        List<String> owners = new ArrayList<>(shop.getOwners().values());
-        new CoreProtectLookup(plugin).lookup(player, owners, location, time, radius);
-    }
-
-    @Override
-    public void lookupAllShops(Player player) {
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
-        shops.forEach((k, shop) -> {
-            class LookupThread implements Runnable{
-                @Override
-                public void run() {
-                    player.sendMessage(ChatColor.GREEN + "For " + ChatColor.GOLD + shop.getName());
-                    lookupShop(player, shop.getKey());
-                }
-            }
-            executorService.submit(new LookupThread());
-        });
-        executorService.shutdown();
     }
 }

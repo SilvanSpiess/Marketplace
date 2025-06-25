@@ -243,23 +243,6 @@ public class ShopEvents implements Listener {
                     plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
                 }
             }
-            else if (holder.getType() == InvType.LOOKUP) {
-                if(shopSelectEvent.isRightClick()) {
-                    int finalCurrPage = currPage;
-                    class LookupThread implements Runnable {
-                        @Override
-                        public void run() {
-                            plugin.getShopRepo().lookupShop((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(finalCurrPage - 1)).get("key"));
-                        }
-                    }
-                    new Thread(new LookupThread()).start();
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                }
-                else {
-                    shopSelectEvent.getWhoClicked().closeInventory();
-                    plugin.gui.openShopInventory((Player) shopSelectEvent.getWhoClicked(), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("key"), holder.getShops().get(shopSelectEvent.getRawSlot() + 45*(currPage - 1)).get("name"),holder.getType());
-                }
-            }
             else if (holder.getType() == InvType.ADD_ITEM) {
                 if(shopSelectEvent.isRightClick()) {
                     String uuid = shopSelectEvent.getWhoClicked().getUniqueId().toString();
