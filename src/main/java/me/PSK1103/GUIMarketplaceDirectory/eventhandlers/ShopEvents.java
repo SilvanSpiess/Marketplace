@@ -156,10 +156,12 @@ public class ShopEvents implements Listener {
                     String[] parts = input.split(",");
                     String messageDynmapLink;
                     if(parts.length == 2) {       
-                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
+                        // pre 1.21.7 messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
+                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[1]);
                     }
                     else {      
-                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
+                        // pre 1.21.7 messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
+                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[2]);
                     }
                     var mm = MiniMessage.miniMessage();
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageDynmapLink + "</underlined>'><click:OPEN_URL:'" + messageDynmapLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
