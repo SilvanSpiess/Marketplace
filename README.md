@@ -99,3 +99,16 @@ the moderator to confirm the removal of the shop.
 approved shops. Moderators can right click on a shop to make a copy of the shop edit book. 
 
 ##### By default, these three utilities are enabled. It is recommended not to turn off moderation.
+
+### Updating GUIMD to newer versions of minecraft.
+Some versions of minecraft might introduce minor changes, which require some tweaks to json and config files. Here we detail some actions needed to update our plugin to the newest version of minecraft.
+
+#### Updating from 1.20.4 or lower to 1.20.5 or higher
+Mojang added armadillos, who drop scutes and hence renamed the already existing scutes to turtle scutes. 
+This causes GUIMarketplaceDirectory to crash when reading the json database. 
+To fix this replace all instances of `"SCUTE"` with `"TURTLE_SCUTE"`. (Make sure to include the quotes to prevent side effects.)
+
+#### Updating from 1.21.8 or lower to 1.21.9 or higher
+Mojang added copper chains and renamed the already existing chains to iron chains. 
+This causes GUIMarketplaceDirectory to crash when reading the json database. 
+To fix this replace all instances of `"CHAIN"` with `"IRON_CHAIN"`. (Make sure to include the quotes to prevent side effects.)
