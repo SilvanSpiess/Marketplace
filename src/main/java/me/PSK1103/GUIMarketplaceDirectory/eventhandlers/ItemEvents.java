@@ -166,11 +166,13 @@ public class ItemEvents implements Listener {
                     String input = plugin.getShopRepo().getSpecificShopDetails(key).get("loc");
                     String[] parts = input.split(",");
                     String messageLink;
-                    if(parts.length == 2) {       
-                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
+                    if(parts.length == 2) {
+                        // pre 1.21.7 messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[1]);
                     }
-                    else {      
-                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
+                    else {
+                        // pre 1.21.7 messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[2]);
                     }
                     var mm = MiniMessage.miniMessage();
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
