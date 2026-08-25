@@ -25,6 +25,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
@@ -303,171 +305,48 @@ public class JSONShopRepo implements ShopRepo {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-            // JSONParser parser = new JSONParser();
-            // try {
-            //     File shopFile = plugin.getShops();
-            //     assert shopFile != null;
-            //     parser.parse(new FileReader(shopFile));
-            //     JSONObject data = new JSONObject();
-            //     JSONArray shopJSONs = new JSONArray();
-            //     JSONArray pendingShopJSONs = new JSONArray();
-            //     JSONArray pendingChangesJSONs = new JSONArray();
-            //     shops.forEach((s, shop1) -> {
-            //         JSONObject shopJSON = convertToJSON(shop1);
-            //         JSONArray items = new JSONArray();
-            //         shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
-            //         shopJSON.put("items", items);
-            //         shopJSONs.add(shopJSON);
-            //     });
-            //     pendingShops.forEach((s, shop1) -> {
-            //         JSONObject shopJSON = convertToJSON(shop1);
-            //         JSONArray items = new JSONArray();
-            //         shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
-            //         shopJSON.put("items", items);
-            //         pendingShopJSONs.add(shopJSON);
-            //     });
-            //     pendingChanges.forEach((s, shop1) -> pendingChangesJSONs.add(convertToJSON(shop1)));
-
-            //     data.put("shops", shopJSONs);
-            //     data.put("pendingShops", pendingShopJSONs);
-            //     data.put("pendingChanges", pendingChangesJSONs);
-
-            //     Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            //     JsonParser jp = new JsonParser();
-            //     JsonElement je = jp.parse(data.toJSONString());
-            //     String prettyJsonString = gson.toJson(je);
-
-            //     FileWriter fw = new FileWriter(shopFile);
-            //     fw.write(prettyJsonString);
-            //     fw.flush();
-            //     fw.close();
-
-            // } catch (IOException | ParseException e) {
-            //     e.printStackTrace();
-            // }
         });
     }
 
-    private Shop loadShopData(JSONObject shopJSON) {
-        Shop shop = new Shop(shopJSON.get("name").toString(), 
-                             shopJSON.get("desc").toString(), 
-                             shopJSON.get("owner").toString(), 
-                             shopJSON.get("uuid").toString(), 
-                             shopJSON.get("key").toString(), 
-                             shopJSON.get("loc").toString());
-        if (shopJSON.containsKey("owners")) {
-            Map<String, String> owners = new Gson().fromJson(shopJSON.get("owners").toString(),
-                    new TypeToken<HashMap<String, String>>() {
-                    }.getType());
-
-            shop.setOwners(owners);
-        }
-        if(shopJSON.containsKey("displayItem")) {
-            shop.setDisplayItem(shopJSON.get("displayItem").toString());
-        }
-        return shop;
-    }
-
-    private void loadShopInventory(JSONObject shopJSON, Shop shop) {
-        JSONArray itemsArray = ((JSONArray) shopJSON.get("items"));
-        for (Object o : itemsArray) {
-            try {
-                JSONObject itemJSON = ((JSONObject) o);
-                ItemList item = new ItemList(itemJSON.get("name").toString(), itemJSON.get("qty").toString(), Integer.parseInt(itemJSON.get("price").toString()), this.plugin);
-                if (itemJSON.get("customName") != null)
-                    item.setCustomName(itemJSON.get("customName").toString());
-                if (itemJSON.containsKey("extraInfo")) {
-                    JSONObject extraData = ((JSONObject) itemJSON.get("extraInfo"));
-                    HashMap<String, Object> headInfo = new Gson().fromJson(extraData.toString(), HashMap.class);
-                    item.setExtraInfo(headInfo, itemJSON.getOrDefault("customType","").toString());
-                }
-                shop.addToInv(item);
-            } catch (ClassCastException | NullPointerException e) {
-                if (e instanceof ClassCastException)
-                    logger.severe("Malformed shops.json, cannot add item");
-                if (e instanceof NullPointerException)
-                    logger.warning("Key value(s) missing, item won't be created");
-                e.printStackTrace();
-            }
-        }
-    }
     private boolean initShopsFromJSON() {
         File shopFile = plugin.getShops();
         try {
-            JSONParser parser = new JSONParser();
-            assert shopFile != null;
-            JSONObject data = (JSONObject) parser.parse(new FileReader(shopFile));
-            JSONArray shopJSONs = ((JSONArray) data.get("shops"));
-            JSONArray pendingShopJSONs = ((JSONArray) data.get("pendingShops"));
-            JSONArray pendingChangesJSONs = ((JSONArray) data.get("pendingChanges"));
-            if (shopJSONs == null) shopJSONs = new JSONArray();
-            if (pendingShopJSONs == null) pendingShopJSONs = new JSONArray();
-            if (pendingChangesJSONs == null) pendingChangesJSONs = new JSONArray();
-            /*
-             * Loads all the normal shops in the directory (shops.json) 
-             */
-            if (shopJSONs.size() > 0) {
-                for (Object json : shopJSONs) {
+            JsonNode rootNode = mapper.readTree(shopFile);
+            JsonNode shopsNode = rootNode.path("shops");
+            if (shopsNode.isArray() && shopsNode.size() > 0) {
+                shopsNode.forEach(shopJson -> {
                     try {
-                        JSONObject shopJSON = ((JSONObject) json);
-                        //load the shop data (name, desc, owner, uuid, key, loc, display item) from the JSON
-                        Shop shop = loadShopData(shopJSON);
-                        //load the shop inventory from the JSON
-                        loadShopInventory(shopJSON, shop);
-                        shops.put(shopJSON.get("key").toString(), shop);
-                    } catch (ClassCastException | NumberFormatException | NullPointerException e) {
-                        if (e instanceof ClassCastException || e instanceof NumberFormatException)
-                            logger.severe("Malformed shops.json, cannot add shop");
-                        if (e instanceof NullPointerException)
-                            logger.warning("Key value(s) missing, shop won't be created");
+                        Shop shop = mapper.treeToValue(shopJson, Shop.class);
+                        shops.put(shop.getKey(), shop);
+                    } catch (JsonProcessingException e) {
                         e.printStackTrace();
                     }
-                }
-            } else
-                logger.warning("No shops in directory");
-            /*
-             * Loads all the shops that are pending
-             */
-            if (pendingShopJSONs.size() > 0) {
-                for (Object json : pendingShopJSONs) {
-                    try {
-                        JSONObject shopJSON = ((JSONObject) json);
-                        //load the shop data (name, desc, owner, uuid, key, loc, display item) from the JSON
-                        Shop shop = loadShopData(shopJSON);
-                        //load the shop inventory from the JSON
-                        loadShopInventory(shopJSON, shop);                        
-                        pendingShops.put(shopJSON.get("key").toString(), shop);
-                    } catch (ClassCastException | NumberFormatException | NullPointerException e) {
-                        if (e instanceof ClassCastException || e instanceof NumberFormatException)
-                            logger.warning("Malformed shops.json, cannot add shop");
-                        if (e instanceof NullPointerException)
-                            logger.warning("Key value(s) missing, shop won't be created");
-                        e.printStackTrace();
-                    }
-                }
+                });
             }
-            /*
-             * Loads all the shops that have changes pending
-             */
-            if (pendingChangesJSONs.size() > 0) {
-                for (Object json : pendingChangesJSONs) {
+            JsonNode pendingShopsNode = rootNode.path("pendingShops");
+            if (pendingShopsNode.isArray() && pendingShopsNode.size() > 0) {
+                pendingShopsNode.forEach(shopJson -> {
                     try {
-                        JSONObject shopJSON = ((JSONObject) json);
-                        //load the shop data (name, desc, owner, uuid, key, loc, display item) from the JSON
-                        Shop shop = loadShopData(shopJSON);                    
-                        pendingChanges.put(shopJSON.get("key").toString(), shop);
-                    } catch (ClassCastException | NumberFormatException | NullPointerException e) {
-                        if (e instanceof ClassCastException || e instanceof NumberFormatException)
-                            logger.warning("Malformed shops.json, cannot add shop");
-                        if (e instanceof NullPointerException)
-                            logger.warning("Key value(s) missing, shop won't be created");
+                        Shop shop = mapper.treeToValue(shopJson, Shop.class);
+                        shops.put(shop.getKey(), shop);
+                    } catch (JsonProcessingException e) {
                         e.printStackTrace();
                     }
-                }
+                });
+            }
+            JsonNode changesNode = rootNode.path("pendingChanges");
+            if (changesNode.isArray() && changesNode.size() > 0) {
+                changesNode.forEach(shopJson -> {
+                    try {
+                        Shop shop = mapper.treeToValue(shopJson, Shop.class);
+                        shops.put(shop.getKey(), shop);
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                });
             }
             return true;
-        } catch (IOException | ParseException | ClassCastException | NullPointerException e) {
+        } catch (IOException | ClassCastException | NullPointerException e) {
             if (e instanceof ParseException || e instanceof ClassCastException)
                 plugin.getLogger().severe("Malformed shops.json, cannot initiate shops");
             if (e instanceof NullPointerException)
@@ -734,36 +613,6 @@ public class JSONShopRepo implements ShopRepo {
             details.put("displayItem",shop.getDisplayItem());
         return details;
     }
-
-    private JSONObject convertToJSON(Shop shop) {
-        JSONObject shopJSON = new JSONObject();
-        shopJSON.put("name", shop.getName());
-        shopJSON.put("desc", shop.getDesc());
-        shopJSON.put("owner", shop.getOwner());
-        shopJSON.put("owners", shop.getOwners());
-        shopJSON.put("uuid", shop.getUuid());
-        shopJSON.put("key", shop.getKey());
-        shopJSON.put("loc", shop.getLoc());
-        shopJSON.put("displayItem",shop.getDisplayItem());
-        return shopJSON;
-    }
-
-    private JSONObject convertToJSON(ItemList itemList) {
-        JSONObject item = new JSONObject();
-        item.put("name", itemList.item.getType().getKey().getKey().toUpperCase());
-        item.put("price", Integer.valueOf(itemList.price).toString());
-        item.put("qty", itemList.qty);
-        
-        if (itemList.item.getItemMeta().hasDisplayName())
-            item.put("customName", (itemList.item.getItemMeta().getDisplayName()));
-        if (itemList.extraInfo != null && itemList.extraInfo.size() > 0) {
-            item.put("extraInfo", itemList.extraInfo);
-        }
-        if (itemList.customType != null && itemList.customType.length() > 0) {
-            item.put("customType", itemList.customType);
-        }
-        return item;
-    }
     
     @Override
     public Map<String, String> getSpecificShopDetails(String key) {
@@ -808,7 +657,7 @@ public class JSONShopRepo implements ShopRepo {
         if (shop == null) return inv;
 
         shop.getItems().forEach(itemList -> {
-            ItemStack item = itemList.item.clone();
+            ItemStack item = itemList.getItem(this.plugin).clone();
             ItemMeta meta = item.getItemMeta();
             List<Component> lore = meta.lore() == null ? new ArrayList<>() : meta.lore();
             meta.lore(lore);
@@ -829,48 +678,55 @@ public class JSONShopRepo implements ShopRepo {
             return;
         }
         
-        String name = item.name;
+        String name = item.getName();
         double value = 0;
-        if(item.price<=0) {
+        if(item.getPrice()<=0) {
             value = Integer.MAX_VALUE;
         }
         else {
-            String[] parts1 = item.qty.split(":");
+            String[] parts1 = item.getQty().split(":");
             if (Integer.parseInt(parts1[0]) > 0)
                 value = Double.parseDouble(parts1[0]) * 1728;
             else if (Integer.parseInt(parts1[1]) > 0)
                 value = Double.parseDouble(parts1[1]) * 64;
             else if (Integer.parseInt(parts1[2]) > 0)
                 value = Double.parseDouble(parts1[2]);
-            value /= item.price;
+            value /= item.getPrice();
         }
         final boolean[] found = {false};
         double finalValue = value;
         shops.forEach((s, shop) ->
                 shop.getItems().forEach(itemList -> {
-                    if (itemList.name.equals(name)) {
+                    if (itemList.getName().equals(name)) {
                         if(plugin.getCustomConfig().filterAlternatives()) {
-                            if(((item.item.getType() == Material.POTION && itemList.item.getType() == Material.POTION) || (item.item.getType() == Material.LINGERING_POTION && itemList.item.getType() == Material.LINGERING_POTION) || (item.item.getType() == Material.TIPPED_ARROW && itemList.item.getType() == Material.TIPPED_ARROW)) && ((PotionMeta)item.item.getItemMeta()).getBasePotionType() != ((PotionMeta)itemList.item.getItemMeta()).getBasePotionType())
+                            if (((item.getItem(plugin).getType() == Material.POTION && 
+                                  itemList.getItem(plugin).getType() == Material.POTION) || 
+                                 (item.getItem(plugin).getType() == Material.LINGERING_POTION && 
+                                  itemList.getItem(plugin).getType() == Material.LINGERING_POTION) || 
+                                 (item.getItem(plugin).getType() == Material.TIPPED_ARROW && 
+                                  itemList.getItem(plugin).getType() == Material.TIPPED_ARROW)) && 
+                                ((PotionMeta) item.getItem(plugin).getItemMeta()).getBasePotionType() != ((PotionMeta)itemList.getItem(plugin).getItemMeta()).getBasePotionType()
+                               )
                                 return;
-                            if (item.item.getType() == Material.ENCHANTED_BOOK && item.extraInfo.containsKey("storedEnchants") && itemList.item.getType() == Material.ENCHANTED_BOOK && itemList.extraInfo.containsKey("storedEnchants") && ((EnchantmentStorageMeta)item.item.getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.item.getItemMeta()).getStoredEnchants().containsKey(enchantment)))
+                            if (item.getItem(plugin).getType() == Material.ENCHANTED_BOOK && item.getExtraInfo().containsKey("storedEnchants") && itemList.getItem(plugin).getType() == Material.ENCHANTED_BOOK && itemList.getExtraInfo().containsKey("storedEnchants") && ((EnchantmentStorageMeta)item.getItem(plugin).getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.getItem(plugin).getItemMeta()).getStoredEnchants().containsKey(enchantment)))
                                 return;
                         }
                         double val = 0;
-                        if (itemList.price <= 0)
+                        if (itemList.getPrice() <= 0)
                             val = Integer.MAX_VALUE;
                         else {
-                            String[] parts = itemList.qty.split(":");
+                            String[] parts = itemList.getQty().split(":");
                             if (Integer.parseInt(parts[0]) > 0)
                                 val = Double.parseDouble(parts[0]) * 1728;
                             else if (Integer.parseInt(parts[1]) > 0)
                                 val = Double.parseDouble(parts[1]) * 64;
                             else if (Integer.parseInt(parts[2]) > 0)
                                 val = Double.parseDouble(parts[2]);
-                            val /= itemList.price;
+                            val /= itemList.getPrice();
                         }
 
                         if (val > finalValue) {
-                            player.sendMessage(MyChatColor.GOLD + shop.getName() + MyChatColor.WHITE + " has a better deal: " + ((TextComponent) itemList.getItem().lore().get(0)).content());
+                            player.sendMessage(MyChatColor.GOLD + shop.getName() + MyChatColor.WHITE + " has a better deal: " + ((TextComponent) itemList.getItem(plugin).lore().get(0)).content());
                             found[0] = true;
                         }
                     }
@@ -904,21 +760,21 @@ public class JSONShopRepo implements ShopRepo {
             return null;
         List<ItemStack> items = new ArrayList<>();
         shop.getItems().forEach(itemList -> {
-            if (itemList.name.equalsIgnoreCase(itemName))
-                items.add(itemList.item);
+            if (itemList.getName().equalsIgnoreCase(itemName))
+                items.add(itemList.getItem(plugin));
         });
         return items;
     }
 
     public void removeMatchingItems(String key, String itemName) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
-        shop.setItems(shop.getItems().stream().filter(itemList -> !itemList.name.equals(itemName)).collect(Collectors.toList()));
+        shop.setItems(shop.getItems().stream().filter(itemList -> !itemList.getName().equals(itemName)).collect(Collectors.toList()));
         saveShops();
     }
 
     public void removeItem(String key, ItemStack item) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
-        shop.setItems(shop.getItems().stream().filter(itemList -> itemList.getItem().getType() != item.getType() || !((TextComponent) item.getItemMeta().lore().get(0)).content().equals(((TextComponent) itemList.item.getItemMeta().lore().get(0)).content())).collect(Collectors.toList()));
+        shop.setItems(shop.getItems().stream().filter(itemList -> itemList.getItem(plugin).getType() != item.getType() || !((TextComponent) item.getItemMeta().lore().get(0)).content().equals(((TextComponent) itemList.getItem(plugin).getItemMeta().lore().get(0)).content())).collect(Collectors.toList()));
         saveShops();
     }
 
@@ -934,8 +790,8 @@ public class JSONShopRepo implements ShopRepo {
         shops.forEach((s, shop) -> {
             List<ItemList> inv = shop.getItems();
             inv.forEach(itemList -> {
-                if (itemList.name.replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
-                    ItemStack itemToAdd = itemList.item.clone();
+                if (itemList.getName().replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
+                    ItemStack itemToAdd = itemList.getItem(plugin).clone();
                     ItemMeta meta = itemToAdd.getItemMeta();
                     List<Component> lore = meta.lore() != null ? meta.lore() : new ArrayList<>();
                     lore.add(Component.text(MyChatColor.GREEN + "From " + shop.getName()));
@@ -944,8 +800,8 @@ public class JSONShopRepo implements ShopRepo {
                     itemToAdd.setItemMeta(meta);
                     items.add(itemToAdd);
                     shopKeys.add(shop.getKey());
-                } else if (itemList.customName.length() > 0 && itemList.customName.toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
-                    ItemStack itemToAdd = itemList.item.clone();
+                } else if (itemList.getCustomName().length() > 0 && itemList.getCustomName().toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
+                    ItemStack itemToAdd = itemList.getItem(plugin).clone();
                     ItemMeta meta = itemToAdd.getItemMeta();
                     List<Component> lore = meta.lore() != null ? meta.lore() : new ArrayList<>();
                     lore.add(Component.text(MyChatColor.GREEN + "From " + shop.getName()));

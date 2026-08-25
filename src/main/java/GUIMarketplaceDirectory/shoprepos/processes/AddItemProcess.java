@@ -41,9 +41,9 @@ public class AddItemProcess implements ChatProcess {
 
         String name = itemStack.getType().getKey().getKey().toUpperCase();
         uuid = player.getUniqueId().toString();
-        item = new ItemList(name, itemStack.getItemMeta(), blockBuilder);
+        item = new ItemList(itemStack);
 
-        List<Integer> errorTracker = item.storeExtraInfo(itemStack);
+        List<Integer> errorTracker = item.getWarnings();
         if (errorTracker.contains(2)) { 
             player.sendMessage(new String[]{MyChatColor.YELLOW + " The enchanted item you're trying to add has illegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});                    
         }
