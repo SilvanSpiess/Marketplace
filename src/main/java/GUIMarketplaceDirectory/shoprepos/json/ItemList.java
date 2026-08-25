@@ -1,6 +1,7 @@
 package GUIMarketplaceDirectory.shoprepos.json;
 
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.*;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.ShulkerBox;
@@ -23,6 +24,7 @@ import org.bukkit.profile.PlayerTextures;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import GUIMarketplaceDirectory.shoprepos.json.ItemList;
@@ -44,7 +46,7 @@ public class ItemList {
     public Map<String, Object> extraInfo;
 
     public Boolean outOfStock;
-    public String outOfStockSince;
+    public LocalDateTime outOfStockSince;
     public String outOfStockBy;
 
 
@@ -59,10 +61,6 @@ public class ItemList {
         this.customType = "";
         this.blockBuilder = blockBuilder;
         this.extraInfo = new HashMap<>(0);
-
-        this.outOfStock = true;
-        this.outOfStockSince = "";
-        this.outOfStockBy = "";
 
         item = new ItemStack(Material.getMaterial(itemName));
         ItemMeta meta = item.getItemMeta();

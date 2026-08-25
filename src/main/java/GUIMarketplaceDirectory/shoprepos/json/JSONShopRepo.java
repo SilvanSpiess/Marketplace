@@ -2,7 +2,6 @@ package GUIMarketplaceDirectory.shoprepos.json;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,10 +25,9 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
@@ -149,6 +147,9 @@ class Shop {
 
 public class JSONShopRepo implements ShopRepo {
     private final GUIMarketplaceDirectory plugin;
+
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final Logger logger;
     
     private final Map<String, Shop> shops;
     private final Map<String, Shop> pendingShops;
@@ -167,7 +168,6 @@ public class JSONShopRepo implements ShopRepo {
                                                       Material.ATTACHED_PUMPKIN_STEM));
     }
 
-    private final Logger logger;
 
     public JSONShopRepo(GUIMarketplaceDirectory plugin) {
         this.shops = new HashMap<>();
@@ -291,48 +291,61 @@ public class JSONShopRepo implements ShopRepo {
         if(shops == null)
             return;
         Bukkit.getScheduler().runTaskAsynchronously(plugin,() -> {
-            JSONParser parser = new JSONParser();
             try {
+                ObjectNode rootNode = mapper.createObjectNode();
+                rootNode.put("shops", mapper.valueToTree(shops));
+                rootNode.put("pendingShops", mapper.valueToTree(pendingShops));
+                rootNode.put("pendingChanges", mapper.valueToTree(pendingChanges));
+
                 File shopFile = plugin.getShops();
-                assert shopFile != null;
-                parser.parse(new FileReader(shopFile));
-                JSONObject data = new JSONObject();
-                JSONArray shopJSONs = new JSONArray();
-                JSONArray pendingShopJSONs = new JSONArray();
-                JSONArray pendingChangesJSONs = new JSONArray();
-                shops.forEach((s, shop1) -> {
-                    JSONObject shopJSON = convertToJSON(shop1);
-                    JSONArray items = new JSONArray();
-                    shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
-                    shopJSON.put("items", items);
-                    shopJSONs.add(shopJSON);
-                });
-                pendingShops.forEach((s, shop1) -> {
-                    JSONObject shopJSON = convertToJSON(shop1);
-                    JSONArray items = new JSONArray();
-                    shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
-                    shopJSON.put("items", items);
-                    pendingShopJSONs.add(shopJSON);
-                });
-                pendingChanges.forEach((s, shop1) -> pendingChangesJSONs.add(convertToJSON(shop1)));
 
-                data.put("shops", shopJSONs);
-                data.put("pendingShops", pendingShopJSONs);
-                data.put("pendingChanges", pendingChangesJSONs);
-
-                Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                JsonParser jp = new JsonParser();
-                JsonElement je = jp.parse(data.toJSONString());
-                String prettyJsonString = gson.toJson(je);
-
-                FileWriter fw = new FileWriter(shopFile);
-                fw.write(prettyJsonString);
-                fw.flush();
-                fw.close();
-
-            } catch (IOException | ParseException e) {
+                mapper.writeValue(shopFile, rootNode);
+            } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            // JSONParser parser = new JSONParser();
+            // try {
+            //     File shopFile = plugin.getShops();
+            //     assert shopFile != null;
+            //     parser.parse(new FileReader(shopFile));
+            //     JSONObject data = new JSONObject();
+            //     JSONArray shopJSONs = new JSONArray();
+            //     JSONArray pendingShopJSONs = new JSONArray();
+            //     JSONArray pendingChangesJSONs = new JSONArray();
+            //     shops.forEach((s, shop1) -> {
+            //         JSONObject shopJSON = convertToJSON(shop1);
+            //         JSONArray items = new JSONArray();
+            //         shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
+            //         shopJSON.put("items", items);
+            //         shopJSONs.add(shopJSON);
+            //     });
+            //     pendingShops.forEach((s, shop1) -> {
+            //         JSONObject shopJSON = convertToJSON(shop1);
+            //         JSONArray items = new JSONArray();
+            //         shop1.getInv().forEach(itemList -> items.add(convertToJSON(itemList)));
+            //         shopJSON.put("items", items);
+            //         pendingShopJSONs.add(shopJSON);
+            //     });
+            //     pendingChanges.forEach((s, shop1) -> pendingChangesJSONs.add(convertToJSON(shop1)));
+
+            //     data.put("shops", shopJSONs);
+            //     data.put("pendingShops", pendingShopJSONs);
+            //     data.put("pendingChanges", pendingChangesJSONs);
+
+            //     Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            //     JsonParser jp = new JsonParser();
+            //     JsonElement je = jp.parse(data.toJSONString());
+            //     String prettyJsonString = gson.toJson(je);
+
+            //     FileWriter fw = new FileWriter(shopFile);
+            //     fw.write(prettyJsonString);
+            //     fw.flush();
+            //     fw.close();
+
+            // } catch (IOException | ParseException e) {
+            //     e.printStackTrace();
+            // }
         });
     }
 
