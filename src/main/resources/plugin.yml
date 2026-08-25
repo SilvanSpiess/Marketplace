@@ -1,4 +1,4 @@
-main: me.PSK1103.GUIMarketplaceDirectory.GUIMarketplaceDirectory
+main: GUIMarketplaceDirectory.GUIMarketplaceDirectory
 name: GUIMarketplaceDirectory
 author: PSK1103
 api-version: "1.14"

@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>me.PSK1103</groupId>
+    <groupId>me.SnL</groupId>
     <artifactId>GUIMarketplaceDirectory</artifactId>
     <version>2.1.2</version>
 
@@ -49,13 +49,6 @@
             <version>24.0.0</version> <!-- 24.0.1 maybe -->
             <scope>provided</scope>
         </dependency>
-        <!-- Source: https://mvnrepository.com/artifact/org.json/json -->
-        <!-- <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20260814</version>
-            <scope>compile</scope>
-        </dependency> -->
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
@@ -75,7 +68,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <release>17</release>
+                    <release>25</release>
                 </configuration>
             </plugin>
         </plugins>
