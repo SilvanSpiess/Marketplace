@@ -1,14 +1,15 @@
 package me.PSK1103.GUIMarketplaceDirectory.utils;
 
-import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
-import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
-import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
@@ -16,8 +17,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.ChatPaginator;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.InvType;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
+import me.PSK1103.GUIMarketplaceDirectory.invholders.ShopInvHolder;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 
 public class GUI {
     public enum Action {
@@ -29,6 +33,7 @@ public class GUI {
         CANCEL_LOCATION, SET_LOCATION,
         CANCEL_DISPLAYITEM, SET_DISPLAYITEM,
         CANCEL_OWNER, ADD_OWNER,
+        SET_ITEM_OUT_STOCK, SET_ITEM_IN_STOCK,
         //moderation
         DELETE_SHOP, GET_SHOP_BOOK,
         APPROVE_SHOP, REJECT_SHOP,

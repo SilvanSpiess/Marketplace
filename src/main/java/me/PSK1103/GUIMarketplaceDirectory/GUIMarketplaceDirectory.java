@@ -1,15 +1,10 @@
 package me.PSK1103.GUIMarketplaceDirectory;
 
-import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ItemEvents;
-import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ShopEvents;
-import me.PSK1103.GUIMarketplaceDirectory.guimd.GUIMarketplaceCommands;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import me.PSK1103.GUIMarketplaceDirectory.utils.DynmapMarkerHandler;
-import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
-import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.JSONShopRepo;
-import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList.BlockBuilder;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.UUID;
+import java.util.logging.Logger;
 
 import org.bukkit.Server;
 import org.bukkit.block.data.BlockData;
@@ -19,11 +14,16 @@ import org.jetbrains.annotations.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.UUID;
-import java.util.logging.Logger;
+import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ItemEvents;
+import me.PSK1103.GUIMarketplaceDirectory.eventhandlers.ShopEvents;
+import me.PSK1103.GUIMarketplaceDirectory.guimd.GUIMarketplaceCommands;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ProcessHandler;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.ShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.ItemList.BlockBuilder;
+import me.PSK1103.GUIMarketplaceDirectory.shoprepos.json.JSONShopRepo;
+import me.PSK1103.GUIMarketplaceDirectory.utils.Config;
+import me.PSK1103.GUIMarketplaceDirectory.utils.DynmapMarkerHandler;
+import me.PSK1103.GUIMarketplaceDirectory.utils.Metrics;
 
 public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder {
 
@@ -70,7 +70,7 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
 
         if(shops!=null)
             return shops;
-
+            
         shops = new File(getDataFolder(),"shops.json");
 
         if(!shops.exists()) {
