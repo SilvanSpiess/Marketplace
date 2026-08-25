@@ -45,7 +45,7 @@ class Shop {
     private String owner, uuid;
     private String key;
     private String displayItem;
-    private List<ItemList> inv;
+    private List<ItemList> items;
 
     public Shop() {
     }
@@ -59,7 +59,7 @@ class Shop {
         this.uuid = uuid;
         this.key = key;
         this.loc = loc;
-        this.inv = new ArrayList<>();
+        this.items = new ArrayList<>();
         this.displayItem = "WRITTEN_BOOK";
     }
 
@@ -100,12 +100,12 @@ class Shop {
         this.desc = desc;
     }
 
-    public void setInv(List<ItemList> inv) {
-        this.inv = inv;
+    public void setItems(List<ItemList> inv) {
+        this.items = inv;
     }
 
     public void addToInv(ItemList item) {
-        inv.add(item);
+        items.add(item);
     }
 
     public String getName() {
@@ -140,8 +140,8 @@ class Shop {
         return key;
     }
 
-    public List<ItemList> getInv() {
-        return inv == null ? new ArrayList<>() : inv;
+    public List<ItemList> getItems() {
+        return items == null ? new ArrayList<>() : items;
     }
 }
 
@@ -293,13 +293,13 @@ public class JSONShopRepo implements ShopRepo {
         Bukkit.getScheduler().runTaskAsynchronously(plugin,() -> {
             try {
                 ObjectNode rootNode = mapper.createObjectNode();
-                rootNode.put("shops", mapper.valueToTree(shops));
-                rootNode.put("pendingShops", mapper.valueToTree(pendingShops));
-                rootNode.put("pendingChanges", mapper.valueToTree(pendingChanges));
+                rootNode.put("shops", mapper.valueToTree(shops.values()));
+                rootNode.put("pendingShops", mapper.valueToTree(pendingShops.values()));
+                rootNode.put("pendingChanges", mapper.valueToTree(pendingChanges.values()));
 
                 File shopFile = plugin.getShops();
 
-                mapper.writeValue(shopFile, rootNode);
+                mapper.writerWithDefaultPrettyPrinter().writeValue(shopFile, rootNode);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -807,7 +807,7 @@ public class JSONShopRepo implements ShopRepo {
 
         if (shop == null) return inv;
 
-        shop.getInv().forEach(itemList -> {
+        shop.getItems().forEach(itemList -> {
             ItemStack item = itemList.item.clone();
             ItemMeta meta = item.getItemMeta();
             List<Component> lore = meta.lore() == null ? new ArrayList<>() : meta.lore();
@@ -821,9 +821,9 @@ public class JSONShopRepo implements ShopRepo {
     public void findBetterAlternative(Player player, String key, int pos) {
         ItemList item;
         if (shops.containsKey(key)) {
-            item = shops.get(key).getInv().get(pos);
+            item = shops.get(key).getItems().get(pos);
         } else if (pendingShops.containsKey(key)) {
-            item = pendingShops.get(key).getInv().get(pos);
+            item = pendingShops.get(key).getItems().get(pos);
         } else {
             player.sendMessage(MyChatColor.RED + "Error: Shop not found.");
             return;
@@ -847,7 +847,7 @@ public class JSONShopRepo implements ShopRepo {
         final boolean[] found = {false};
         double finalValue = value;
         shops.forEach((s, shop) ->
-                shop.getInv().forEach(itemList -> {
+                shop.getItems().forEach(itemList -> {
                     if (itemList.name.equals(name)) {
                         if(plugin.getCustomConfig().filterAlternatives()) {
                             if(((item.item.getType() == Material.POTION && itemList.item.getType() == Material.POTION) || (item.item.getType() == Material.LINGERING_POTION && itemList.item.getType() == Material.LINGERING_POTION) || (item.item.getType() == Material.TIPPED_ARROW && itemList.item.getType() == Material.TIPPED_ARROW)) && ((PotionMeta)item.item.getItemMeta()).getBasePotionType() != ((PotionMeta)itemList.item.getItemMeta()).getBasePotionType())
@@ -903,7 +903,7 @@ public class JSONShopRepo implements ShopRepo {
         if(shop == null)
             return null;
         List<ItemStack> items = new ArrayList<>();
-        shop.getInv().forEach(itemList -> {
+        shop.getItems().forEach(itemList -> {
             if (itemList.name.equalsIgnoreCase(itemName))
                 items.add(itemList.item);
         });
@@ -912,13 +912,13 @@ public class JSONShopRepo implements ShopRepo {
 
     public void removeMatchingItems(String key, String itemName) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
-        shop.setInv(shop.getInv().stream().filter(itemList -> !itemList.name.equals(itemName)).collect(Collectors.toList()));
+        shop.setItems(shop.getItems().stream().filter(itemList -> !itemList.name.equals(itemName)).collect(Collectors.toList()));
         saveShops();
     }
 
     public void removeItem(String key, ItemStack item) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
-        shop.setInv(shop.getInv().stream().filter(itemList -> itemList.getItem().getType() != item.getType() || !((TextComponent) item.getItemMeta().lore().get(0)).content().equals(((TextComponent) itemList.item.getItemMeta().lore().get(0)).content())).collect(Collectors.toList()));
+        shop.setItems(shop.getItems().stream().filter(itemList -> itemList.getItem().getType() != item.getType() || !((TextComponent) item.getItemMeta().lore().get(0)).content().equals(((TextComponent) itemList.item.getItemMeta().lore().get(0)).content())).collect(Collectors.toList()));
         saveShops();
     }
 
@@ -932,7 +932,7 @@ public class JSONShopRepo implements ShopRepo {
         List<ItemStack> items = new ArrayList<>();
         List<String> shopKeys = new ArrayList<>();
         shops.forEach((s, shop) -> {
-            List<ItemList> inv = shop.getInv();
+            List<ItemList> inv = shop.getItems();
             inv.forEach(itemList -> {
                 if (itemList.name.replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
                     ItemStack itemToAdd = itemList.item.clone();
@@ -964,7 +964,7 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     private void addShopCountMetric() {
-        plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shop_items", () -> shops.values().stream().mapToInt(shop -> shop.getInv().size()).sum()));
+        plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shop_items", () -> shops.values().stream().mapToInt(shop -> shop.getItems().size()).sum()));
         plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shops", shops::size));
     }
 }

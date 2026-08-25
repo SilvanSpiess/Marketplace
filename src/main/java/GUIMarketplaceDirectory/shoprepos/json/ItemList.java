@@ -22,14 +22,21 @@ import org.bukkit.potion.PotionType;
 import org.bukkit.profile.PlayerProfile;
 import org.bukkit.profile.PlayerTextures;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 import GUIMarketplaceDirectory.shoprepos.json.ItemList;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 
+@JsonInclude(Include.NON_NULL)
 public class ItemList {
 
     public interface BlockBuilder {
@@ -37,6 +44,7 @@ public class ItemList {
         PlayerProfile createPlayerProfile(UUID uniqueId, String name);  
     }
 
+    @JsonIgnore
     ItemStack item;
     int price;
     String qty;
@@ -45,9 +53,9 @@ public class ItemList {
     BlockBuilder blockBuilder;
     public Map<String, Object> extraInfo;
 
-    public Boolean outOfStock;
-    public LocalDateTime outOfStockSince;
-    public String outOfStockBy;
+    private Boolean outOfStock;
+    private LocalDateTime outOfStockSince;
+    private String outOfStockBy;
 
 
     public ItemList() {
@@ -109,6 +117,7 @@ public class ItemList {
     /* 
      * Custom Items such as heads, potions, tipped arrows, rockets, banners, shulkers, enchanted books and enchants
      */
+    @JsonIgnore
     public static ItemStack getCustomItem(ItemStack item, String customType, Map<String, Object> extraInfo, BlockBuilder blockBuilder) {
         switch (customType) {
             case "head" -> {
@@ -683,8 +692,21 @@ public class ItemList {
         item.setItemMeta(meta);
     }
 
+    @JsonIgnore
     public ItemStack getItem() {
         return item;
+    }
+
+    public int getPrice() {
+        return price;
+    }
+
+    public String getQty() {
+        return qty;
+    }
+
+    public String getName() {
+        return name;
     }
 }
 
