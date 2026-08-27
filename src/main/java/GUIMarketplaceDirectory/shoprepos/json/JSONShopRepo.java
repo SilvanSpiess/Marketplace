@@ -708,7 +708,7 @@ public class JSONShopRepo implements ShopRepo {
                                 ((PotionMeta) item.getItem(plugin).getItemMeta()).getBasePotionType() != ((PotionMeta)itemList.getItem(plugin).getItemMeta()).getBasePotionType()
                                )
                                 return;
-                            if (item.getItem(plugin).getType() == Material.ENCHANTED_BOOK && item.getExtraInfo().containsKey("storedEnchants") && itemList.getItem(plugin).getType() == Material.ENCHANTED_BOOK && itemList.getExtraInfo().containsKey("storedEnchants") && ((EnchantmentStorageMeta)item.getItem(plugin).getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.getItem(plugin).getItemMeta()).getStoredEnchants().containsKey(enchantment)))
+                            if (item.getItem(plugin).getType() == Material.ENCHANTED_BOOK && item.getExtraInfo().has("storedEnchants") && itemList.getItem(plugin).getType() == Material.ENCHANTED_BOOK && itemList.getExtraInfo().has("storedEnchants") && ((EnchantmentStorageMeta)item.getItem(plugin).getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.getItem(plugin).getItemMeta()).getStoredEnchants().containsKey(enchantment)))
                                 return;
                         }
                         double val = 0;
