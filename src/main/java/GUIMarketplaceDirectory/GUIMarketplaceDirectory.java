@@ -1,7 +1,6 @@
 package GUIMarketplaceDirectory;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -11,8 +10,9 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.profile.PlayerProfile;
 import org.jetbrains.annotations.Nullable;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import GUIMarketplaceDirectory.eventhandlers.ItemEvents;
 import GUIMarketplaceDirectory.eventhandlers.ShopEvents;
@@ -34,6 +34,7 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
     private Config config;
     private Metrics metrics;
     private Logger logger;
+    private ObjectMapper mapper;
     private Server server;
 
     private static final int pluginId = 9879;
@@ -77,14 +78,12 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
             try {
                 getDataFolder().mkdir();
                 shops.createNewFile();
-                JSONObject init = new JSONObject();
-                init.put("shops", new JSONArray());
-                init.put("pendingShops", new JSONArray());
-                init.put("pendingChanges", new JSONArray());
-                FileWriter writer = new FileWriter(shops);
-                writer.write(init.toJSONString());
-                writer.close();
+                ObjectNode rootNode = mapper.createObjectNode();
+                rootNode.putArray("shops");
+                rootNode.putArray("pendingShops");
+                rootNode.putArray("pendingChanges");
 
+                mapper.writerWithDefaultPrettyPrinter().writeValue(shops, rootNode);
             }
             catch (IOException e) {
                 logger.severe(String.format("Unable to initialise shops %s",e.getMessage()));

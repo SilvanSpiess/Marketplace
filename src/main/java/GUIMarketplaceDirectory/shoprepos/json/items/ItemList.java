@@ -1,51 +1,55 @@
 package GUIMarketplaceDirectory.shoprepos.json.items;
 
-import net.kyori.adventure.text.Component;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-import org.bukkit.*;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Fire;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
+import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.block.banner.Pattern;
-import org.bukkit.block.banner.PatternType;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.enchantments.EnchantmentWrapper;
-import org.bukkit.entity.Axolotl;
-import org.bukkit.entity.TropicalFish;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.*;
-import org.bukkit.inventory.meta.BookMeta.Generation;
+import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.AxolotlBucketMeta;
+import org.bukkit.inventory.meta.BannerMeta;
+import org.bukkit.inventory.meta.BlockStateMeta;
+import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.ColorableArmorMeta;
+import org.bukkit.inventory.meta.CrossbowMeta;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.inventory.meta.MusicInstrumentMeta;
+import org.bukkit.inventory.meta.OminousBottleMeta;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.meta.SuspiciousStewMeta;
+import org.bukkit.inventory.meta.TropicalFishBucketMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
-import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
+import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 import org.bukkit.profile.PlayerProfile;
 import org.bukkit.profile.PlayerTextures;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.bukkit.entity.Axolotl.Variant;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContentInfo;
-import GUIMarketplaceDirectory.utils.MyChatColor;
 
 @JsonInclude(Include.NON_NULL)
 public class ItemList {
@@ -71,6 +75,7 @@ public class ItemList {
     public ItemList() {
     }
 
+    @SuppressWarnings("OverridableMethodCallInConstructor")
     public ItemList(String itemName, BlockBuilder blockBuilder) {
         this.name = itemName;
         this.stackSize = 1;
@@ -85,6 +90,7 @@ public class ItemList {
         this.stackSize = 1;
     }
 
+    @SuppressWarnings("OverridableMethodCallInConstructor")
     public ItemList(ItemStack item, BlockBuilder blockBuilder) {
         processItemStack(item);
         this.blockBuilder = blockBuilder;

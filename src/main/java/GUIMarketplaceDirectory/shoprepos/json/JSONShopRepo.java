@@ -1,7 +1,6 @@
 package GUIMarketplaceDirectory.shoprepos.json;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,18 +24,12 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffectType;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import GUIMarketplaceDirectory.shoprepos.ShopRepo;
@@ -52,7 +45,6 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeDeseria
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeSerializer;
-import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
 import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.utils.Metrics;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -383,7 +375,7 @@ public class JSONShopRepo implements ShopRepo {
             }
             return true;
         } catch (IOException | ClassCastException | NullPointerException e) {
-            if (e instanceof ParseException || e instanceof ClassCastException)
+            if (e instanceof ClassCastException)
                 plugin.getLogger().severe("Malformed shops.json, cannot initiate shops");
             if (e instanceof NullPointerException)
                 plugin.getLogger().warning("Key value(s) missing, shop or item won't be created");
