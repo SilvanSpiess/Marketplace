@@ -6,8 +6,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import GUIMarketplaceDirectory.shoprepos.json.ItemList;
-import GUIMarketplaceDirectory.shoprepos.json.ItemList.BlockBuilder;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.BlockBuilder;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 
 public class AddItemProcess implements ChatProcess {
@@ -30,7 +31,7 @@ public class AddItemProcess implements ChatProcess {
     private String quantity;
     private int price;
     private ItemStack itemStack;
-    private ItemList item;
+    private SellableItemList item;
 
     public AddItemProcess(Player player, String key, ItemStack itemStack, BlockBuilder blockBuilder, ShopRepo shoprepo, ProcessHandler processHandler) {
         this.player = player;
@@ -41,7 +42,7 @@ public class AddItemProcess implements ChatProcess {
 
         String name = itemStack.getType().getKey().getKey().toUpperCase();
         uuid = player.getUniqueId().toString();
-        item = new ItemList(itemStack);
+        item = new SellableItemList(itemStack);
 
         List<Integer> errorTracker = item.getWarnings();
         if (errorTracker.contains(2)) { 

@@ -13,13 +13,18 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.Material;
+import org.bukkit.MusicInstrument;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.banner.PatternType;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionEffectType;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -28,12 +33,27 @@ import org.json.simple.parser.ParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import GUIMarketplaceDirectory.shoprepos.ShopRepo;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.DyeColorDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.DyeColorSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeyDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeySerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.utils.Metrics;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
@@ -47,7 +67,7 @@ class Shop {
     private String owner, uuid;
     private String key;
     private String displayItem;
-    private List<ItemList> items;
+    private List<SellableItemList> items;
 
     public Shop() {
     }
@@ -102,11 +122,11 @@ class Shop {
         this.desc = desc;
     }
 
-    public void setItems(List<ItemList> inv) {
+    public void setItems(List<SellableItemList> inv) {
         this.items = inv;
     }
 
-    public void addToInv(ItemList item) {
+    public void addToInv(SellableItemList item) {
         items.add(item);
     }
 
@@ -142,7 +162,7 @@ class Shop {
         return key;
     }
 
-    public List<ItemList> getItems() {
+    public List<SellableItemList> getItems() {
         return items == null ? new ArrayList<>() : items;
     }
 }
@@ -150,7 +170,7 @@ class Shop {
 public class JSONShopRepo implements ShopRepo {
     private final GUIMarketplaceDirectory plugin;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    public static ObjectMapper mapper;
     private final Logger logger;
     
     private final Map<String, Shop> shops;
@@ -172,6 +192,22 @@ public class JSONShopRepo implements ShopRepo {
 
 
     public JSONShopRepo(GUIMarketplaceDirectory plugin) {
+        mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+        module.addKeySerializer(Enchantment.class, new EnchantmentKeySerializer());
+        module.addKeyDeserializer(Enchantment.class, new EnchantmentKeyDeserializer());
+        module.addSerializer(Enchantment.class, new EnchantmentSerializer());
+        module.addDeserializer(Enchantment.class, new EnchantmentDeserializer());
+        module.addSerializer(PotionEffectType.class, new PotionEffectTypeSerializer());
+        module.addDeserializer(PotionEffectType.class, new PotionEffectTypeDeserializer());
+        module.addSerializer(MusicInstrument.class, new MusicInstrumentSerializer());
+        module.addDeserializer(MusicInstrument.class, new MusicInstrumentDeserializer());
+        module.addSerializer(DyeColor.class, new DyeColorSerializer());
+        module.addDeserializer(DyeColor.class, new DyeColorDeserializer());
+        module.addSerializer(PatternType.class, new PatternTypeSerializer());
+        module.addDeserializer(PatternType.class, new PatternTypeDeserializer());
+        mapper.registerModule(module);
+
         this.shops = new HashMap<>();
         this.pendingShops = new HashMap<>();
         this.pendingChanges = new HashMap<>();
@@ -357,7 +393,7 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public boolean addItemToShop(ItemList item, String shopkey) {
+    public boolean addItemToShop(SellableItemList item, String shopkey) {
         Shop shop;
         if (shops.containsKey(shopkey)) {
             shop = shops.get(shopkey);
@@ -668,7 +704,7 @@ public class JSONShopRepo implements ShopRepo {
         return inv;
     }
     public void findBetterAlternative(Player player, String key, int pos) {
-        ItemList item;
+        SellableItemList item;
         if (shops.containsKey(key)) {
             item = shops.get(key).getItems().get(pos);
         } else if (pendingShops.containsKey(key)) {
@@ -708,7 +744,11 @@ public class JSONShopRepo implements ShopRepo {
                                 ((PotionMeta) item.getItem(plugin).getItemMeta()).getBasePotionType() != ((PotionMeta)itemList.getItem(plugin).getItemMeta()).getBasePotionType()
                                )
                                 return;
-                            if (item.getItem(plugin).getType() == Material.ENCHANTED_BOOK && item.getExtraInfo().has("storedEnchants") && itemList.getItem(plugin).getType() == Material.ENCHANTED_BOOK && itemList.getExtraInfo().has("storedEnchants") && ((EnchantmentStorageMeta)item.getItem(plugin).getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.getItem(plugin).getItemMeta()).getStoredEnchants().containsKey(enchantment)))
+                            if (item.getItem(plugin).getType() == Material.ENCHANTED_BOOK
+                                && item.getExtraInfo().getStoredEnchants() != null 
+                                && itemList.getItem(plugin).getType() == Material.ENCHANTED_BOOK 
+                                && itemList.getExtraInfo().getStoredEnchants() != null 
+                                && ((EnchantmentStorageMeta)item.getItem(plugin).getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.getItem(plugin).getItemMeta()).getStoredEnchants().containsKey(enchantment)))
                                 return;
                         }
                         double val = 0;
@@ -788,7 +828,7 @@ public class JSONShopRepo implements ShopRepo {
         List<ItemStack> items = new ArrayList<>();
         List<String> shopKeys = new ArrayList<>();
         shops.forEach((s, shop) -> {
-            List<ItemList> inv = shop.getItems();
+            List<SellableItemList> inv = shop.getItems();
             inv.forEach(itemList -> {
                 if (itemList.getName().replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
                     ItemStack itemToAdd = itemList.getItem(plugin).clone();

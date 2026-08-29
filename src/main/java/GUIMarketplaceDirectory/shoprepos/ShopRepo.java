@@ -4,7 +4,9 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import GUIMarketplaceDirectory.shoprepos.json.ItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +30,7 @@ public interface ShopRepo {
 
     void saveShops();
 
-    boolean addItemToShop(ItemList item, String shopkey);
+    boolean addItemToShop(SellableItemList item, String shopkey);
 
     boolean isShopOwner(String uuid, String key);
 
