@@ -1,39 +1,20 @@
 package GUIMarketplaceDirectory.shoprepos.json.items;
 
-import net.kyori.adventure.text.Component;
 
 import org.bukkit.*;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Fire;
-import org.bukkit.block.ShulkerBox;
-import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.enchantments.EnchantmentWrapper;
-import org.bukkit.entity.Axolotl;
 import org.bukkit.entity.TropicalFish;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.*;
 import org.bukkit.inventory.meta.BookMeta.Generation;
-import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
-import org.bukkit.profile.PlayerProfile;
-import org.bukkit.profile.PlayerTextures;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.bukkit.entity.Axolotl.Variant;
 
@@ -41,23 +22,15 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import GUIMarketplaceDirectory.shoprepos.json.JSONShopRepo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContentInfo;
-import GUIMarketplaceDirectory.utils.MyChatColor;
 
 @JsonInclude(Include.NON_NULL)
 public class ExtraInfo {
