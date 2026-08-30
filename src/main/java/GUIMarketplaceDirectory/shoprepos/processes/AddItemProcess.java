@@ -4,9 +4,9 @@ import java.util.List;
 
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
 import GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
 import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.BlockBuilder;
 import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -44,9 +44,9 @@ public class AddItemProcess implements ChatProcess {
         uuid = player.getUniqueId().toString();
         item = new SellableItemList(itemStack);
 
-        List<Integer> errorTracker = item.getWarnings();
-        if (errorTracker.contains(2)) { 
-            player.sendMessage(new String[]{MyChatColor.YELLOW + " The enchanted item you're trying to add has illegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window."});                    
+        List<String> addingWarnings = item.getAddWarnings();
+        for (String warning : addingWarnings) {
+            player.sendMessage(MyChatColor.YELLOW + warning);
         }
         player.sendMessage(MyChatColor.GREEN + "Set quantity (in format shulker:stack:num)");
         player.sendMessage(MyChatColor.GRAY + "Or type \"nil\" to cancel.");

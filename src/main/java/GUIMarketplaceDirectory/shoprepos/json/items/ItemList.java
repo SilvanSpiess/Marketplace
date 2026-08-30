@@ -3,9 +3,11 @@ package GUIMarketplaceDirectory.shoprepos.json.items;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
@@ -16,6 +18,7 @@ import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.inventory.meta.AxolotlBucketMeta;
@@ -69,7 +72,7 @@ public class ItemList {
     @JsonIgnore
     protected BlockBuilder blockBuilder;
     @JsonIgnore
-    protected List<Integer> warnings = new ArrayList<>();
+    protected List<String> addWarnings = new ArrayList<>();
 
 
     public ItemList() {
@@ -98,7 +101,7 @@ public class ItemList {
     }
 
     private void processItemStack(ItemStack itemStack) {
-        warnings.clear();
+        addWarnings.clear();
         //
         this.name = itemStack.getType().getKey().getKey().toUpperCase();
         if (itemStack.getItemMeta().hasDisplayName()) this.customName = itemStack.getItemMeta().getDisplayName();
@@ -257,7 +260,13 @@ public class ItemList {
         Map<Enchantment,Integer> enchants = itemStack.getEnchantments();
         if(!enchants.isEmpty()) {
             if(this.extraInfo == null) this.extraInfo = new ExtraInfo();
-            extraInfo.setEnchants(enchants);
+            extraInfo.setEnchants(enchants.entrySet().stream().filter(enchant -> {
+                if (!(enchant.getValue() >= enchant.getKey().getStartLevel() && enchant.getValue() <= enchant.getKey().getMaxLevel())) {
+                    addWarnings.add("The enchanted item you're trying to add has illegal enchants on it. You may continue adding, however these enchants will not be seen within your shop window.");
+                    return false;
+                }
+                return true;
+            }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
         }
     }
 
@@ -272,7 +281,7 @@ public class ItemList {
         ItemStack item = new ItemStack(Material.getMaterial(this.name));
         ItemMeta meta = item.getItemMeta();
 
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, /*ItemFlag.HIDE_ENCHANTS,*/ ItemFlag.HIDE_UNBREAKABLE);
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
         if (this.customName != null && !this.customName.isEmpty())
             meta.setDisplayName(this.customName);
         item.setItemMeta(meta);
@@ -385,8 +394,8 @@ public class ItemList {
             case "enchantedBook" -> {
                 Map<Enchantment, Integer> enchants = extraInfo.getStoredEnchants();
                 EnchantmentStorageMeta esm = (EnchantmentStorageMeta) item.getItemMeta();
-                //enchants.forEach((enchant, integer) -> esm.addStoredEnchant(new EnchantmentWrapper(enchant), integer instanceof String ? Integer.parseInt(integer.toString()) : integer instanceof Integer ? Integer.parseInt(integer.toString()) : Double.valueOf(integer.toString()).intValue(), true));
-                enchants.forEach((enchant, integer) -> esm.addEnchant(enchant, integer , true));
+                
+                enchants.forEach((enchant, integer) -> esm.addStoredEnchant(enchant, integer , true));
                 item.setItemMeta(esm);
             }
             case "axolotl" -> {
@@ -470,10 +479,10 @@ public class ItemList {
                 //((BlockDataMeta) item.getItemMeta()).setBlockData(blockBuilder.getBlockData(extraInfo.get("shards").textValue()));
             }
         }
-        if (extraInfo.getStoredEnchants() != null) {
-            Map<Enchantment,Integer> storedEnchants = extraInfo.getStoredEnchants();
+        if (extraInfo.getEnchants() != null) {
+            Map<Enchantment,Integer> enchants = extraInfo.getEnchants();
             ItemMeta itemMeta = item.getItemMeta();
-            storedEnchants.forEach((enchant, integer) -> itemMeta.addEnchant(enchant, integer, true));
+            enchants.forEach((enchant, integer) -> itemMeta.addEnchant(enchant, integer, true));
             item.setItemMeta(itemMeta);
         }
         return item;
@@ -534,7 +543,8 @@ public class ItemList {
         return this.item;
     }
 
-    public List<Integer> getWarnings() {
-        return warnings;
+    @JsonIgnore
+    public List<String> getAddWarnings() {
+        return addWarnings;
     }
 }

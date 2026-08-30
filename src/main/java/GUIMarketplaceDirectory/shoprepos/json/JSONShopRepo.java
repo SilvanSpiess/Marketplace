@@ -23,6 +23,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.trim.TrimMaterial;
+import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.potion.PotionEffectType;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,6 +47,10 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeDeseria
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.utils.Metrics;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -198,6 +204,10 @@ public class JSONShopRepo implements ShopRepo {
         module.addDeserializer(DyeColor.class, new DyeColorDeserializer());
         module.addSerializer(PatternType.class, new PatternTypeSerializer());
         module.addDeserializer(PatternType.class, new PatternTypeDeserializer());
+        module.addSerializer(TrimPattern.class, new TrimPatternSerializer());
+        module.addDeserializer(TrimPattern.class, new TrimPatternDeserializer());
+        module.addSerializer(TrimMaterial.class, new TrimMaterialSerializer());
+        module.addDeserializer(TrimMaterial.class, new TrimMaterialDeserializer());
         mapper.registerModule(module);
 
         this.shops = new HashMap<>();

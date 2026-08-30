@@ -321,5 +321,35 @@ public class ExtraInfo {
             return PatternType.getByIdentifier(p.getValueAsString());
         }
     }
+
+    // armour TrimPattern
+    public static class TrimPatternSerializer extends JsonSerializer<TrimPattern> {
+        @Override
+        public void serialize(TrimPattern value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeString(value.getKey().getKey());
+        }
+    }
+
+    public static class TrimPatternDeserializer extends JsonDeserializer<TrimPattern> {
+        @Override
+        public TrimPattern deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            return Registry.TRIM_PATTERN.get(NamespacedKey.fromString(p.getValueAsString()));
+        }
+    }
+    
+    // armour trim material
+    public static class TrimMaterialSerializer extends JsonSerializer<TrimMaterial> {
+        @Override
+        public void serialize(TrimMaterial value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeString(value.getKey().getKey());
+        }
+    }
+
+    public static class TrimMaterialDeserializer extends JsonDeserializer<TrimMaterial> {
+        @Override
+        public TrimMaterial deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            return Registry.TRIM_MATERIAL.get(NamespacedKey.fromString(p.getValueAsString()));
+        }
+    }
 }
 
