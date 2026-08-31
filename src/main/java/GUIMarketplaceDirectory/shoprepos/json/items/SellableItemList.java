@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Color;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -50,6 +51,13 @@ public class SellableItemList extends ItemList {
         ItemMeta meta = itemStack.getItemMeta();
 
         List<Component> lore = new ArrayList<>(2);
+
+        // out of stock message
+        if (!this.getInStock()) {
+            lore.add(Component.text(MyChatColor.RED + "§lOUT OF STOCK"));
+        }
+
+        // example: x stacks for y diamonds
         String qtyString = getQuantityString();
 
         if (price > 0 && !qtyString.isEmpty()) {
@@ -60,7 +68,9 @@ public class SellableItemList extends ItemList {
         } else if(price == 0) {
             lore.add(Component.text(MyChatColor.GREEN + "Free!"));
         }
+
         meta.lore(lore);
+        meta.getCustomModelDataComponent().setColors(java.util.List.of(Color.fromRGB(80, 80, 80)));
         itemStack.setItemMeta(meta);
         return itemStack;
     }
@@ -127,6 +137,7 @@ public class SellableItemList extends ItemList {
 
     public void setInStock(Boolean inStock) {
         this.inStock = inStock;
+        if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
     public LocalDateTime getOutOfStockSince() {

@@ -7,6 +7,7 @@ import org.bukkit.inventory.ItemStack;
 import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
 import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -75,5 +76,8 @@ public interface ShopRepo {
 
     void removeItem(String key, SellableItemList item);
 
+    void markItemOutOfStock(SellableItemList item, String name, String uuid, LocalDateTime currentTime);
+    void markItemInStock(SellableItemList item);
+    
     Map<String, Object> findItem(String searchKey);
 }

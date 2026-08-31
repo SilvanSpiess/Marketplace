@@ -14,6 +14,7 @@ import org.bukkit.potion.PotionType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import org.bukkit.entity.Axolotl.Variant;
@@ -322,6 +323,21 @@ public class ExtraInfo {
         @Override
         public TrimMaterial deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             return Registry.TRIM_MATERIAL.get(NamespacedKey.fromString(p.getValueAsString()));
+        }
+    }
+
+    // local date time
+    public static class LocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
+        @Override
+        public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeString(value.toString());
+        }
+    }
+
+    public static class LocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+        @Override
+        public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            return LocalDateTime.parse(p.getValueAsString());
         }
     }
 }

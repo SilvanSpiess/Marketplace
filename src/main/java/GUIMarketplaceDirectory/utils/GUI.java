@@ -145,12 +145,14 @@ public class GUI {
         return texts.toArray(new Component[0]);
     }
 
-    private static Component[] getItemTextFor(InvType type, Config config) {
+    private static Component[] getItemTextFor(SellableItemList item, InvType type, Config config) {
         ArrayList<Component> texts = new ArrayList<>();
         switch(type) {
             case INV_EDIT: 
                 texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
                 texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to delete this item"));
+                if (!item.getInStock())
+                    texts.add(Component.text(MyChatColor.DARK_GREEN + "§oRight click to mark this item back in stock"));
             break;
             case SEARCH:
                 texts.add(Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"));
@@ -161,8 +163,9 @@ public class GUI {
                 texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to remove"));
             break;
             case NORMAL:
-                texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to mark this item out of stock"));
                 texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
+                if (item.getInStock())
+                    texts.add(Component.text(MyChatColor.GRAY + "§oPress 'drop' key to mark this item out of stock"));
             break;
             default:
                 texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
@@ -243,7 +246,9 @@ public class GUI {
 
     public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, List<SellableItemList> items, InvType type, Config config, int page, boolean backButton, BlockBuilder blockBuilder) {
         holder.getInventoryMaker().setPage(page);
-        List<ItemStack> inv = items.stream().map(itemList -> addItemLore(itemList.getItem(blockBuilder).clone(), getItemTextFor(type, config))).collect(Collectors.toList());
+        List<ItemStack> inv = items.stream()
+            .map(itemList -> addItemLore(itemList.getItem(blockBuilder).clone(), getItemTextFor(itemList, type, config)))
+            .collect(Collectors.toList());
         //int i=0;i<(shops.size() > 54 ? Math.min(45, shops.size()-45*page) : shops.size());i++
         for(int i=0;i< Math.min(45, inv.size()-page*45);i++) {            
             shopInventory.setItem(i,inv.get(i + page*45));
@@ -422,12 +427,13 @@ public class GUI {
             if (slotNum == shopInventory.getSize()-7) return Action.ADD_ITEM;
             if (click == ClickType.DROP && slotNum + 45*currPage < holder.getInv().size()) return Action.DELETE_ITEM;
             return Action.NOTHING;
-        } else if (slotNum + 45*currPage < holder.getInv().size()) { // searched items inventory
+        } else if (slotNum + 45*currPage < holder.getInv().size()) { // items inventory
             if (click.isShiftClick() && holder.getType() != InvType.SEARCH) return Action.FIND_BETTER_ALTERNATIVE;
             if (click.isShiftClick() && holder.getType() == InvType.SEARCH) return Action.WAYPOINT;
             if (click.isLeftClick() && holder.getType() == InvType.SEARCH) return Action.OPEN_SHOP;
             if (click.isRightClick() && holder.getType() == InvType.SEARCH) return Action.DYNMAP;
             if (click == ClickType.DROP && holder.getType() == InvType.INV_EDIT) return Action.DELETE_ITEM;
+            if (click.isRightClick() && holder.getType() == InvType.INV_EDIT) return Action.MARK_ITEM_IN_STOCK;
             if (click == ClickType.DROP && holder.getType() == InvType.NORMAL) return Action.MARK_ITEM_OUT_STOCK;
         }
         return Action.NOTHING;
@@ -448,6 +454,7 @@ public class GUI {
         if (slotNum == itemInventory.getSize()-1 && clickedItem.displayName().toString().contains("Go Back")) {
             return Action.GO_BACK;
         }
+
         //if a shop was clicked
         if (slotNum + 45*currPage < holder.getShops().size()) {
             if (click.isShiftClick() && (type != InvType.SEARCH && type != InvType.NORMAL)) return Action.OPEN_SHOP;

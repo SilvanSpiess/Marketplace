@@ -27,14 +27,13 @@ public class MarkOutOfStockProcess extends ConfirmationProcess {
         this.itemList = itemList;
         this.processHandler = processHandler;
         this.uuid = player.getUniqueId().toString();
+        player.sendMessage(MyChatColor.YELLOW + "Do you want to mark this item out of stock? (" +
+                           MyChatColor.GOLD + MyChatColor.BOLD + "Y" + MyChatColor.YELLOW + "/" + MyChatColor.GOLD + MyChatColor.BOLD + "N" + MyChatColor.YELLOW + ")");
     }
     
     @Override
     public void executeTask(Player player) {
-        itemList.setInStock(false);
-        itemList.setOutOfStockByName(player.getName());
-        itemList.setOutOfStockByUuid(player.getUniqueId().toString());
-        itemList.setOutOfStockSince(LocalDateTime.now());
+        shopRepo.markItemOutOfStock(itemList, player.getName(), player.getUniqueId().toString(), LocalDateTime.now());
         finished = true;
         succesful = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);

@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.inventory.ItemStack;
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.shoprepos.processes.AddItemProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.AddOwnerProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.ApproveChangeProcess;
@@ -15,6 +16,7 @@ import GUIMarketplaceDirectory.shoprepos.processes.ChangeDescriptionProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.ChangeDisplayitemProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.ChangeLocationProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
+import GUIMarketplaceDirectory.shoprepos.processes.MarkOutOfStockProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.NewShopProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.RejectChangeProcess;
 import GUIMarketplaceDirectory.shoprepos.processes.RemoveShopProcess;
@@ -146,9 +148,6 @@ public class ProcessHandler {
         shopProcesses.put(shopKey, removeShopProcess);
     }
 
-
-
-
     private boolean checkProcessAvailabilityHighPrio(Player player, String shopKey) {
         String uuid = player.getUniqueId().toString();
         if (!shopRepo.shopExist(shopKey)) {
@@ -195,6 +194,12 @@ public class ProcessHandler {
         AddItemProcess addItemProcess = new AddItemProcess(player, shopKey, itemStack, this.plugin, shopRepo, this);
         playerProcesses.put(uuid, addItemProcess);
         shopProcesses.put(shopKey, addItemProcess);
+    }
+
+    public void startMarkingItemOutOfStock(Player player, SellableItemList item) {
+        String uuid = player.getUniqueId().toString();
+        MarkOutOfStockProcess markOutOfStockProcess = new MarkOutOfStockProcess(player, item, shopRepo, this);
+        playerProcesses.put(uuid, markOutOfStockProcess);
     }
 
     public void discontinueProcessOfPlayer(ChatProcess process, String uuid) {

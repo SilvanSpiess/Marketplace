@@ -2,6 +2,7 @@ package GUIMarketplaceDirectory.shoprepos.json;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -41,6 +42,8 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentDeseria
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeyDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeySerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.LocalDateTimeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.LocalDateTimeSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeDeserializer;
@@ -101,6 +104,8 @@ public class JSONShopRepo implements ShopRepo {
         module.addDeserializer(TrimPattern.class, new TrimPatternDeserializer());
         module.addSerializer(TrimMaterial.class, new TrimMaterialSerializer());
         module.addDeserializer(TrimMaterial.class, new TrimMaterialDeserializer());
+        module.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
         mapper.registerModule(module);
 
         this.shops = new HashMap<>();
@@ -749,5 +754,21 @@ public class JSONShopRepo implements ShopRepo {
     private void addShopCountMetric() {
         plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shop_items", () -> shops.values().stream().mapToInt(shop -> shop.getItems().size()).sum()));
         plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shops", shops::size));
+    }
+
+    public void markItemOutOfStock(SellableItemList item, String name, String uuid, LocalDateTime currentTime) {
+        item.setInStock(false);
+        item.setOutOfStockByName(name);
+        item.setOutOfStockByUuid(uuid);
+        item.setOutOfStockSince(currentTime);
+        saveShops();
+    }
+
+    public void markItemInStock(SellableItemList item) {
+        item.setInStock(true);
+        item.setOutOfStockByName(null);
+        item.setOutOfStockByUuid(null);
+        item.setOutOfStockSince(null);
+        saveShops();
     }
 }

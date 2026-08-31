@@ -221,6 +221,13 @@ public class ItemEvents implements Listener {
                     player.closeInventory();
                     player.sendMessage(MyChatColor.YELLOW + "All matching items removed");
                 break;
+                case MARK_ITEM_OUT_STOCK: //TODO
+                    player.closeInventory();
+                    plugin.getProcessHandler().startMarkingItemOutOfStock(player, clickedItemList);
+                break;
+                case MARK_ITEM_IN_STOCK:
+                    plugin.getShopRepo().markItemInStock(clickedItemList);
+                break;
                 case DELETE_SHOP:
                     plugin.getProcessHandler().startDeletingShop(player, holder.getKey());
                     player.closeInventory();
