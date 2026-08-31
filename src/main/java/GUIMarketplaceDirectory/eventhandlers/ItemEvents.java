@@ -1,14 +1,7 @@
 package GUIMarketplaceDirectory.eventhandlers;
 
-import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
-import GUIMarketplaceDirectory.invholders.InvType;
-import GUIMarketplaceDirectory.invholders.ShopInvHolder;
-import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
-import GUIMarketplaceDirectory.utils.GUI;
-import GUIMarketplaceDirectory.utils.MyChatColor;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import java.util.List;
+import java.util.Map;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -19,8 +12,18 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
-import java.util.List;
-import java.util.Map;
+
+import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import GUIMarketplaceDirectory.invholders.InvType;
+import GUIMarketplaceDirectory.invholders.ShopInvHolder;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
+import GUIMarketplaceDirectory.utils.GUI;
+import GUIMarketplaceDirectory.utils.MyChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 
 public class ItemEvents implements Listener {
     final GUIMarketplaceDirectory plugin;
@@ -77,7 +80,7 @@ public class ItemEvents implements Listener {
                 return;  
             }
 
-            List<ItemStack> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType().getKey().getKey().toUpperCase());
+            List<SellableItemList> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType().getKey().getKey().toUpperCase());
 
             if(matchingItems == null) {
                 player.sendMessage(MyChatColor.RED + "Shop doesn't exist");
@@ -89,7 +92,7 @@ public class ItemEvents implements Listener {
                 plugin.getProcessHandler().initItemAddition(player, bookMeta.getPage(bookMeta.getPageCount()), item);
             }
             else { //if shop owner has the item in shop already it opens a window displaying those items and giving multiple options to perceed. 
-                Inventory itemAddMenuInv = GUI.makeItemInventory("Adding Item...", bookMeta.getPage(bookMeta.getPageCount()), matchingItems, InvType.ADD_ITEM, plugin.getCustomConfig(), item.clone(), null);
+                Inventory itemAddMenuInv = GUI.makeItemInventory("Adding Item...", bookMeta.getPage(bookMeta.getPageCount()), matchingItems, InvType.ADD_ITEM, plugin.getCustomConfig(), item.clone(), null, this.plugin);
                 player.openInventory(itemAddMenuInv);
             }
         }
@@ -124,21 +127,23 @@ public class ItemEvents implements Listener {
             } catch (Exception e) {}
             String key = "";
             String name = "";
+            SellableItemList clickedItemList = null;
             try {
                 key = holder.getShops().get(slotNum + 45*currPage);
                 name = plugin.getShopRepo().getShopName(key);
+                clickedItemList = holder.getInv().get(slotNum + 45*currPage);
             } catch (Exception e) {}
             
             switch(action) {
                 case NOTHING: break;
                 case NEXT_PAGE:
                     itemCheckEvent.getInventory().clear();
-                    GUI.fillItemInventory(itemCheckEvent.getInventory(), holder, plugin.getCustomConfig(), currPage+1);
+                    GUI.fillItemInventory(itemCheckEvent.getInventory(), holder, plugin.getCustomConfig(), currPage+1, this.plugin);
                     player.updateInventory();
                 break;
                 case PREVIOUS_PAGE:
                     itemCheckEvent.getInventory().clear();
-                    GUI.fillItemInventory(itemCheckEvent.getInventory(), holder, plugin.getCustomConfig(), currPage-1);
+                    GUI.fillItemInventory(itemCheckEvent.getInventory(), holder, plugin.getCustomConfig(), currPage-1, this.plugin);
                     player.updateInventory();
                 break;
                 case GO_BACK: {
@@ -147,19 +152,19 @@ public class ItemEvents implements Listener {
                         player.sendMessage("No back page found.");
                     else {
                         player.closeInventory();
-                        player.openInventory(holder.makePreviousInventory());
+                        player.openInventory(backInventory);
                     }
                 } break;
                 case OPEN_SHOP: {
                     player.closeInventory();
-                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
-                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker());
+                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 } break;
-                case OPEN_EDIT_SHOP_INV: {
+                case OPEN_EDIT_SHOP_INV: { //TODO probable bug
                     player.closeInventory();
-                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
-                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.INV_EDIT, plugin.getCustomConfig(), holder.getInventoryMaker());
+                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.INV_EDIT, plugin.getCustomConfig(), holder.getInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 } break;
                 case DYNMAP: {
@@ -168,11 +173,11 @@ public class ItemEvents implements Listener {
                     String messageLink;
                     if(parts.length == 2) {
                         // pre 1.21.7 messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
-                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[1]);
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + parts[0] + "&y=64&z=" + parts[1];
                     }
                     else {
                         // pre 1.21.7 messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
-                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[2]);
+                        messageLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + parts[0] + "&y=64&z=" + parts[2];
                     }
                     var mm = MiniMessage.miniMessage();
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageLink + "</underlined>'><click:OPEN_URL:'" + messageLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");
@@ -196,9 +201,13 @@ public class ItemEvents implements Listener {
                     plugin.getShopRepo().findBetterAlternative(player, holder.getKey(), currPage*45 + slotNum);
                 break;
                 case DELETE_ITEM:
-                    plugin.getShopRepo().removeItem(key, itemCheckEvent.getCurrentItem());
-                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
-                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), holder.getKey(), inv, holder.getType(), plugin.getCustomConfig(), holder.getPreviousInventoryMaker());
+                    if (clickedItemList == null) {
+                        player.sendMessage(MyChatColor.RED + "Cannot delete that item");
+                        return;
+                    }
+                    plugin.getShopRepo().removeItem(key, clickedItemList);
+                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), holder.getKey(), inv, holder.getType(), plugin.getCustomConfig(), holder.getPreviousInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 break;
                 case ADD_ITEM:

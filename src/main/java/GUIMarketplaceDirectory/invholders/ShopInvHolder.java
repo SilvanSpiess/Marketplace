@@ -1,19 +1,20 @@
 package GUIMarketplaceDirectory.invholders;
 
+import java.util.List;
+
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.utils.GUI.InventoryMaker;
-
-import java.util.List;
 
 public class ShopInvHolder implements InventoryHolder {
     final String key;
     ItemStack item;
     List<String> shops;
-    List<ItemStack> items;
+    List<SellableItemList> items;
     final InvType type;
     boolean paged;
     boolean filtered;
@@ -52,7 +53,7 @@ public class ShopInvHolder implements InventoryHolder {
         this.pageMaker = makeInstructions;   
     }
 
-    public ShopInvHolder(String key, InvType type, List<ItemStack> items, InventoryMaker makeInstructions) {
+    public ShopInvHolder(String key, InvType type, List<SellableItemList> items, InventoryMaker makeInstructions) {
         super();
         this.key = key;
         this.type = type;
@@ -85,7 +86,7 @@ public class ShopInvHolder implements InventoryHolder {
         return item;
     }
 
-    public List<ItemStack> getInv() {
+    public List<SellableItemList> getInv() {
         return items;
     }
 

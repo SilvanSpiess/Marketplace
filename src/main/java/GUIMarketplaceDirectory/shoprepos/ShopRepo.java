@@ -56,7 +56,7 @@ public interface ShopRepo {
     List<Map<String, String>> getPendingShopDetails();
     List<Map<String, String>> getPendingChangesDetails();
 
-    List<ItemStack> getShopInv(String key);
+    List<SellableItemList> getShopInv(String key);
 
     void findBetterAlternative(Player player, String key, int pos);
 
@@ -69,11 +69,11 @@ public interface ShopRepo {
     List<Map<String, String>> getRefinedShopsByName(String searchKey);
     List<Map<String, String>> getRefinedShopsByPlayer(String searchKey);
 
-    List<ItemStack> getMatchingItems(String key, String itemName);
+    List<SellableItemList> getMatchingItems(String key, String itemName);
 
     void removeMatchingItems(String key, String itemName);
 
-    void removeItem(String key, ItemStack item);
+    void removeItem(String key, SellableItemList item);
 
     Map<String, Object> findItem(String searchKey);
 }

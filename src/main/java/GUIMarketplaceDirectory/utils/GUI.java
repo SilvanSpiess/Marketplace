@@ -20,6 +20,9 @@ import org.bukkit.util.ChatPaginator;
 import GUIMarketplaceDirectory.invholders.InvType;
 import GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import GUIMarketplaceDirectory.invholders.ShopInvHolder;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.BlockBuilder;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
@@ -33,7 +36,7 @@ public class GUI {
         CANCEL_LOCATION, SET_LOCATION,
         CANCEL_DISPLAYITEM, SET_DISPLAYITEM,
         CANCEL_OWNER, ADD_OWNER,
-        SET_ITEM_OUT_STOCK, SET_ITEM_IN_STOCK,
+        MARK_ITEM_OUT_STOCK, MARK_ITEM_IN_STOCK,
         //moderation
         DELETE_SHOP, GET_SHOP_BOOK,
         APPROVE_SHOP, REJECT_SHOP,
@@ -157,6 +160,10 @@ public class GUI {
             case ADD_ITEM:
                 texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to remove"));
             break;
+            case NORMAL:
+                texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to mark this item out of stock"));
+                texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
+            break;
             default:
                 texts.add(Component.text(MyChatColor.GOLD + "§oShift click to find a better deal"));
         }
@@ -230,13 +237,13 @@ public class GUI {
         return shopDirectory;
     }
 
-    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, Config config, int page) {
-        fillItemInventory(shopInventory, holder, holder.getInv(), holder.getType(), config, page, holder.getPreviousInventoryMaker() != null);
+    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, Config config, int page, BlockBuilder blockBuilder) {
+        fillItemInventory(shopInventory, holder, holder.getInv(), holder.getType(), config, page, holder.getPreviousInventoryMaker() != null, blockBuilder);
     }
 
-    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, List<ItemStack> items, InvType type, Config config, int page, boolean backButton) {
+    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, List<SellableItemList> items, InvType type, Config config, int page, boolean backButton, BlockBuilder blockBuilder) {
         holder.getInventoryMaker().setPage(page);
-        List<ItemStack> inv = items.stream().map(item -> addItemLore(item.clone(), getItemTextFor(type, config))).collect(Collectors.toList());
+        List<ItemStack> inv = items.stream().map(itemList -> addItemLore(itemList.getItem(blockBuilder).clone(), getItemTextFor(type, config))).collect(Collectors.toList());
         //int i=0;i<(shops.size() > 54 ? Math.min(45, shops.size()-45*page) : shops.size());i++
         for(int i=0;i< Math.min(45, inv.size()-page*45);i++) {            
             shopInventory.setItem(i,inv.get(i + page*45));
@@ -273,26 +280,26 @@ public class GUI {
         }
     }
 
-    public static Inventory makeItemInventory(String title, String key, List<ItemStack> items, InvType type, Config config, ItemStack item, InventoryMaker previousWindow) {
-        return makeItemInventory(Component.text(title), key, items, Collections.nCopies(items.size(), key), type, config, item, 0, previousWindow);
+    public static Inventory makeItemInventory(String title, String key, List<SellableItemList> items, InvType type, Config config, ItemStack item, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+        return makeItemInventory(Component.text(title), key, items, Collections.nCopies(items.size(), key), type, config, item, 0, previousWindow, blockBuilder);
     }
 
-    public static Inventory makeItemInventory(Component title, String key, List<ItemStack> items, InvType type, Config config, InventoryMaker previousWindow) {
-        return makeItemInventory(title, key, items, Collections.nCopies(items.size(), key), type, config, null, 0, previousWindow);
+    public static Inventory makeItemInventory(Component title, String key, List<SellableItemList> items, InvType type, Config config, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+        return makeItemInventory(title, key, items, Collections.nCopies(items.size(), key), type, config, null, 0, previousWindow, blockBuilder);
     }
     
-    public static Inventory makeItemInventory(String title, String key, List<ItemStack> items, List<String> shops, InvType type, Config config, InventoryMaker previousWindow) {
-        return makeItemInventory(Component.text(title), key, items, shops, type, config, null, 0, previousWindow);
+    public static Inventory makeItemInventory(String title, String key, List<SellableItemList> items, List<String> shops, InvType type, Config config, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+        return makeItemInventory(Component.text(title), key, items, shops, type, config, null, 0, previousWindow, blockBuilder);
     }
 
-    public static Inventory makeItemInventory(Component title, String key, List<ItemStack> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, InventoryMaker previousWindow) {
-        InventoryMaker instructions = new itemInventoryMaker(title, key, items, shops, type, config, itemToAdd, page, previousWindow);
+    public static Inventory makeItemInventory(Component title, String key, List<SellableItemList> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+        InventoryMaker instructions = new itemInventoryMaker(title, key, items, shops, type, config, itemToAdd, page, blockBuilder, previousWindow);
         ShopInvHolder holder = new ShopInvHolder(key,type,items, instructions);
         holder.setPreviousInventoryMaker(previousWindow);
         holder.setShops(shops);
         holder.setItem(itemToAdd); //itemToAdd is null unless type=ADD_ITEM
         Inventory shopInventory = Bukkit.createInventory(holder,getInvSize(items.size(), previousWindow != null), title);
-        fillItemInventory(shopInventory, holder, items, type, config, page, previousWindow != null);
+        fillItemInventory(shopInventory, holder, items, type, config, page, previousWindow != null, blockBuilder);
         return shopInventory;
     }
 
@@ -396,7 +403,7 @@ public class GUI {
         if (slotNum == shopInventory.getSize()-1 && clickedItem.displayName().toString().contains("Go Back")) {
             return Action.GO_BACK;
         }
-        if (holder.getType() == InvType.SHOP_MENU) {
+        if (holder.getType() == InvType.SHOP_MENU) { // shop edit inventory
             if (slotNum == 1 && click != ClickType.DROP) return Action.SET_DESCRIPTION;
             if (slotNum == 1 && click == ClickType.DROP) return Action.CANCEL_DESCRIPTION;
             if (slotNum == 7 && click != ClickType.DROP) return Action.SET_LOCATION;
@@ -410,17 +417,18 @@ public class GUI {
             if (slotNum == 4 && click.isRightClick()) return Action.DYNMAP;
             if (slotNum == 4 && !click.isRightClick()) return Action.OPEN_EDIT_SHOP_INV;
             return Action.NOTHING;
-        } else if (holder.getType() == InvType.ADD_ITEM) {
+        } else if (holder.getType() == InvType.ADD_ITEM) { // add item inventory
             if (slotNum == shopInventory.getSize()-3) return Action.REMOVE_MATCHING_ITEMS;
             if (slotNum == shopInventory.getSize()-7) return Action.ADD_ITEM;
             if (click == ClickType.DROP && slotNum + 45*currPage < holder.getInv().size()) return Action.DELETE_ITEM;
             return Action.NOTHING;
-        } else if (slotNum + 45*currPage < holder.getInv().size()) {
-            if (click.isShiftClick() && holder.getType() != InvType.ADD_ITEM && holder.getType() != InvType.SEARCH) return Action.FIND_BETTER_ALTERNATIVE;
+        } else if (slotNum + 45*currPage < holder.getInv().size()) { // searched items inventory
+            if (click.isShiftClick() && holder.getType() != InvType.SEARCH) return Action.FIND_BETTER_ALTERNATIVE;
             if (click.isShiftClick() && holder.getType() == InvType.SEARCH) return Action.WAYPOINT;
             if (click.isLeftClick() && holder.getType() == InvType.SEARCH) return Action.OPEN_SHOP;
             if (click.isRightClick() && holder.getType() == InvType.SEARCH) return Action.DYNMAP;
             if (click == ClickType.DROP && holder.getType() == InvType.INV_EDIT) return Action.DELETE_ITEM;
+            if (click == ClickType.DROP && holder.getType() == InvType.NORMAL) return Action.MARK_ITEM_OUT_STOCK;
         }
         return Action.NOTHING;
     }
@@ -493,14 +501,15 @@ public class GUI {
     public static class itemInventoryMaker implements InventoryMaker {
         Component title;
         String key;
-        List<ItemStack> items;
+        List<SellableItemList> items;
         List<String> shops;
         InvType type;
         Config config;
         ItemStack itemToAdd;
         int page;
         InventoryMaker instructions;
-        public itemInventoryMaker(Component title, String key, List<ItemStack> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, InventoryMaker instructions) {
+        BlockBuilder blockBuilder;
+        public itemInventoryMaker(Component title, String key, List<SellableItemList> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, BlockBuilder blockBuilder, InventoryMaker instructions) {
             this.title = title;
             this.key = key;
             this.items = items;
@@ -510,6 +519,7 @@ public class GUI {
             this.itemToAdd = itemToAdd;
             this.page = page;
             this.instructions = instructions;
+            this.blockBuilder = blockBuilder;
         }
 
         @Override
@@ -519,7 +529,7 @@ public class GUI {
 
         @Override
         public Inventory makeInventory() {
-            return makeItemInventory(title, key, items, shops, type, config, itemToAdd, page, instructions);
+            return makeItemInventory(title, key, items, shops, type, config, itemToAdd, page, instructions, blockBuilder);
         }
         
     }

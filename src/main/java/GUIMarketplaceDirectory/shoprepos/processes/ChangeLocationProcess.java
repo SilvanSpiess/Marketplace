@@ -1,25 +1,25 @@
 package GUIMarketplaceDirectory.shoprepos.processes;
 
 import org.bukkit.entity.Player;
-import GUIMarketplaceDirectory.utils.MyChatColor;
 
 import GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import GUIMarketplaceDirectory.shoprepos.ShopRepo;
+import GUIMarketplaceDirectory.utils.MyChatColor;
 
 public class ChangeLocationProcess extends ConfirmationProcess{
-    private String name = "changing location";
+    private final String name = "changing location";
 
     private boolean finished = false;
     private boolean succesful = false;
 
-    private ShopRepo shopRepo;
-    private ProcessHandler processHandler;
-    private Player player;
-    private String uuid;
-    private String shopKey;
-    private String location;
+    private final ShopRepo shopRepo;
+    private final ProcessHandler processHandler;
+    private final Player player;
+    private final String uuid;
+    private final String shopKey;
+    private final String location;
 
-    private boolean moderateEnabled;
+    private final boolean moderateEnabled;
 
 
     public ChangeLocationProcess(Player player, String shopKey, boolean moderateEnabled, ShopRepo shopRepo, ProcessHandler processHandler) {
@@ -49,6 +49,8 @@ public class ChangeLocationProcess extends ConfirmationProcess{
             else
                 player.sendMessage(MyChatColor.GOLD + "Something went wrong");
         }
+        finished = true;
+        succesful = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
     }
@@ -76,6 +78,7 @@ public class ChangeLocationProcess extends ConfirmationProcess{
     @Override
     public void cancel() {
         finished = true;
+        succesful = false;
         processHandler.discontinueProcessOfPlayer(this, uuid);
         processHandler.discontinueProcessOfShop(this, shopKey);
         player.sendMessage(MyChatColor.GRAY + "Canceled " + getName());

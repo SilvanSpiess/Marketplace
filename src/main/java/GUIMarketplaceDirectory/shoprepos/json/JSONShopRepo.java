@@ -51,119 +51,12 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialDeseri
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
 import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.utils.Metrics;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-
-class Shop {
-    private String name;
-    private String loc;
-    private String desc;
-    private Map<String, String> owners;
-    private String owner, uuid;
-    private String key;
-    private String displayItem;
-    private List<SellableItemList> items;
-
-    public Shop() {
-    }
-
-    public Shop(String name, String desc, String owner, String uuid, String key, String loc) {
-        this.name = name;
-        this.desc = desc;
-        this.owner = owner;
-        this.owners = new HashMap<>();
-        this.owners.put(uuid, owner);
-        this.uuid = uuid;
-        this.key = key;
-        this.loc = loc;
-        this.items = new ArrayList<>();
-        this.displayItem = "WRITTEN_BOOK";
-    }
-
-    public void setDisplayItem(String displayItem) {
-        this.displayItem = displayItem;
-    }
-
-    public void setLoc(String loc) {
-        this.loc = loc;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setOwner(String owner) {
-        this.owner = owner;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
-
-    public void setOwners(Map<String, String> owners) {
-        this.owners = new HashMap<>();
-        this.owners.putAll(owners);
-    }
-
-    public void addOwner(String uuid, String owner) {
-        this.owners.put(uuid, owner);
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    public void setDesc(String desc) {
-        this.desc = desc;
-    }
-
-    public void setItems(List<SellableItemList> inv) {
-        this.items = inv;
-    }
-
-    public void addToInv(SellableItemList item) {
-        items.add(item);
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getLoc() {
-        return loc;
-    }
-
-    public String getDesc() {
-        return desc;
-    }
-
-    public String getOwner() {
-        return owner;
-    }
-
-    public String getDisplayItem() {
-        return displayItem;
-    }
-
-    public Map<String, String> getOwners() {
-        return owners;
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public List<SellableItemList> getItems() {
-        return items == null ? new ArrayList<>() : items;
-    }
-}
 
 public class JSONShopRepo implements ShopRepo {
     private final GUIMarketplaceDirectory plugin;
@@ -625,6 +518,7 @@ public class JSONShopRepo implements ShopRepo {
         }
     }
 
+    @Override
     public boolean removeShop(Player player, String shopKey) {  
         if(pendingChanges.containsKey(shopKey))
             pendingChanges.remove(shopKey);          
@@ -665,46 +559,64 @@ public class JSONShopRepo implements ShopRepo {
         else return null;
     }
 
+    @Override
     public List<Map<String, String>> getShopDetails() {
         List<Map<String, String>> detailsList = new ArrayList<>();
         shops.forEach((s, shop) -> detailsList.add(convertToMap(shop)));
         return detailsList;
     }
 
+    @Override
     public List<Map<String, String>> getPendingShopDetails() {
         List<Map<String, String>> detailsList = new ArrayList<>();
         pendingShops.forEach((s, shop) -> detailsList.add(convertToMap(shop)));
         return detailsList;
     }
 
+    @Override
     public List<Map<String, String>> getPendingChangesDetails() {
         List<Map<String, String>> detailsList = new ArrayList<>();
         pendingChanges.forEach((s, shop) -> detailsList.add(convertToMap(shop)));
         return detailsList;
     }
 
-    public List<ItemStack> getShopInv(String key) {
+    @Override
+    public List<SellableItemList> getShopInv(String key) {
         Shop shop = null;
         if (shops.containsKey(key))
             shop = shops.get(key);
         else if (pendingShops.containsKey(key))
             shop = pendingShops.get(key);
 
-        List<ItemStack> inv = new ArrayList<>();
+        List<SellableItemList> inv = new ArrayList<>();
 
         if (shop == null) return inv;
 
         shop.getItems().forEach(itemList -> {
-            ItemStack item = itemList.getItem(this.plugin).clone();
-            ItemMeta meta = item.getItemMeta();
-            List<Component> lore = meta.lore() == null ? new ArrayList<>() : meta.lore();
-            meta.lore(lore);
-            item.setItemMeta(meta);
-            inv.add(item);
-
+            inv.add(itemList);
         });
         return inv;
     }
+
+    private double getQuantityPerDiamond(String qtyString, int diamondPrice) {
+        double value = 0;
+        if(diamondPrice<=0) {
+            value = Integer.MAX_VALUE;
+        }
+        else {
+            String[] parts1 = qtyString.split(":");
+            if (Integer.parseInt(parts1[0]) > 0)
+                value = Double.parseDouble(parts1[0]) * 1728;
+            else if (Integer.parseInt(parts1[1]) > 0)
+                value = Double.parseDouble(parts1[1]) * 64;
+            else if (Integer.parseInt(parts1[2]) > 0)
+                value = Double.parseDouble(parts1[2]);
+            value /= diamondPrice;
+        }
+        return value;
+    }
+
+    @Override
     public void findBetterAlternative(Player player, String key, int pos) {
         SellableItemList item;
         if (shops.containsKey(key)) {
@@ -717,20 +629,7 @@ public class JSONShopRepo implements ShopRepo {
         }
         
         String name = item.getName();
-        double value = 0;
-        if(item.getPrice()<=0) {
-            value = Integer.MAX_VALUE;
-        }
-        else {
-            String[] parts1 = item.getQty().split(":");
-            if (Integer.parseInt(parts1[0]) > 0)
-                value = Double.parseDouble(parts1[0]) * 1728;
-            else if (Integer.parseInt(parts1[1]) > 0)
-                value = Double.parseDouble(parts1[1]) * 64;
-            else if (Integer.parseInt(parts1[2]) > 0)
-                value = Double.parseDouble(parts1[2]);
-            value /= item.getPrice();
-        }
+        double value = getQuantityPerDiamond(item.getQty(), item.getPrice());
         final boolean[] found = {false};
         double finalValue = value;
         shops.forEach((s, shop) ->
@@ -753,20 +652,7 @@ public class JSONShopRepo implements ShopRepo {
                                 && ((EnchantmentStorageMeta)item.getItem(plugin).getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.getItem(plugin).getItemMeta()).getStoredEnchants().containsKey(enchantment)))
                                 return;
                         }
-                        double val = 0;
-                        if (itemList.getPrice() <= 0)
-                            val = Integer.MAX_VALUE;
-                        else {
-                            String[] parts = itemList.getQty().split(":");
-                            if (Integer.parseInt(parts[0]) > 0)
-                                val = Double.parseDouble(parts[0]) * 1728;
-                            else if (Integer.parseInt(parts[1]) > 0)
-                                val = Double.parseDouble(parts[1]) * 64;
-                            else if (Integer.parseInt(parts[2]) > 0)
-                                val = Double.parseDouble(parts[2]);
-                            val /= itemList.getPrice();
-                        }
-
+                        double val = getQuantityPerDiamond(itemList.getQty(), itemList.getPrice());
                         if (val > finalValue) {
                             player.sendMessage(MyChatColor.GOLD + shop.getName() + MyChatColor.WHITE + " has a better deal: " + ((TextComponent) itemList.getItem(plugin).lore().get(0)).content());
                             found[0] = true;
@@ -779,10 +665,12 @@ public class JSONShopRepo implements ShopRepo {
         }
     }
 
+    @Override
     public String getShopName(String key) {
         return shops.containsKey(key) ? shops.get(key).getName() : pendingShops.containsKey(key) ? pendingShops.get(key).getName() : "";
     }
 
+    @Override
     public String getShopTitle(String key) {
         if(isPendingShop(key))
             return getShopName(key) + " §5§o(pending approvals)";
@@ -792,65 +680,62 @@ public class JSONShopRepo implements ShopRepo {
             return getShopName(key);
     }
 
+    @Override
     public List<Map<String, String>> getRefinedShopsByName(String searchKey) {
         return shops.values().stream().filter(shop -> shop.getName().toLowerCase().trim().contains(searchKey.toLowerCase().trim())).map(shop -> convertToMap(shop)).toList();
     }
 
-    public List<ItemStack> getMatchingItems(String key, String itemName) {
+    @Override
+    public List<SellableItemList> getMatchingItems(String key, String itemName) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
         if(shop == null)
             return null;
-        List<ItemStack> items = new ArrayList<>();
+        List<SellableItemList> items = new ArrayList<>();
         shop.getItems().forEach(itemList -> {
             if (itemList.getName().equalsIgnoreCase(itemName))
-                items.add(itemList.getItem(plugin));
+                items.add(itemList);
         });
         return items;
     }
 
+    @Override
     public void removeMatchingItems(String key, String itemName) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
         shop.setItems(shop.getItems().stream().filter(itemList -> !itemList.getName().equals(itemName)).collect(Collectors.toList()));
         saveShops();
     }
 
-    public void removeItem(String key, ItemStack item) {
+    @Override
+    public void removeItem(String key, SellableItemList item) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
-        shop.setItems(shop.getItems().stream().filter(itemList -> itemList.getItem(plugin).getType() != item.getType() || !((TextComponent) item.getItemMeta().lore().get(0)).content().equals(((TextComponent) itemList.getItem(plugin).getItemMeta().lore().get(0)).content())).collect(Collectors.toList()));
+        shop.setItems(shop.getItems().stream()
+            .filter(itemList -> 
+                itemList.getItem(plugin).getType() != item.getItem(this.plugin).getType() 
+                || !itemList.getPrice().equals(item.getPrice())
+                || !itemList.getQty().equals(item.getQty()))
+            .collect(Collectors.toList()));
         saveShops();
     }
 
+    @Override
     public List<Map<String, String>> getRefinedShopsByPlayer(String searchKey) {
         return shops.values().stream()
             .filter(shop -> shop.getOwners().values().stream().map(owner -> owner.toLowerCase().trim().contains(searchKey.toLowerCase().trim()))
             .reduce(false, (x, y) -> x || y)).map(shop -> convertToMap(shop)).toList();
     }
 
+    @Override
     public Map<String, Object> findItem(String searchKey) {
-        List<ItemStack> items = new ArrayList<>();
+        List<SellableItemList> items = new ArrayList<>();
         List<String> shopKeys = new ArrayList<>();
         shops.forEach((s, shop) -> {
             List<SellableItemList> inv = shop.getItems();
             inv.forEach(itemList -> {
                 if (itemList.getName().replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
-                    ItemStack itemToAdd = itemList.getItem(plugin).clone();
-                    ItemMeta meta = itemToAdd.getItemMeta();
-                    List<Component> lore = meta.lore() != null ? meta.lore() : new ArrayList<>();
-                    lore.add(Component.text(MyChatColor.GREEN + "From " + shop.getName()));
-                    lore.add(Component.text(plugin.getCustomConfig().getDefaultShopLocColor() + shop.getLoc()));
-                    meta.lore(lore);
-                    itemToAdd.setItemMeta(meta);
-                    items.add(itemToAdd);
+                    items.add(itemList);
                     shopKeys.add(shop.getKey());
-                } else if (itemList.getCustomName().length() > 0 && itemList.getCustomName().toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
-                    ItemStack itemToAdd = itemList.getItem(plugin).clone();
-                    ItemMeta meta = itemToAdd.getItemMeta();
-                    List<Component> lore = meta.lore() != null ? meta.lore() : new ArrayList<>();
-                    lore.add(Component.text(MyChatColor.GREEN + "From " + shop.getName()));
-                    lore.add(Component.text(plugin.getCustomConfig().getDefaultShopLocColor() + shop.getLoc()));
-                    meta.lore(lore);
-                    itemToAdd.setItemMeta(meta);
-                    items.add(itemToAdd);
+                } else if (itemList.getCustomName() != null && itemList.getCustomName().length() > 0 && itemList.getCustomName().toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
+                    items.add(itemList);
                     shopKeys.add(shop.getKey());
                 }
             });

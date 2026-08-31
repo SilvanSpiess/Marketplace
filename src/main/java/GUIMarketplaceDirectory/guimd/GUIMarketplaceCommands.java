@@ -1,12 +1,8 @@
 package GUIMarketplaceDirectory.guimd;
 
-import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
-import GUIMarketplaceDirectory.invholders.InvType;
-import GUIMarketplaceDirectory.utils.GUI;
-import GUIMarketplaceDirectory.utils.MyChatColor;
-import GUIMarketplaceDirectory.utils.Config;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -15,14 +11,19 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import GUIMarketplaceDirectory.invholders.InvType;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.utils.Config;
+import GUIMarketplaceDirectory.utils.GUI;
+import GUIMarketplaceDirectory.utils.MyChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 
 public class GUIMarketplaceCommands implements TabExecutor {
 
@@ -81,13 +82,13 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             //get shops and display
                             Player player = (Player) commandSender;
                             Map<String,Object> searchResults = plugin.getShopRepo().findItem(searchKey);
-                            List<ItemStack> refinedItems = (List<ItemStack>) searchResults.get("items");
+                            List<SellableItemList> refinedItems = (List<SellableItemList>) searchResults.get("items");
                             List<String> shops = ((List<String>) searchResults.get("shops"));
                             if(refinedItems.size() == 0) {
                                 player.sendMessage(MyChatColor.RED + "No shops with matching name found");
                                 return true;
                             }
-                            Inventory refinedItemInv = GUI.makeItemInventory("Search results", "", refinedItems, shops, InvType.SEARCH, plugin.getCustomConfig(), null);
+                            Inventory refinedItemInv = GUI.makeItemInventory("Search results", "", refinedItems, shops, InvType.SEARCH, plugin.getCustomConfig(), null, this.plugin);
                             player.openInventory(refinedItemInv);
                             return true;
                         }

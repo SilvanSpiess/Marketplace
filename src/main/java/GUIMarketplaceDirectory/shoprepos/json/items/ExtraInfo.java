@@ -299,7 +299,7 @@ public class ExtraInfo {
     public static class TrimPatternSerializer extends JsonSerializer<TrimPattern> {
         @Override
         public void serialize(TrimPattern value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeString(value.getKey().getKey());
+            gen.writeString(value.getKey().getKey()); //getKeyOrNull maybe
         }
     }
 

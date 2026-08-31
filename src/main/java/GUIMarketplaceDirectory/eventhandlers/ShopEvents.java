@@ -1,15 +1,10 @@
 package GUIMarketplaceDirectory.eventhandlers;
 
-import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
-import GUIMarketplaceDirectory.invholders.InvType;
-import GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
-import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
-import GUIMarketplaceDirectory.utils.GUI;
-import GUIMarketplaceDirectory.utils.MyChatColor;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.minimessage.*;
-import org.bukkit.*;
+import java.util.List;
+import java.util.Map;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,7 +18,16 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
-import java.util.*;
+import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
+import GUIMarketplaceDirectory.invholders.InvType;
+import GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
+import GUIMarketplaceDirectory.utils.GUI;
+import GUIMarketplaceDirectory.utils.MyChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 
 public class ShopEvents implements Listener { 
 
@@ -147,8 +151,8 @@ public class ShopEvents implements Listener {
                     player.closeInventory();
                     String key = holder.getShops().get(slotNum + 45*currPage).get("key");
                     String name = holder.getShops().get(slotNum + 45*currPage).get("name");
-                    List<ItemStack> inv = plugin.getShopRepo().getShopInv(key);
-                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker());
+                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 break;
                 case DYNMAP: {
@@ -157,11 +161,11 @@ public class ShopEvents implements Listener {
                     String messageDynmapLink;
                     if(parts.length == 2) {       
                         // pre 1.21.7 messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[1]) + ";7";
-                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[1]);
+                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + parts[0] + "&y=64&z=" + parts[1];
                     }
                     else {      
                         // pre 1.21.7 messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "#world;flat;" + Integer.parseInt(parts[0]) + ",64," + Integer.parseInt(parts[2]) + ";7";
-                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + Integer.parseInt(parts[0]) + "&y=64&z=" + Integer.parseInt(parts[2]);
+                        messageDynmapLink = plugin.getCustomConfig().getDynmapServerAdress() + "?worldname=world&mapname=flat&zoom=7&x=" + parts[0] + "&y=64&z=" + parts[2];
                     }
                     var mm = MiniMessage.miniMessage();
                     Component parsed = mm.deserialize("<#3ed3f1>You can <hover:show_text:'<gray><underlined>" + messageDynmapLink + "</underlined>'><click:OPEN_URL:'" + messageDynmapLink + "'><#3c9aaf><underlined><bold>[click here]</bold></underlined></click></hover> <#3ed3f1>to open the location in <#ee2bd6><bold>dynmap</bold><#3ed3f1>.");

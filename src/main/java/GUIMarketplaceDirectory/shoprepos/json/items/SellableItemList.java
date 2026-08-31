@@ -7,16 +7,25 @@ import java.util.List;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import GUIMarketplaceDirectory.shoprepos.json.Shop;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
 
+@JsonInclude(Include.NON_NULL)
 public class SellableItemList extends ItemList {
+    @JsonIgnore
+    private Shop shop;
     private Integer price;
     private String qty;
 
-    private Boolean outOfStock;
+    private Boolean inStock;
     private LocalDateTime outOfStockSince;
-    private String outOfStockBy;
+    private String outOfStockByName;
+    private String outOfStockByUuid;
 
     public SellableItemList() {
         super();
@@ -35,19 +44,13 @@ public class SellableItemList extends ItemList {
         this.price = 0;
     }
 
+    @Override
     protected ItemStack makeItemStack(BlockBuilder blockBuilder) {
         ItemStack itemStack = super.makeItemStack(blockBuilder);
         ItemMeta meta = itemStack.getItemMeta();
 
         List<Component> lore = new ArrayList<>(2);
-        String qtyString = "";
-        String[] parts = qty.split(":");
-        if (Integer.parseInt(parts[0]) > 0)
-            qtyString = parts[0] + " shulker";
-        else if (Integer.parseInt(parts[1]) > 0)
-            qtyString = parts[1] + " stack";
-        else if (Integer.parseInt(parts[2]) > 0)
-            qtyString = parts[2];
+        String qtyString = getQuantityString();
 
         if (price > 0 && !qtyString.isEmpty()) {
             lore.add(Component.text("§6" + qtyString + " §ffor §3" + price + " diamond" + (price == 1 ? "" : "s")));
@@ -62,7 +65,41 @@ public class SellableItemList extends ItemList {
         return itemStack;
     }
 
+    @JsonIgnore
+    public String getQuantityString() {
+        String qtyString = "";
+        String[] parts = qty.split(":");
+        if (Integer.parseInt(parts[0]) > 0)
+            qtyString = parts[0] + " shulker";
+        else if (Integer.parseInt(parts[1]) > 0)
+            qtyString = parts[1] + " stack";
+        else if (Integer.parseInt(parts[2]) > 0)
+            qtyString = parts[2];
+        return qtyString;
+    }
+
+
+
+    public ItemStack getItemWithShop(BlockBuilder blockBuilder, String shopLocColor) {
+        ItemStack itemStack = super.getItem(blockBuilder);
+        ItemMeta meta = itemStack.getItemMeta();
+        List<Component> lore = meta.lore() != null ? meta.lore() : new ArrayList<>();
+        lore.add(Component.text(MyChatColor.GREEN + "From " + shop.getName()));
+        lore.add(Component.text(shopLocColor + shop.getLoc()));
+        meta.lore(lore);
+        itemStack.setItemMeta(meta);
+        return itemStack;
+    }
+
     // getters and setters
+    public Shop getShop() {
+        return shop;
+    }
+
+    public void setShop(Shop shop) {
+        this.shop = shop;
+    }
+
     public Integer getPrice() {
         if (price == null) return 0;
         else return price;
@@ -82,4 +119,38 @@ public class SellableItemList extends ItemList {
         this.qty = qty;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
+
+    public Boolean getInStock() {
+        if (this.inStock == null) return true;
+        return this.inStock;
+    }
+
+    public void setInStock(Boolean inStock) {
+        this.inStock = inStock;
+    }
+
+    public LocalDateTime getOutOfStockSince() {
+        return this.outOfStockSince;
+    }
+
+    public void setOutOfStockSince(LocalDateTime outOfStockSince) {
+        this.outOfStockSince = outOfStockSince;
+    }
+
+    public String getOutOfStockByName() {
+        return this.outOfStockByName;
+    }
+
+    public void setOutOfStockByName(String outOfStockByName) {
+        this.outOfStockByName = outOfStockByName;
+    }
+
+    public String getOutOfStockByUuid() {
+        return this.outOfStockByUuid;
+    }
+
+    public void setOutOfStockByUuid(String outOfStockByUuid) {
+        this.outOfStockByUuid = outOfStockByUuid;
+    }
+
 }
