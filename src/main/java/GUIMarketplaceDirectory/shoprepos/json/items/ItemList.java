@@ -53,7 +53,7 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContentInfo;
 
 @JsonInclude(Include.NON_NULL)
-public class ItemList {
+public class ItemList implements Displayable {
     public interface BlockBuilder {
         BlockData getBlockData(String string);
         PlayerProfile createPlayerProfile(UUID uniqueId, String name);  
@@ -533,6 +533,7 @@ public class ItemList {
     }
 
     @JsonIgnore
+    @Override
     public ItemStack getItem(BlockBuilder blockBuilder) {
         if (this.item == null) {
             this.item = makeItemStack(blockBuilder);

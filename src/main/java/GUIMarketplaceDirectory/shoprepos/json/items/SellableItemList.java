@@ -17,7 +17,7 @@ import GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
 
 @JsonInclude(Include.NON_NULL)
-public class SellableItemList extends ItemList {
+public class SellableItemList extends ItemList implements Sellable {
     @JsonIgnore
     private Shop shop;
     private Integer price;
@@ -89,7 +89,8 @@ public class SellableItemList extends ItemList {
     }
 
 
-
+    @Override
+    @JsonIgnore
     public ItemStack getItemWithShop(BlockBuilder blockBuilder, String shopLocColor) {
         ItemStack itemStack = super.getItem(blockBuilder);
         ItemMeta meta = itemStack.getItemMeta();
@@ -102,64 +103,78 @@ public class SellableItemList extends ItemList {
     }
 
     // getters and setters
+    @Override
     public Shop getShop() {
         return shop;
     }
 
+    @Override
     public void setShop(Shop shop) {
         this.shop = shop;
     }
 
+    @Override
     public Integer getPrice() {
         if (price == null) return 0;
         else return price;
     }
 
+    @Override
     public void setPrice(int price) {
         this.price = price;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
+    @Override
     public String getQty() {
         if (qty == null) return "";
         else return qty;
     }
 
+    @Override
     public void setQty(String qty) {
         this.qty = qty;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
+    @Override
     public Boolean getInStock() {
         if (this.inStock == null) return true;
         return this.inStock;
     }
 
+    @Override
     public void setInStock(Boolean inStock) {
         this.inStock = inStock;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
+    @Override
     public LocalDateTime getOutOfStockSince() {
         return this.outOfStockSince;
     }
 
+    @Override
     public void setOutOfStockSince(LocalDateTime outOfStockSince) {
         this.outOfStockSince = outOfStockSince;
     }
 
+    @Override
     public String getOutOfStockByName() {
         return this.outOfStockByName;
     }
 
+    @Override
     public void setOutOfStockByName(String outOfStockByName) {
         this.outOfStockByName = outOfStockByName;
     }
 
+    @Override
     public String getOutOfStockByUuid() {
         return this.outOfStockByUuid;
     }
 
+    @Override
     public void setOutOfStockByUuid(String outOfStockByUuid) {
         this.outOfStockByUuid = outOfStockByUuid;
     }

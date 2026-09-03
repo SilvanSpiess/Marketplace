@@ -22,7 +22,7 @@ import GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import GUIMarketplaceDirectory.invholders.ShopInvHolder;
 import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
 import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.BlockBuilder;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
@@ -145,7 +145,7 @@ public class GUI {
         return texts.toArray(new Component[0]);
     }
 
-    private static Component[] getItemTextFor(SellableItemList item, InvType type, Config config) {
+    private static Component[] getItemTextFor(Sellable item, InvType type, Config config) {
         ArrayList<Component> texts = new ArrayList<>();
         switch(type) {
             case INV_EDIT: 
@@ -244,7 +244,7 @@ public class GUI {
         fillItemInventory(shopInventory, holder, holder.getInv(), holder.getType(), config, page, holder.getPreviousInventoryMaker() != null, blockBuilder);
     }
 
-    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, List<SellableItemList> items, InvType type, Config config, int page, boolean backButton, BlockBuilder blockBuilder) {
+    public static void fillItemInventory(Inventory shopInventory, ShopInvHolder holder, List<Sellable> items, InvType type, Config config, int page, boolean backButton, BlockBuilder blockBuilder) {
         holder.getInventoryMaker().setPage(page);
         List<ItemStack> inv = items.stream()
             .map(itemList -> addItemLore(itemList.getItem(blockBuilder).clone(), getItemTextFor(itemList, type, config)))
@@ -285,19 +285,19 @@ public class GUI {
         }
     }
 
-    public static Inventory makeItemInventory(String title, String key, List<SellableItemList> items, InvType type, Config config, ItemStack item, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+    public static Inventory makeItemInventory(String title, String key, List<Sellable> items, InvType type, Config config, ItemStack item, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
         return makeItemInventory(Component.text(title), key, items, Collections.nCopies(items.size(), key), type, config, item, 0, previousWindow, blockBuilder);
     }
 
-    public static Inventory makeItemInventory(Component title, String key, List<SellableItemList> items, InvType type, Config config, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+    public static Inventory makeItemInventory(Component title, String key, List<Sellable> items, InvType type, Config config, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
         return makeItemInventory(title, key, items, Collections.nCopies(items.size(), key), type, config, null, 0, previousWindow, blockBuilder);
     }
     
-    public static Inventory makeItemInventory(String title, String key, List<SellableItemList> items, List<String> shops, InvType type, Config config, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+    public static Inventory makeItemInventory(String title, String key, List<Sellable> items, List<String> shops, InvType type, Config config, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
         return makeItemInventory(Component.text(title), key, items, shops, type, config, null, 0, previousWindow, blockBuilder);
     }
 
-    public static Inventory makeItemInventory(Component title, String key, List<SellableItemList> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
+    public static Inventory makeItemInventory(Component title, String key, List<Sellable> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, InventoryMaker previousWindow, BlockBuilder blockBuilder) {
         InventoryMaker instructions = new itemInventoryMaker(title, key, items, shops, type, config, itemToAdd, page, blockBuilder, previousWindow);
         ShopInvHolder holder = new ShopInvHolder(key,type,items, instructions);
         holder.setPreviousInventoryMaker(previousWindow);
@@ -508,7 +508,7 @@ public class GUI {
     public static class itemInventoryMaker implements InventoryMaker {
         Component title;
         String key;
-        List<SellableItemList> items;
+        List<Sellable> items;
         List<String> shops;
         InvType type;
         Config config;
@@ -516,7 +516,7 @@ public class GUI {
         int page;
         InventoryMaker instructions;
         BlockBuilder blockBuilder;
-        public itemInventoryMaker(Component title, String key, List<SellableItemList> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, BlockBuilder blockBuilder, InventoryMaker instructions) {
+        public itemInventoryMaker(Component title, String key, List<Sellable> items, List<String> shops, InvType type, Config config, ItemStack itemToAdd, int page, BlockBuilder blockBuilder, InventoryMaker instructions) {
             this.title = title;
             this.key = key;
             this.items = items;

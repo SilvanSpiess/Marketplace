@@ -20,9 +20,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
@@ -54,11 +52,10 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialDeseri
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternSerializer;
-import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableDeserializer;
 import GUIMarketplaceDirectory.utils.Metrics;
 import GUIMarketplaceDirectory.utils.MyChatColor;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 
 public class JSONShopRepo implements ShopRepo {
@@ -106,6 +103,7 @@ public class JSONShopRepo implements ShopRepo {
         module.addDeserializer(TrimMaterial.class, new TrimMaterialDeserializer());
         module.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
         module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
+        module.addDeserializer(Sellable.class, new SellableDeserializer());
         mapper.registerModule(module);
 
         this.shops = new HashMap<>();
@@ -293,7 +291,7 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public boolean addItemToShop(SellableItemList item, String shopkey) {
+    public boolean addItemToShop(Sellable item, String shopkey) {
         Shop shop;
         if (shops.containsKey(shopkey)) {
             shop = shops.get(shopkey);
@@ -586,14 +584,14 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public List<SellableItemList> getShopInv(String key) {
+    public List<Sellable> getShopInv(String key) {
         Shop shop = null;
         if (shops.containsKey(key))
             shop = shops.get(key);
         else if (pendingShops.containsKey(key))
             shop = pendingShops.get(key);
 
-        List<SellableItemList> inv = new ArrayList<>();
+        List<Sellable> inv = new ArrayList<>();
 
         if (shop == null) return inv;
 
@@ -623,7 +621,7 @@ public class JSONShopRepo implements ShopRepo {
 
     @Override
     public void findBetterAlternative(Player player, String key, int pos) {
-        SellableItemList item;
+        Sellable item;
         if (shops.containsKey(key)) {
             item = shops.get(key).getItems().get(pos);
         } else if (pendingShops.containsKey(key)) {
@@ -651,8 +649,10 @@ public class JSONShopRepo implements ShopRepo {
                                )
                                 return;
                             if (item.getItem(plugin).getType() == Material.ENCHANTED_BOOK
+                                && itemList.getExtraInfo() != null
                                 && item.getExtraInfo().getStoredEnchants() != null 
                                 && itemList.getItem(plugin).getType() == Material.ENCHANTED_BOOK 
+                                && item.getExtraInfo() != null
                                 && itemList.getExtraInfo().getStoredEnchants() != null 
                                 && ((EnchantmentStorageMeta)item.getItem(plugin).getItemMeta()).getStoredEnchants().keySet().stream().noneMatch(enchantment -> ((EnchantmentStorageMeta)itemList.getItem(plugin).getItemMeta()).getStoredEnchants().containsKey(enchantment)))
                                 return;
@@ -691,11 +691,11 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public List<SellableItemList> getMatchingItems(String key, String itemName) {
+    public List<Sellable> getMatchingItems(String key, String itemName) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
         if(shop == null)
             return null;
-        List<SellableItemList> items = new ArrayList<>();
+        List<Sellable> items = new ArrayList<>();
         shop.getItems().forEach(itemList -> {
             if (itemList.getName().equalsIgnoreCase(itemName))
                 items.add(itemList);
@@ -711,7 +711,7 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public void removeItem(String key, SellableItemList item) {
+    public void removeItem(String key, Sellable item) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
         shop.setItems(shop.getItems().stream()
             .filter(itemList -> 
@@ -731,10 +731,10 @@ public class JSONShopRepo implements ShopRepo {
 
     @Override
     public Map<String, Object> findItem(String searchKey) {
-        List<SellableItemList> items = new ArrayList<>();
+        List<Sellable> items = new ArrayList<>();
         List<String> shopKeys = new ArrayList<>();
         shops.forEach((s, shop) -> {
-            List<SellableItemList> inv = shop.getItems();
+            List<Sellable> inv = shop.getItems();
             inv.forEach(itemList -> {
                 if (itemList.getName().replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
                     items.add(itemList);
@@ -756,7 +756,7 @@ public class JSONShopRepo implements ShopRepo {
         plugin.getMetrics().addCustomChart(new Metrics.SingleLineChart("shops", shops::size));
     }
 
-    public void markItemOutOfStock(SellableItemList item, String name, String uuid, LocalDateTime currentTime) {
+    public void markItemOutOfStock(Sellable item, String name, String uuid, LocalDateTime currentTime) {
         item.setInStock(false);
         item.setOutOfStockByName(name);
         item.setOutOfStockByUuid(uuid);
@@ -764,7 +764,7 @@ public class JSONShopRepo implements ShopRepo {
         saveShops();
     }
 
-    public void markItemInStock(SellableItemList item) {
+    public void markItemInStock(Sellable item) {
         item.setInStock(true);
         item.setOutOfStockByName(null);
         item.setOutOfStockByUuid(null);

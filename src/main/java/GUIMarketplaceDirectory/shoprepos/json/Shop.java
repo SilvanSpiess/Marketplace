@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 
 public class Shop {
     private String name;
@@ -15,7 +15,7 @@ public class Shop {
     private String owner, uuid;
     private String key;
     private String displayItem;
-    private List<SellableItemList> items;
+    private List<Sellable> items;
 
     public Shop() {
     }
@@ -70,12 +70,12 @@ public class Shop {
         this.desc = desc;
     }
 
-    public void setItems(List<SellableItemList> inv) {
+    public void setItems(List<Sellable> inv) {
         inv.forEach(item -> item.setShop(this));
         this.items = inv;
     }
 
-    public void addToInv(SellableItemList item) {
+    public void addToInv(Sellable item) {
         item.setShop(this);
         items.add(item);
     }
@@ -112,7 +112,7 @@ public class Shop {
         return key;
     }
 
-    public List<SellableItemList> getItems() {
+    public List<Sellable> getItems() {
         return items == null ? new ArrayList<>() : items;
     }
 }

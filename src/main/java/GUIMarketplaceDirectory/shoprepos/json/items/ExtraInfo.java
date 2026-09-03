@@ -58,7 +58,7 @@ public class ExtraInfo {
     private DyeColor fishColor;                       // for tropical fish bucked TODO used to be called color
     private TropicalFish.Pattern fishPattern;         // for tropical fish bucket TODO used to be called pattern
     private DyeColor fishPatternColor;                // for tropical fish bucked TODO used to be called patternColor
-    private List<ShulkerContentInfo> contents;            // for shulker contents
+    private List<ShulkerContentInfo> contents;        // for shulker contents
 
     private Map<Enchantment, Integer> enchants;       // for any item
 

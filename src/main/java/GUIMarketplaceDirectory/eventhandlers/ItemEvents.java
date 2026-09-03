@@ -16,8 +16,7 @@ import org.bukkit.inventory.meta.BookMeta;
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import GUIMarketplaceDirectory.invholders.InvType;
 import GUIMarketplaceDirectory.invholders.ShopInvHolder;
-import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
 import GUIMarketplaceDirectory.utils.GUI;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -80,7 +79,7 @@ public class ItemEvents implements Listener {
                 return;  
             }
 
-            List<SellableItemList> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType().getKey().getKey().toUpperCase());
+            List<Sellable> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType().getKey().getKey().toUpperCase());
 
             if(matchingItems == null) {
                 player.sendMessage(MyChatColor.RED + "Shop doesn't exist");
@@ -127,7 +126,7 @@ public class ItemEvents implements Listener {
             } catch (Exception e) {}
             String key = "";
             String name = "";
-            SellableItemList clickedItemList = null;
+            Sellable clickedItemList = null;
             try {
                 key = holder.getShops().get(slotNum + 45*currPage);
                 name = plugin.getShopRepo().getShopName(key);
@@ -157,13 +156,13 @@ public class ItemEvents implements Listener {
                 } break;
                 case OPEN_SHOP: {
                     player.closeInventory();
-                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    List<Sellable> inv = plugin.getShopRepo().getShopInv(key);
                     Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 } break;
                 case OPEN_EDIT_SHOP_INV: { //TODO probable bug
                     player.closeInventory();
-                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    List<Sellable> inv = plugin.getShopRepo().getShopInv(key);
                     Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.INV_EDIT, plugin.getCustomConfig(), holder.getInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 } break;
@@ -206,7 +205,7 @@ public class ItemEvents implements Listener {
                         return;
                     }
                     plugin.getShopRepo().removeItem(key, clickedItemList);
-                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    List<Sellable> inv = plugin.getShopRepo().getShopInv(key);
                     Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), holder.getKey(), inv, holder.getType(), plugin.getCustomConfig(), holder.getPreviousInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 break;

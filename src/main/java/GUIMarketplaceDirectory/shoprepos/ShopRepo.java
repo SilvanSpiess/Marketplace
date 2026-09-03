@@ -1,15 +1,13 @@
 package GUIMarketplaceDirectory.shoprepos;
 
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-
-import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
+
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 
 public interface ShopRepo {
     public enum EditType {
@@ -31,7 +29,7 @@ public interface ShopRepo {
 
     void saveShops();
 
-    boolean addItemToShop(SellableItemList item, String shopkey);
+    boolean addItemToShop(Sellable item, String shopkey);
 
     boolean isShopOwner(String uuid, String key);
 
@@ -57,7 +55,7 @@ public interface ShopRepo {
     List<Map<String, String>> getPendingShopDetails();
     List<Map<String, String>> getPendingChangesDetails();
 
-    List<SellableItemList> getShopInv(String key);
+    List<Sellable> getShopInv(String key);
 
     void findBetterAlternative(Player player, String key, int pos);
 
@@ -70,14 +68,14 @@ public interface ShopRepo {
     List<Map<String, String>> getRefinedShopsByName(String searchKey);
     List<Map<String, String>> getRefinedShopsByPlayer(String searchKey);
 
-    List<SellableItemList> getMatchingItems(String key, String itemName);
+    List<Sellable> getMatchingItems(String key, String itemName);
 
     void removeMatchingItems(String key, String itemName);
 
-    void removeItem(String key, SellableItemList item);
+    void removeItem(String key, Sellable item);
 
-    void markItemOutOfStock(SellableItemList item, String name, String uuid, LocalDateTime currentTime);
-    void markItemInStock(SellableItemList item);
+    void markItemOutOfStock(Sellable item, String name, String uuid, LocalDateTime currentTime);
+    void markItemInStock(Sellable item);
     
     Map<String, Object> findItem(String searchKey);
 }

@@ -21,6 +21,7 @@ import org.bukkit.inventory.meta.BookMeta;
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import GUIMarketplaceDirectory.invholders.InvType;
 import GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
 import GUIMarketplaceDirectory.utils.GUI;
@@ -151,7 +152,7 @@ public class ShopEvents implements Listener {
                     player.closeInventory();
                     String key = holder.getShops().get(slotNum + 45*currPage).get("key");
                     String name = holder.getShops().get(slotNum + 45*currPage).get("name");
-                    List<SellableItemList> inv = plugin.getShopRepo().getShopInv(key);
+                    List<Sellable> inv = plugin.getShopRepo().getShopInv(key);
                     Inventory shopInventory = GUI.makeItemInventory(plugin.getShopRepo().isPendingShop(key) ? Component.text(name+ " §5§o(pending)") : Component.text(name), key, inv, InvType.NORMAL, plugin.getCustomConfig(), holder.getInventoryMaker(), this.plugin);
                     player.openInventory(shopInventory);
                 break;

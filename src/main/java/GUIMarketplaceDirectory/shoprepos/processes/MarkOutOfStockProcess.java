@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 
 import GUIMarketplaceDirectory.shoprepos.ProcessHandler;
 import GUIMarketplaceDirectory.shoprepos.ShopRepo;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 
 public class MarkOutOfStockProcess extends ConfirmationProcess {
@@ -16,12 +16,12 @@ public class MarkOutOfStockProcess extends ConfirmationProcess {
     private boolean succesful = false;
 
     private final ShopRepo shopRepo;
-    private final SellableItemList itemList;
+    private final Sellable itemList;
     private final ProcessHandler processHandler;
     private final Player player;
     private final String uuid;
 
-    public MarkOutOfStockProcess(Player player, SellableItemList itemList, ShopRepo shopRepo, ProcessHandler processHandler) {
+    public MarkOutOfStockProcess(Player player, Sellable itemList, ShopRepo shopRepo, ProcessHandler processHandler) {
         this.player = player;
         this.shopRepo = shopRepo;
         this.itemList = itemList;

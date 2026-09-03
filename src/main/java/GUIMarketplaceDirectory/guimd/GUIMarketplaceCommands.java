@@ -17,8 +17,7 @@ import org.slf4j.Logger;
 
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import GUIMarketplaceDirectory.invholders.InvType;
-import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
+import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import GUIMarketplaceDirectory.utils.Config;
 import GUIMarketplaceDirectory.utils.GUI;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -82,7 +81,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             //get shops and display
                             Player player = (Player) commandSender;
                             Map<String,Object> searchResults = plugin.getShopRepo().findItem(searchKey);
-                            List<SellableItemList> refinedItems = (List<SellableItemList>) searchResults.get("items");
+                            List<Sellable> refinedItems = (List<Sellable>) searchResults.get("items");
                             List<String> shops = ((List<String>) searchResults.get("shops"));
                             if(refinedItems.size() == 0) {
                                 player.sendMessage(MyChatColor.RED + "No shops with matching name found");
