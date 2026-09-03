@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Color;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -32,8 +33,8 @@ public class SellableItemList extends ItemList implements Sellable {
         super();
     }
 
-    public SellableItemList(String itemName, String qty, int price, BlockBuilder blockBuilder) {
-        super(itemName, blockBuilder);
+    public SellableItemList(Material material, String qty, int price, BlockBuilder blockBuilder) {
+        super(material, blockBuilder);
         this.qty = qty;
         this.price = price;
         updateItemStack(blockBuilder);

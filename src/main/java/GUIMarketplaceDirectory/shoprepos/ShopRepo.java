@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -68,7 +69,7 @@ public interface ShopRepo {
     List<Map<String, String>> getRefinedShopsByName(String searchKey);
     List<Map<String, String>> getRefinedShopsByPlayer(String searchKey);
 
-    List<Sellable> getMatchingItems(String key, String itemName);
+    List<Sellable> getMatchingItems(String key, Material material);
 
     void removeMatchingItems(String key, String itemName);
 

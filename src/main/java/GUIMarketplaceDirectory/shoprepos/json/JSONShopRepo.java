@@ -52,6 +52,8 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialDeseri
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.MaterialDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.MaterialSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import GUIMarketplaceDirectory.shoprepos.json.items.SellableDeserializer;
 import GUIMarketplaceDirectory.utils.Metrics;
@@ -85,6 +87,8 @@ public class JSONShopRepo implements ShopRepo {
     public JSONShopRepo(GUIMarketplaceDirectory plugin) {
         mapper = new ObjectMapper();
         SimpleModule module = new SimpleModule();
+        module.addSerializer(Material.class, new MaterialSerializer());
+        module.addDeserializer(Material.class, new MaterialDeserializer());
         module.addKeySerializer(Enchantment.class, new EnchantmentKeySerializer());
         module.addKeyDeserializer(Enchantment.class, new EnchantmentKeyDeserializer());
         module.addSerializer(Enchantment.class, new EnchantmentSerializer());
@@ -631,7 +635,7 @@ public class JSONShopRepo implements ShopRepo {
             return;
         }
         
-        String name = item.getName();
+        Material name = item.getName();
         double value = getQuantityPerDiamond(item.getQty(), item.getPrice());
         final boolean[] found = {false};
         double finalValue = value;
@@ -691,13 +695,13 @@ public class JSONShopRepo implements ShopRepo {
     }
 
     @Override
-    public List<Sellable> getMatchingItems(String key, String itemName) {
+    public List<Sellable> getMatchingItems(String key, Material material) {
         Shop shop = shops.getOrDefault(key, pendingShops.get(key));
         if(shop == null)
             return null;
         List<Sellable> items = new ArrayList<>();
         shop.getItems().forEach(itemList -> {
-            if (itemList.getName().equalsIgnoreCase(itemName))
+            if (itemList.getName().equals(material))
                 items.add(itemList);
         });
         return items;
@@ -736,7 +740,7 @@ public class JSONShopRepo implements ShopRepo {
         shops.forEach((s, shop) -> {
             List<Sellable> inv = shop.getItems();
             inv.forEach(itemList -> {
-                if (itemList.getName().replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
+                if (itemList.getName().getKey().getKey().replace('_', ' ').toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {
                     items.add(itemList);
                     shopKeys.add(shop.getKey());
                 } else if (itemList.getCustomName() != null && itemList.getCustomName().length() > 0 && itemList.getCustomName().toLowerCase().trim().contains(searchKey.toLowerCase().trim())) {

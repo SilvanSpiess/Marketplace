@@ -2,6 +2,7 @@ package GUIMarketplaceDirectory.shoprepos.json.items;
 
 import java.time.LocalDateTime;
 
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 import GUIMarketplaceDirectory.shoprepos.json.Shop;
@@ -11,8 +12,8 @@ public interface Sellable extends Displayable {
     public ItemStack getItemWithShop(BlockBuilder blockBuilder, String shopLocColor);
 
     // getters and setters
-    public default String getName() {return null;};
-    public void setName(String name);
+    public default Material getName() {return null;};
+    public void setName(Material name);
     public Shop getShop();
     public void setShop(Shop shop);
     public Integer getPrice();

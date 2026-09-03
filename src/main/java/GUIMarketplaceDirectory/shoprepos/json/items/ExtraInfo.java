@@ -5,6 +5,7 @@ import org.bukkit.*;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.TropicalFish;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta.Generation;
 import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
@@ -31,7 +32,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
-import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContentInfo;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContent;
 
 @JsonInclude(Include.NON_NULL)
 public class ExtraInfo {
@@ -58,7 +59,7 @@ public class ExtraInfo {
     private DyeColor fishColor;                       // for tropical fish bucked TODO used to be called color
     private TropicalFish.Pattern fishPattern;         // for tropical fish bucket TODO used to be called pattern
     private DyeColor fishPatternColor;                // for tropical fish bucked TODO used to be called patternColor
-    private List<ShulkerContentInfo> contents;        // for shulker contents
+    private List<ShulkerContent> contents;        // for shulker contents
 
     private Map<Enchantment, Integer> enchants;       // for any item
 
@@ -110,10 +111,13 @@ public class ExtraInfo {
     public void setFishPattern(TropicalFish.Pattern fishPattern) { this.fishPattern = fishPattern; }
     public DyeColor getFishPatternColor() { return this.fishPatternColor; }
     public void setFishPatternColor(DyeColor fishPatternColor) { this.fishPatternColor = fishPatternColor; }
-    public List<ShulkerContentInfo> getContents() { return this.contents; }
-    public void setContents(List<ShulkerContentInfo> contents) { this.contents = contents; }
+    public List<ShulkerContent> getContents() { return this.contents; }
+    public void setContents(List<ShulkerContent> contents) { this.contents = contents; }
     public Map<Enchantment,Integer> getEnchants() { return this.enchants; }
     public void setEnchants(Map<Enchantment,Integer> enchants) { this.enchants = enchants; }
+
+    // Backwards compatibility getter setters
+    public void setPatternColor(DyeColor patternColor) { this.setFishPatternColor(patternColor); }
 
     public static class FireWorkEffectInfo {
         private FireworkEffect.Type type;
@@ -161,20 +165,25 @@ public class ExtraInfo {
         public void setType(PatternType type) { this.type = type; }
     }
 
-    public static class ShulkerContentInfo {
-        private int invSlot;
-        private ItemList item;
+    public static class ShulkerContent extends ItemList {
+        private Integer invSlot;
 
-        public ShulkerContentInfo() {}
-        public ShulkerContentInfo(int invSlot, ItemList item) {
+        public ShulkerContent() {
+            super();
+        }
+
+        public ShulkerContent(ItemStack item, int invSlot) {
+            super(item);
             this.invSlot = invSlot;
-            this.item = item;
         }
 
         public Integer getInvSlot() { return this.invSlot; }
         public void setInvSlot(int invSlot) { this.invSlot = invSlot; }
-        public ItemList getItem() { return this.item; }
-        public void setItem(ItemList item) { this.item = item; }
+
+        // Backwards compatibility getter setters
+        public void setQuantity(Integer quantity) {
+            this.setStackSize(quantity);
+        }
     }
 
     /* ---------------------------------------------------------------------------------------------------

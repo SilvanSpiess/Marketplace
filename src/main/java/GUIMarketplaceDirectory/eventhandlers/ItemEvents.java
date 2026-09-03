@@ -79,7 +79,7 @@ public class ItemEvents implements Listener {
                 return;  
             }
 
-            List<Sellable> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType().getKey().getKey().toUpperCase());
+            List<Sellable> matchingItems = plugin.getShopRepo().getMatchingItems(bookMeta.getPage(bookMeta.getPageCount()),item.getType());
 
             if(matchingItems == null) {
                 player.sendMessage(MyChatColor.RED + "Shop doesn't exist");

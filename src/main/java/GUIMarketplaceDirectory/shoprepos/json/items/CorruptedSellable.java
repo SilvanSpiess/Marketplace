@@ -16,7 +16,7 @@ import GUIMarketplaceDirectory.shoprepos.json.Shop;
 
 @JsonSerialize(using = CorruptedSellable.CorruptedSellableSerializer.class)
 public class CorruptedSellable implements Sellable {
-    private String name;
+    private Material name;
     private Shop shop;
     private Integer price;
     private String qty;
@@ -47,12 +47,12 @@ public class CorruptedSellable implements Sellable {
     }
 
     @Override
-    public String getName() {
+    public Material getName() {
         return name;
     }
 
     @Override
-    public void setName(String name) {
+    public void setName(Material name) {
         this.name = name;
     }
 

@@ -1,5 +1,6 @@
 package GUIMarketplaceDirectory.shoprepos.json.items;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -47,10 +48,17 @@ import org.bukkit.profile.PlayerTextures;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
-import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContentInfo;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContent;
 
 @JsonInclude(Include.NON_NULL)
 public class ItemList implements Displayable {
@@ -59,7 +67,8 @@ public class ItemList implements Displayable {
         PlayerProfile createPlayerProfile(UUID uniqueId, String name);  
     }
 
-    protected String name, customName;
+    protected Material name;
+    protected String customName;
     protected int stackSize;
     protected String customType;
     protected ExtraInfo extraInfo;
@@ -77,8 +86,8 @@ public class ItemList implements Displayable {
     }
 
     @SuppressWarnings("OverridableMethodCallInConstructor")
-    public ItemList(String itemName, BlockBuilder blockBuilder) {
-        this.name = itemName;
+    public ItemList(Material material, BlockBuilder blockBuilder) {
+        this.name = material;
         this.stackSize = 1;
         this.customName = "";
         this.customType = "";
@@ -101,24 +110,25 @@ public class ItemList implements Displayable {
     private void processItemStack(ItemStack itemStack) {
         addWarnings.clear();
         //
-        this.name = itemStack.getType().getKey().getKey().toUpperCase();
+        this.name = itemStack.getType();
+        String materialName = name.getKey().getKey();
         if (itemStack.getItemMeta().hasDisplayName()) this.customName = itemStack.getItemMeta().getDisplayName();
         //extraInfo, customType
-        if (name.contains("SHULKER_BOX")) {
+        if (materialName.contains("SHULKER_BOX")) {
             if (itemStack.getItemMeta() instanceof BlockStateMeta im) {
                 if (im.getBlockState() instanceof ShulkerBox shulker) {
                     this.customType = "shulker";
                     this.extraInfo = new ExtraInfo();
-                    List<ShulkerContentInfo> contents = new ArrayList<>(27);
+                    List<ShulkerContent> contents = new ArrayList<>(27);
 
                     for (int i = 0; i < 27; i++) {
                         ItemStack itemStack1 = shulker.getSnapshotInventory().getItem(i);
                         if (itemStack1 == null || itemStack1.getType() == Material.AIR)
                             continue;
-                        ItemList itemList1 = new ItemList(itemStack1);
+                        ShulkerContent itemList1 = new ShulkerContent(itemStack1, i);
                         itemList1.setStackSize(itemStack1.getAmount());
                         
-                        contents.add(new ExtraInfo.ShulkerContentInfo(i, itemList1));
+                        contents.add(itemList1);
                     }
                     this.extraInfo.setContents(contents);
                 }
@@ -137,19 +147,19 @@ public class ItemList implements Displayable {
                     extraInfo.setSkin(skullMeta.getOwnerProfile().getTextures().getSkin().toString());
                     extraInfo.setProfileId(skullMeta.getOwnerProfile().getUniqueId().toString());
             }
-        } else if (name.contains("POTION")) {
+        } else if (materialName.contains("POTION")) {
             this.customType = "potion";
             this.extraInfo = new ExtraInfo();
             PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
             PotionType potionType = potionMeta.getBasePotionType();
             extraInfo.setPotionType(potionType);
-        } else if (name.contains("OMINOUS_BOTTLE")) {
+        } else if (materialName.contains("OMINOUS_BOTTLE")) {
             this.customType = "ominousBottle";
             this.extraInfo = new ExtraInfo();
             OminousBottleMeta ominousBottleMeta = (OminousBottleMeta) itemStack.getItemMeta(); 
             if(ominousBottleMeta.hasAmplifier())
                 extraInfo.setAmplifier(ominousBottleMeta.getAmplifier());
-        } else if (name.contains("FIREWORK_ROCKET")) {
+        } else if (materialName.contains("FIREWORK_ROCKET")) {
             this.customType = "rocket";
             this.extraInfo = new ExtraInfo();
             FireworkMeta rocketMeta = (FireworkMeta) itemStack.getItemMeta();
@@ -164,13 +174,13 @@ public class ItemList implements Displayable {
                     );
                 }).toList());
             if (rocketMeta.hasPower()) extraInfo.setFlight(rocketMeta.getPower());
-        } else if (name.contains("TIPPED_ARROW")) {//TODO
+        } else if (materialName.contains("TIPPED_ARROW")) {//TODO
             this.customType = "tippedArrow";
             this.extraInfo = new ExtraInfo();
             PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
             PotionType potionType = potionMeta.getBasePotionType();
             extraInfo.setPotionType(potionType);
-        } else if (name.endsWith("BANNER")) {
+        } else if (materialName.endsWith("BANNER")) {
             this.customType = "banner";
             this.extraInfo = new ExtraInfo();
             BannerMeta bannerMeta = (BannerMeta) itemStack.getItemMeta();
@@ -216,7 +226,7 @@ public class ItemList implements Displayable {
             if(colorableArmorMeta.getColor() != null) {
                 extraInfo.setColor(colorableArmorMeta.getColor().asRGB());
             }
-        } else if(name.contains("BOOTS") || name.contains("LEGGINGS") || name.contains("CHESTPLATE") || name.contains("HELMET")) {
+        } else if(materialName.contains("BOOTS") || materialName.contains("LEGGINGS") || materialName.contains("CHESTPLATE") || materialName.contains("HELMET")) {
             this.customType = "armor";
             this.extraInfo = new ExtraInfo();
             ArmorMeta armorMeta = (ArmorMeta) itemStack.getItemMeta();          
@@ -224,7 +234,8 @@ public class ItemList implements Displayable {
                 extraInfo.setTrimMaterial(armorMeta.getTrim().getMaterial());
                 extraInfo.setTrimPattern(armorMeta.getTrim().getPattern());
             }
-            if(name.contains("LEATHER")) {
+            if(!materialName.contains("LEATHER")) {
+            } else {
                 ColorableArmorMeta colorableArmorMeta = (ColorableArmorMeta) itemStack.getItemMeta();
                 extraInfo.setColor(colorableArmorMeta.getColor().asRGB());
             }
@@ -276,7 +287,8 @@ public class ItemList implements Displayable {
     }
 
     protected ItemStack makeItemStack(BlockBuilder blockBuilder) {
-        ItemStack item = new ItemStack(Material.getMaterial(this.name));
+
+        ItemStack item = new ItemStack(this.name);
         ItemMeta meta = item.getItemMeta();
 
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
@@ -372,16 +384,18 @@ public class ItemList implements Displayable {
                 item.setItemMeta(bannerMeta);
             }
             case "shulker" -> {
-                List<ShulkerContentInfo> contents = extraInfo.getContents();
+                List<ShulkerContent> contents = extraInfo.getContents();
                 ItemStack[] items = new ItemStack[27];
-                contents.forEach(content -> {
-                    try {
-                        ItemList contentList = content.getItem();
-                        items[content.getInvSlot()] = contentList.getItem(blockBuilder);
-                    } catch (IllegalArgumentException ex) {
-                        System.getLogger(ItemList.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                
+                if (contents.stream().allMatch(content -> content.getInvSlot() != null)) {
+                    contents.forEach(content -> {
+                        items[content.getInvSlot()] = content.getItem(blockBuilder);
+                    });
+                } else {
+                    for (int i = 0; i < contents.size(); i++) {
+                        items[i] = contents.get(i).getItem(blockBuilder);
                     }
-                });
+                }
                 BlockStateMeta blockStateMeta = (BlockStateMeta) item.getItemMeta();
                 ShulkerBox shulkerBox = (ShulkerBox) blockStateMeta.getBlockState();
                 shulkerBox.getInventory().setContents(items);
@@ -487,11 +501,11 @@ public class ItemList implements Displayable {
     }
 
     //getters and setters
-    public String getName() {
+    public Material getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(Material name) {
         this.name = name;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
@@ -545,5 +559,22 @@ public class ItemList implements Displayable {
     @JsonIgnore
     public List<String> getAddWarnings() {
         return addWarnings;
+    }
+
+    public static class MaterialSerializer extends JsonSerializer<Material> {
+        @Override
+        public void serialize(Material value, JsonGenerator jgen, SerializerProvider serializers) throws IOException {
+            jgen.writeString(value.getKey().getKey());
+        }
+    }
+
+    public static class MaterialDeserializer extends JsonDeserializer<Material> {
+
+        public MaterialDeserializer() {
+        }
+        @Override
+        public Material deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+            return Material.getMaterial(p.getValueAsString());
+        }
     }
 }
