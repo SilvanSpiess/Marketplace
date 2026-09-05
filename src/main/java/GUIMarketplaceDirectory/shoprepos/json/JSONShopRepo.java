@@ -312,6 +312,30 @@ public class JSONShopRepo implements ShopRepo {
         return (shops.containsKey(key) && (shops.get(key).getUuid().equals(uuid) || shops.get(key).getOwners().containsKey(uuid))) || (pendingShops.containsKey(key) && (pendingShops.get(key).getUuid().equals(uuid) || pendingShops.get(key).getOwners().containsKey(uuid)));
     }
 
+    @Override
+    public Map<String, Integer> getShopsOfPlayerWithOutOfStockCount(String uuid) {
+        Map<String, Integer> ownedShopsWithItemsOutOfStock = new HashMap<>();
+        // my Leonne can turn this into a stream
+        for (Shop shop : shops.values()) {            
+            if (shop.getUuid().equals(uuid)) {
+                int count = shop.countOutOfStockItems(shop);
+                ownedShopsWithItemsOutOfStock.put(shop.getKey(), count);
+            }
+        }
+        for (Shop shop : pendingShops.values()) {            
+            if (shop.getUuid().equals(uuid)) {
+                int count = shop.countOutOfStockItems(shop);
+                ownedShopsWithItemsOutOfStock.put(shop.getKey(), count);
+            }
+        }
+        for (Shop shop : pendingChanges.values()) {            
+            if (shop.getUuid().equals(uuid)) {
+                int count = shop.countOutOfStockItems(shop);
+                ownedShopsWithItemsOutOfStock.put(shop.getKey(), count);
+            }
+        }
+        return ownedShopsWithItemsOutOfStock;
+    }
 
     @Override
     public boolean approveChange(Player player, String shopKey) {

@@ -30,17 +30,17 @@ public class AddItemProcess implements ChatProcess {
 
     private String quantity;
     private int price;
-    private ItemStack itemStack;
+    //private ItemStack itemStack;
     private SellableItemList item;
 
     public AddItemProcess(Player player, String key, ItemStack itemStack, BlockBuilder blockBuilder, ShopRepo shoprepo, ProcessHandler processHandler) {
         this.player = player;
         this.shopKey = key;
-        this.itemStack = itemStack;
+        //this.itemStack = itemStack;
         this.shopRepo = shoprepo;
         this.processHandler = processHandler;
 
-        String name = itemStack.getType().getKey().getKey().toUpperCase();
+        //String name = itemStack.getType().getKey().getKey().toUpperCase();
         uuid = player.getUniqueId().toString();
         item = new SellableItemList(itemStack);
 

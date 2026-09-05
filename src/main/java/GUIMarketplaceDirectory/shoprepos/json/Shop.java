@@ -115,4 +115,14 @@ public class Shop {
     public List<Sellable> getItems() {
         return items == null ? new ArrayList<>() : items;
     }
+    
+    public int countOutOfStockItems(Shop shop) {
+        int nbrOutOfStockItems = 0;
+        for (Sellable item : shop.getItems()) {
+            if (!item.getInStock()) {
+                nbrOutOfStockItems++;
+            }
+        }        
+        return nbrOutOfStockItems;
+    }
 }

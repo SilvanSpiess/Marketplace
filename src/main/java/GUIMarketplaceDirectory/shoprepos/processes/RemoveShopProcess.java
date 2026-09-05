@@ -13,7 +13,7 @@ public class RemoveShopProcess extends ConfirmationProcess{
     private boolean succesful = false;
 
     private String removeKind = "remove";
-    private boolean enabledDynmapMarkers = false;
+    //private boolean enabledDynmapMarkers = false;
 
     private ShopRepo shopRepo;
     private ProcessHandler processHandler;

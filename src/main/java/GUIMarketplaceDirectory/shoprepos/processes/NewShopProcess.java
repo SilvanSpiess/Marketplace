@@ -20,9 +20,9 @@ public class NewShopProcess implements ChatProcess {
     private boolean succesful = false;
 
     private Player player;
-    private String uuid;
+    //private String uuid;
     private ShopRepo shopRepo;
-    private ProcessHandler processHandler;
+    //private ProcessHandler processHandler;
     private int shopDetailsLengthLimit;
     private boolean multiOwnerEnabled;
     private boolean directoryModerationEnabled;
@@ -80,7 +80,9 @@ public class NewShopProcess implements ChatProcess {
         }
 
         //gets location
-        shopLocation = player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ();
+        shopLocation = player.getLocation().getBlockX() + "," + 
+                       player.getLocation().getBlockY() + "," + 
+                       player.getLocation().getBlockZ();
 
         if(!multiOwnerEnabled) {
             //TODO replace function addShopAsOwner 

@@ -22,7 +22,6 @@ import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import GUIMarketplaceDirectory.invholders.InvType;
 import GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList;
 import GUIMarketplaceDirectory.shoprepos.processes.ChatProcess;
 import GUIMarketplaceDirectory.utils.GUI;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -102,7 +101,15 @@ public class ShopEvents implements Listener {
 
     @EventHandler
     public final void onJoin(PlayerJoinEvent e) {
-
+        Player player = e.getPlayer();
+        Map<String, Integer> itemsOutOfStockInShops = ShopEvents.this.plugin.getShopRepo().getShopsOfPlayerWithOutOfStockCount(player.getUniqueId().toString());
+        for (Map.Entry<String, Integer> entry : itemsOutOfStockInShops.entrySet()) {
+            String shopKey = entry.getKey();
+            Integer nbrOutOfStockInItems = entry.getValue();
+            if(nbrOutOfStockInItems > 0) {
+                player.sendMessage(MyChatColor.YELLOW + "Your shop " + MyChatColor.GOLD + plugin.getShopRepo().getShopName(shopKey) + MyChatColor.YELLOW + " has " + MyChatColor.RED + nbrOutOfStockInItems.toString() + MyChatColor.YELLOW + " items out of stock.");
+            }
+        }
     }
 
     @EventHandler

@@ -20,7 +20,6 @@ import org.bukkit.util.ChatPaginator;
 import GUIMarketplaceDirectory.invholders.InvType;
 import GUIMarketplaceDirectory.invholders.MarketplaceBookHolder;
 import GUIMarketplaceDirectory.invholders.ShopInvHolder;
-import GUIMarketplaceDirectory.shoprepos.json.items.ItemList;
 import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.BlockBuilder;
 import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import net.kyori.adventure.text.Component;

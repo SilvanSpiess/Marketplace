@@ -34,6 +34,8 @@ public interface ShopRepo {
 
     boolean isShopOwner(String uuid, String key);
 
+    Map<String, Integer> getShopsOfPlayerWithOutOfStockCount(String uuid);
+
     boolean approveChange(Player player, String shopKey);
     boolean rejectChange(String shopKey);
 
