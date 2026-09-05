@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContent;
+import io.papermc.paper.datacomponent.item.BundleContents;
 
 @JsonInclude(Include.NON_NULL)
 public class ExtraInfo {
@@ -59,7 +60,8 @@ public class ExtraInfo {
     private DyeColor fishColor;                       // for tropical fish bucked TODO used to be called color
     private TropicalFish.Pattern fishPattern;         // for tropical fish bucket TODO used to be called pattern
     private DyeColor fishPatternColor;                // for tropical fish bucked TODO used to be called patternColor
-    private List<ShulkerContent> contents;        // for shulker contents
+    private List<ShulkerContent> shulkerContents;            // for shulker contents
+    private List<BundleContents> bundleContents;            // for shulker contents
 
     private Map<Enchantment, Integer> enchants;       // for any item
 
@@ -111,8 +113,10 @@ public class ExtraInfo {
     public void setFishPattern(TropicalFish.Pattern fishPattern) { this.fishPattern = fishPattern; }
     public DyeColor getFishPatternColor() { return this.fishPatternColor; }
     public void setFishPatternColor(DyeColor fishPatternColor) { this.fishPatternColor = fishPatternColor; }
-    public List<ShulkerContent> getContents() { return this.contents; }
-    public void setContents(List<ShulkerContent> contents) { this.contents = contents; }
+    public List<ShulkerContent> getShulkerContents() { return this.shulkerContents; }
+    public void setShulkerContents(List<ShulkerContent> shulkerContents) { this.shulkerContents = shulkerContents; }
+    public List<BundleContents> getBundleContents() { return this.bundleContents; }
+    public void setBundleContents(List<BundleContents> bundleContents) { this.bundleContents = bundleContents; }
     public Map<Enchantment,Integer> getEnchants() { return this.enchants; }
     public void setEnchants(Map<Enchantment,Integer> enchants) { this.enchants = enchants; }
 

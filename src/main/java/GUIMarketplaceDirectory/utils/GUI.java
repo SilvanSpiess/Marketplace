@@ -132,7 +132,7 @@ public class GUI {
                 texts.add(Component.text(MyChatColor.RED + "§oPress 'drop' key to delete"));
             break;
             case RECOVER: 
-                texts.add(Component.text(MyChatColor.AQUA + "§oRight click to recover"));
+                texts.add(Component.text(MyChatColor.AQUA + "§oPress 'swap-offhand' key to recover"));
             break;
             case SEARCH:
                 texts.add(Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"));
@@ -468,7 +468,7 @@ public class GUI {
             //review
             if (click == ClickType.DROP && type==InvType.REVIEW) return Action.DELETE_SHOP;
             //recover
-            if (click.isRightClick() && type==InvType.RECOVER) return Action.GET_SHOP_BOOK;
+            if (click == ClickType.SWAP_OFFHAND && type==InvType.RECOVER) return Action.GET_SHOP_BOOK;
             //normal and search window
             if (click.isShiftClick() && (type == InvType.NORMAL || type == InvType.SEARCH)) return Action.WAYPOINT;
             if (click.isRightClick() && (type == InvType.NORMAL || type == InvType.SEARCH)) return Action.DYNMAP;

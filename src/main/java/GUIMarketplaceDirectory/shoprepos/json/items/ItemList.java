@@ -24,6 +24,7 @@ import org.bukkit.inventory.meta.AxolotlBucketMeta;
 import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ColorableArmorMeta;
 import org.bukkit.inventory.meta.CrossbowMeta;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
@@ -59,6 +60,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContent;
+import io.papermc.paper.datacomponent.item.BundleContents;
 
 @JsonInclude(Include.NON_NULL)
 public class ItemList implements Displayable {
@@ -130,9 +132,14 @@ public class ItemList implements Displayable {
                         
                         contents.add(itemList1);
                     }
-                    this.extraInfo.setContents(contents);
+                    this.extraInfo.setShulkerContents(contents);
                 }
             }
+        } else if(materialName.contains("BUNDLE")) {
+            this.customType = "bundle";
+            this.extraInfo = new ExtraInfo();
+            BundleMeta bundleMeta = (BundleMeta) itemStack.getItemMeta();
+            //TODO
         } else if (itemStack.getType() == Material.PLAYER_HEAD) {
             this.customType = "head";
             this.extraInfo = new ExtraInfo();
@@ -384,7 +391,7 @@ public class ItemList implements Displayable {
                 item.setItemMeta(bannerMeta);
             }
             case "shulker" -> {
-                List<ShulkerContent> contents = extraInfo.getContents();
+                List<ShulkerContent> contents = extraInfo.getShulkerContents();
                 ItemStack[] items = new ItemStack[27];
                 
                 if (contents.stream().allMatch(content -> content.getInvSlot() != null)) {
@@ -402,6 +409,12 @@ public class ItemList implements Displayable {
                 shulkerBox.update(true, false);
                 blockStateMeta.setBlockState(shulkerBox);
                 item.setItemMeta(blockStateMeta);
+            }
+            case "bundle" -> {
+                //TODO
+                List<BundleContents> contents = extraInfo.getBundleContents();
+                ItemStack[] items = new ItemStack[64];
+                
             }
             case "enchantedBook" -> {
                 Map<Enchantment, Integer> enchants = extraInfo.getStoredEnchants();
