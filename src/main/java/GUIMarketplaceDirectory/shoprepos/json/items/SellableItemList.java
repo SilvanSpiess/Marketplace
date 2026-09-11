@@ -7,9 +7,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Color;
+import org.bukkit.DyeColor;
 import org.bukkit.Material;
+import org.bukkit.MusicInstrument;
+import org.bukkit.block.banner.PatternType;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.trim.TrimMaterial;
+import org.bukkit.inventory.meta.trim.TrimPattern;
+import org.bukkit.potion.PotionEffectType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -21,14 +28,34 @@ import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import GUIMarketplaceDirectory.shoprepos.json.Shop;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.DyeColorDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.DyeColorSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeyDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeySerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.LocalDateTimeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.LocalDateTimeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternSerializer;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.Component;
 
 @JsonInclude(Include.NON_NULL)
-public class SellableItemList extends ItemList implements Sellable {
+public class SellableItemList extends ItemList {
     @JsonIgnore
     private Shop shop;
     private Integer price;
@@ -39,8 +66,11 @@ public class SellableItemList extends ItemList implements Sellable {
     private String outOfStockByName;
     private String outOfStockByUuid;
 
+    @JsonIgnore
     private TreeNode backupJson;
+    @JsonIgnore
     private boolean validated = false;
+    @JsonIgnore
     private boolean corrupted = false;
 
     public SellableItemList() {
@@ -65,7 +95,6 @@ public class SellableItemList extends ItemList implements Sellable {
         else return true; //TODO check if makes sense
     }
 
-    @Override
     protected ItemStack makeItemStack(BlockBuilder blockBuilder) {
         try {
             ItemStack item = makeDefaultItemStack(blockBuilder);
@@ -128,7 +157,6 @@ public class SellableItemList extends ItemList implements Sellable {
     }
 
 
-    @Override
     @JsonIgnore
     public ItemStack getItemWithShop(BlockBuilder blockBuilder, String shopLocColor) {
         ItemStack itemStack = super.getItem(blockBuilder);
@@ -142,78 +170,64 @@ public class SellableItemList extends ItemList implements Sellable {
     }
 
     // getters and setters
-    @Override
     public Shop getShop() {
         return shop;
     }
 
-    @Override
     public void setShop(Shop shop) {
         this.shop = shop;
     }
 
-    @Override
     public Integer getPrice() {
         if (price == null) return 0;
         else return price;
     }
 
-    @Override
     public void setPrice(int price) {
         this.price = price;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
-    @Override
     public String getQty() {
         if (qty == null) return "";
         else return qty;
     }
 
-    @Override
     public void setQty(String qty) {
         this.qty = qty;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
-    @Override
     public Boolean getInStock() {
         if (this.inStock == null) return true;
         return this.inStock;
     }
 
-    @Override
     public void setInStock(Boolean inStock) {
         this.inStock = inStock;
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
-    @Override
     public LocalDateTime getOutOfStockSince() {
         return this.outOfStockSince;
     }
 
-    @Override
     public void setOutOfStockSince(LocalDateTime outOfStockSince) {
         this.outOfStockSince = outOfStockSince;
     }
 
-    @Override
     public String getOutOfStockByName() {
         return this.outOfStockByName;
     }
 
-    @Override
     public void setOutOfStockByName(String outOfStockByName) {
         this.outOfStockByName = outOfStockByName;
     }
 
-    @Override
     public String getOutOfStockByUuid() {
         return this.outOfStockByUuid;
     }
 
-    @Override
     public void setOutOfStockByUuid(String outOfStockByUuid) {
         this.outOfStockByUuid = outOfStockByUuid;
     }
@@ -226,14 +240,16 @@ public class SellableItemList extends ItemList implements Sellable {
         this.backupJson = backupJson;
     }
 
-    public static class SellableDeserializer extends JsonDeserializer<Sellable> {
+    public static class SellableItemListDeserializer extends JsonDeserializer<SellableItemList> {
+        private static ObjectMapper simpleMapper = getItemListMapper();
 
         @Override
-        public Sellable deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public SellableItemList deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             TreeNode json = p.readValueAsTree();
 
             try {
-                SellableItemList sellable = p.getCodec().treeToValue(json, SellableItemList.class);
+
+                SellableItemList sellable = simpleMapper.treeToValue(json, SellableItemList.class);
                 sellable.setBackupJson(json);
                 return sellable;
             } catch (JsonProcessingException e) {
@@ -242,13 +258,45 @@ public class SellableItemList extends ItemList implements Sellable {
                 return sellable;
             }
         }
+
+        private static ObjectMapper getItemListMapper() {
+            ObjectMapper mapper = new ObjectMapper();
+            ItemList.equipObjectMapper(mapper);
+            return mapper;
+        }
     }
 
-    public static class SellableSerializer extends JsonSerializer<SellableItemList> {
+    public static class SellableItemListSerializer extends JsonSerializer<SellableItemList> {
         @Override
         public void serialize(SellableItemList corruptedSellable, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             if (corruptedSellable.isCorrupted()) jgen.writeTree(corruptedSellable.getBackupJson());
             else jgen.writeObject(corruptedSellable); //TODO check if works
         }
+    }
+
+    public static void equipObjectMapper(ObjectMapper mapper) {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Material.class, new MaterialSerializer());
+        module.addDeserializer(Material.class, new MaterialDeserializer());
+        module.addKeySerializer(Enchantment.class, new EnchantmentKeySerializer());
+        module.addKeyDeserializer(Enchantment.class, new EnchantmentKeyDeserializer());
+        module.addSerializer(Enchantment.class, new EnchantmentSerializer());
+        module.addDeserializer(Enchantment.class, new EnchantmentDeserializer());
+        module.addSerializer(PotionEffectType.class, new PotionEffectTypeSerializer());
+        module.addDeserializer(PotionEffectType.class, new PotionEffectTypeDeserializer());
+        module.addSerializer(MusicInstrument.class, new MusicInstrumentSerializer());
+        module.addDeserializer(MusicInstrument.class, new MusicInstrumentDeserializer());
+        module.addSerializer(DyeColor.class, new DyeColorSerializer());
+        module.addDeserializer(DyeColor.class, new DyeColorDeserializer());
+        module.addSerializer(PatternType.class, new PatternTypeSerializer());
+        module.addDeserializer(PatternType.class, new PatternTypeDeserializer());
+        module.addSerializer(TrimPattern.class, new TrimPatternSerializer());
+        module.addDeserializer(TrimPattern.class, new TrimPatternDeserializer());
+        module.addSerializer(TrimMaterial.class, new TrimMaterialSerializer());
+        module.addDeserializer(TrimMaterial.class, new TrimMaterialDeserializer());
+        module.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
+        module.addDeserializer(SellableItemList.class, new SellableItemListDeserializer());
+        mapper.registerModule(module);
     }
 }

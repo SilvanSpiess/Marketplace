@@ -3,6 +3,7 @@ package GUIMarketplaceDirectory.shoprepos.json.items;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,11 +11,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.bukkit.Color;
+import org.bukkit.DyeColor;
 import org.bukkit.FireworkEffect;
 import org.bukkit.Material;
+import org.bukkit.MusicInstrument;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.block.banner.Pattern;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
@@ -41,6 +45,7 @@ import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 import org.bukkit.profile.PlayerProfile;
 import org.bukkit.profile.PlayerTextures;
@@ -54,14 +59,35 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.DyeColorDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.DyeColorSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeyDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentKeySerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.EnchantmentSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.LocalDateTimeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.LocalDateTimeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.MusicInstrumentSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PatternTypeSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.PotionEffectTypeSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContent;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimMaterialSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternSerializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList.SellableItemListDeserializer;
 
 @JsonInclude(Include.NON_NULL)
-public class ItemList implements Displayable {
+public class ItemList {
     public interface BlockBuilder {
         BlockData getBlockData(String string);
         PlayerProfile createPlayerProfile(UUID uniqueId, String name);  
@@ -560,7 +586,6 @@ public class ItemList implements Displayable {
     }
 
     @JsonIgnore
-    @Override
     public ItemStack getItem(BlockBuilder blockBuilder) {
         if (this.item == null) {
             this.item = makeItemStack(blockBuilder);
@@ -587,5 +612,30 @@ public class ItemList implements Displayable {
         public Material deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
             return Material.matchMaterial(p.getValueAsString());
         }
+    }
+
+    public static void equipObjectMapper(ObjectMapper mapper) {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Material.class, new MaterialSerializer());
+        module.addDeserializer(Material.class, new MaterialDeserializer());
+        module.addKeySerializer(Enchantment.class, new EnchantmentKeySerializer());
+        module.addKeyDeserializer(Enchantment.class, new EnchantmentKeyDeserializer());
+        module.addSerializer(Enchantment.class, new EnchantmentSerializer());
+        module.addDeserializer(Enchantment.class, new EnchantmentDeserializer());
+        module.addSerializer(PotionEffectType.class, new PotionEffectTypeSerializer());
+        module.addDeserializer(PotionEffectType.class, new PotionEffectTypeDeserializer());
+        module.addSerializer(MusicInstrument.class, new MusicInstrumentSerializer());
+        module.addDeserializer(MusicInstrument.class, new MusicInstrumentDeserializer());
+        module.addSerializer(DyeColor.class, new DyeColorSerializer());
+        module.addDeserializer(DyeColor.class, new DyeColorDeserializer());
+        module.addSerializer(PatternType.class, new PatternTypeSerializer());
+        module.addDeserializer(PatternType.class, new PatternTypeDeserializer());
+        module.addSerializer(TrimPattern.class, new TrimPatternSerializer());
+        module.addDeserializer(TrimPattern.class, new TrimPatternDeserializer());
+        module.addSerializer(TrimMaterial.class, new TrimMaterialSerializer());
+        module.addDeserializer(TrimMaterial.class, new TrimMaterialDeserializer());
+        module.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
+        mapper.registerModule(module);
     }
 }
