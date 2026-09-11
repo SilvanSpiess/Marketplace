@@ -107,6 +107,10 @@ public class ItemList implements Displayable {
         updateItemStack(blockBuilder);
     }
 
+    public boolean isValidItem() {
+        return name != null;
+    }
+
     private void processItemStack(ItemStack itemStack) {
         addWarnings.clear();
         //
@@ -430,7 +434,7 @@ public class ItemList implements Displayable {
             }
             case "crossbow" -> {
                 CrossbowMeta CrossbowMeta = (CrossbowMeta) item.getItemMeta();
-                if(extraInfo.getLoaded() != null) {
+                if(extraInfo.getLoaded() != null && extraInfo.getLoaded().isValidItem()) {
                     ItemStack arrow = extraInfo.getLoaded().getItem(blockBuilder);
                     CrossbowMeta.addChargedProjectile(arrow);
                 }

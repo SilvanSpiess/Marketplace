@@ -2,9 +2,11 @@ package GUIMarketplaceDirectory.shoprepos.json.items;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.TreeNode;
@@ -27,6 +29,12 @@ public class CorruptedSellable implements Sellable {
     private String outOfStockByUuid;
     private final TreeNode json;
 
+    private String stackTrace;
+
+    public CorruptedSellable(TreeNode json, String stackTrace) {
+        this.json = json;
+        this.stackTrace = stackTrace;
+    }
 
     public CorruptedSellable(TreeNode json) {
         this.json = json;
@@ -38,7 +46,11 @@ public class CorruptedSellable implements Sellable {
 
     @Override
     public ItemStack getItem(ItemList.BlockBuilder blockBuilder) { //TODO make better
-        return new ItemStack(Material.ACACIA_BOAT);
+        ItemStack item = new ItemStack(Material.ACACIA_BOAT);
+        ItemMeta meta = item.getItemMeta();
+        meta.setLore(Arrays.asList(getStackTrace().split("\n")));
+        item.setItemMeta(meta);
+        return item;
     }
 
     @Override
@@ -127,6 +139,10 @@ public class CorruptedSellable implements Sellable {
     @Override
     public void setOutOfStockByUuid(String outOfStockByUuid) {
         this.outOfStockByUuid = outOfStockByUuid;
+    }
+
+    public String getStackTrace() {
+        return stackTrace == null ? "" : stackTrace;
     }
 
     public static class CorruptedSellableSerializer extends JsonSerializer<CorruptedSellable> {

@@ -20,9 +20,11 @@ public class SellableDeserializer extends JsonDeserializer<Sellable> {
         TreeNode json = p.readValueAsTree();
 
         try {
-            return p.getCodec().treeToValue(json, SellableItemList.class);
-        } catch (IOException e) {
-            return new CorruptedSellable(json);
+            SellableItemList sellable = p.getCodec().treeToValue(json, SellableItemList.class);
+            if (sellable.isValidItem()) return sellable;
+            else return new CorruptedSellable(json, "Was not a valid item");
+        } catch (Exception e) {
+            return new CorruptedSellable(json, e.getMessage());
         }
     }
 }
