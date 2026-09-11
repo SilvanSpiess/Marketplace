@@ -1,6 +1,7 @@
 package GUIMarketplaceDirectory.shoprepos.processes;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 import org.bukkit.entity.Player;
 
@@ -33,7 +34,7 @@ public class MarkOutOfStockProcess extends ConfirmationProcess {
     
     @Override
     public void executeTask(Player player) {
-        shopRepo.markItemOutOfStock(itemList, player.getName(), player.getUniqueId().toString(), LocalDateTime.now());
+        shopRepo.markItemOutOfStock(itemList, player.getName(), player.getUniqueId().toString(), LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
         finished = true;
         succesful = true;
         processHandler.discontinueProcessOfPlayer(this, uuid);

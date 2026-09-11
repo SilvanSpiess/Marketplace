@@ -17,12 +17,15 @@ public class SellableDeserializer extends JsonDeserializer<Sellable> {
 
     @Override
     public Sellable deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        
         TreeNode json = p.readValueAsTree();
+        
 
         try {
             return p.getCodec().treeToValue(json, SellableItemList.class);
         } catch (IOException e) {
-            System.out.println("Found another corrupted thingy");
+            System.out.println("Found another corrupted thingy: " + p);
+            //e.printStackTrace();
             return new CorruptedSellable(json);
         }
     }

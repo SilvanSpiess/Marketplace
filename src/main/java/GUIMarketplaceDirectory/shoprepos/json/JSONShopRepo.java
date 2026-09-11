@@ -331,9 +331,9 @@ public class JSONShopRepo implements ShopRepo {
         for (Shop shop : shops.values()) {
             int count = shop.countOutOfStockItems(shop);
             int total = shop.getItems().size();
-            if (count > 0 && total > 0) {
-                double ratio = count / total * 100;
-                ratio = (double)Math.round(ratio * 100d) / 100d;
+            if (count > 0) {
+                double ratio = ((double)count / (double)total) * 100;
+                ratio = Math.round(ratio * 10d) / 10d;
                 shopStockSummaries.add(new ShopStockSummary(shop.getKey(), total, count, ratio));
             }
         }

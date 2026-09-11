@@ -9,9 +9,11 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonSetter;
 
 import GUIMarketplaceDirectory.shoprepos.json.Shop;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -25,6 +27,7 @@ public class SellableItemList extends ItemList implements Sellable {
     private String qty;
 
     private Boolean inStock;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime outOfStockSince;
     private String outOfStockByName;
     private String outOfStockByUuid;
@@ -44,6 +47,16 @@ public class SellableItemList extends ItemList implements Sellable {
         super(item);
         this.qty = "";
         this.price = 0;
+    }
+    
+    @JsonSetter("name")
+    public void setNameFromJson(String rawName) {
+        if (rawName == null) {
+            this.name = Material.STONE;
+            return;
+        }
+        Material mat = Material.matchMaterial(rawName);
+        this.name = (mat != null) ? mat : Material.STONE;
     }
 
     @Override
@@ -104,6 +117,7 @@ public class SellableItemList extends ItemList implements Sellable {
     }
 
     // getters and setters
+
     @Override
     public Shop getShop() {
         return shop;
