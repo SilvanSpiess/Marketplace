@@ -11,6 +11,20 @@ import org.bukkit.entity.Player;
 import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 
 public interface ShopRepo {
+
+    public class ShopStockSummary {
+        public String shopKey;
+        public int total;
+        public int count;
+        public double ratio;
+        public ShopStockSummary(String key, int total, int count, double ratio) {
+            this.shopKey = key;
+            this.total = total;
+            this.count = count;
+            this.ratio = ratio;
+        }
+    }
+
     public enum EditType {
         NOT_UNDER_ADD, NOT_UNDER_EDIT, ADD_OWNER, ADD_SHOP, SET_DISPLAY_ITEM, SET_DESCRIPTION, SHOP_OWNER_ADDITION, COREPROTECT_RADIUS, SET_LOCATION;
     }
@@ -35,6 +49,7 @@ public interface ShopRepo {
     boolean isShopOwner(String uuid, String key);
 
     Map<String, Integer> getShopsOfPlayerWithOutOfStockCount(String uuid);
+    List<ShopStockSummary> getSummaryOfOutOfStockShops();
 
     boolean approveChange(Player player, String shopKey);
     boolean rejectChange(String shopKey);

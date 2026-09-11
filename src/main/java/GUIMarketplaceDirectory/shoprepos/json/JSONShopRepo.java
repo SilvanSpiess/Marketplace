@@ -316,25 +316,28 @@ public class JSONShopRepo implements ShopRepo {
     public Map<String, Integer> getShopsOfPlayerWithOutOfStockCount(String uuid) {
         Map<String, Integer> ownedShopsWithItemsOutOfStock = new HashMap<>();
         // my Leonne can turn this into a stream
-        for (Shop shop : shops.values()) {            
-            if (shop.getUuid().equals(uuid)) {
-                int count = shop.countOutOfStockItems(shop);
-                ownedShopsWithItemsOutOfStock.put(shop.getKey(), count);
-            }
-        }
-        for (Shop shop : pendingShops.values()) {            
-            if (shop.getUuid().equals(uuid)) {
-                int count = shop.countOutOfStockItems(shop);
-                ownedShopsWithItemsOutOfStock.put(shop.getKey(), count);
-            }
-        }
-        for (Shop shop : pendingChanges.values()) {            
+        for (Shop shop : shops.values()) {
             if (shop.getUuid().equals(uuid)) {
                 int count = shop.countOutOfStockItems(shop);
                 ownedShopsWithItemsOutOfStock.put(shop.getKey(), count);
             }
         }
         return ownedShopsWithItemsOutOfStock;
+    }
+
+    @Override
+    public List<ShopStockSummary> getSummaryOfOutOfStockShops() {
+        List<ShopStockSummary> shopStockSummaries = new ArrayList<>();
+        for (Shop shop : shops.values()) {
+            int count = shop.countOutOfStockItems(shop);
+            int total = shop.getItems().size();
+            if (count > 0 && total > 0) {
+                double ratio = count / total * 100;
+                ratio = (double)Math.round(ratio * 100d) / 100d;
+                shopStockSummaries.add(new ShopStockSummary(shop.getKey(), total, count, ratio));
+            }
+        }
+        return shopStockSummaries;
     }
 
     @Override

@@ -59,8 +59,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
 import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
-import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContent;
-import io.papermc.paper.datacomponent.item.BundleContents;
+import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContentList;
 
 @JsonInclude(Include.NON_NULL)
 public class ItemList implements Displayable {
@@ -121,13 +120,13 @@ public class ItemList implements Displayable {
                 if (im.getBlockState() instanceof ShulkerBox shulker) {
                     this.customType = "shulker";
                     this.extraInfo = new ExtraInfo();
-                    List<ShulkerContent> contents = new ArrayList<>(27);
+                    List<ShulkerContentList> contents = new ArrayList<>(27);
 
                     for (int i = 0; i < 27; i++) {
                         ItemStack itemStack1 = shulker.getSnapshotInventory().getItem(i);
                         if (itemStack1 == null || itemStack1.getType() == Material.AIR)
                             continue;
-                        ShulkerContent itemList1 = new ShulkerContent(itemStack1, i);
+                        ShulkerContentList itemList1 = new ShulkerContentList(itemStack1, i);
                         itemList1.setStackSize(itemStack1.getAmount());
                         
                         contents.add(itemList1);
@@ -135,20 +134,26 @@ public class ItemList implements Displayable {
                     this.extraInfo.setShulkerContents(contents);
                 }
             }
-        } else if(materialName.contains("BUNDLE")) {
+        } else if (materialName.contains("BUNDLE")) {
             this.customType = "bundle";
             this.extraInfo = new ExtraInfo();
             BundleMeta bundleMeta = (BundleMeta) itemStack.getItemMeta();
-            //TODO
+            List<ItemList> contents = new ArrayList<>();
+            for (ItemStack item : bundleMeta.getItems()) {
+                ItemList itemList = new ItemList(item);
+                itemList.setStackSize(item.getAmount());
+                contents.add(itemList);
+            }
+            this.extraInfo.setBundleContents(contents);
         } else if (itemStack.getType() == Material.PLAYER_HEAD) {
             this.customType = "head";
             this.extraInfo = new ExtraInfo();
             SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
             OfflinePlayer whoSkull = skullMeta.getOwningPlayer();
-            if(whoSkull != null) {
+            if (whoSkull != null) {
                 extraInfo.setName(skullMeta.getOwningPlayer().getName());
             }
-            if(skullMeta.getOwnerProfile() != null && 
+            if (skullMeta.getOwnerProfile() != null && 
                 skullMeta.getOwnerProfile().getTextures() != null && 
                 skullMeta.getOwnerProfile().getTextures().getSkin() != null) {
                     extraInfo.setSkin(skullMeta.getOwnerProfile().getTextures().getSkin().toString());
@@ -391,7 +396,7 @@ public class ItemList implements Displayable {
                 item.setItemMeta(bannerMeta);
             }
             case "shulker" -> {
-                List<ShulkerContent> contents = extraInfo.getShulkerContents();
+                List<ShulkerContentList> contents = extraInfo.getShulkerContents();
                 ItemStack[] items = new ItemStack[27];
                 
                 if (contents.stream().allMatch(content -> content.getInvSlot() != null)) {
@@ -411,14 +416,16 @@ public class ItemList implements Displayable {
                 item.setItemMeta(blockStateMeta);
             }
             case "bundle" -> {
-                //TODO
-                List<BundleContents> contents = extraInfo.getBundleContents();
-                ItemStack[] items = new ItemStack[64];
-                
+                List<ItemList> contents = extraInfo.getBundleContents();
+                if (contents != null) {
+                    BundleMeta bundleMeta = (BundleMeta) item.getItemMeta();
+                    bundleMeta.setItems(contents.stream().map(content -> content.getItem(blockBuilder)).toList());
+                    item.setItemMeta(bundleMeta);                    
+                }
             }
             case "enchantedBook" -> {
                 Map<Enchantment, Integer> enchants = extraInfo.getStoredEnchants();
-                EnchantmentStorageMeta esm = (EnchantmentStorageMeta) item.getItemMeta();
+                    EnchantmentStorageMeta esm = (EnchantmentStorageMeta) item.getItemMeta();
                 
                 enchants.forEach((enchant, integer) -> esm.addStoredEnchant(enchant, integer , true));
                 item.setItemMeta(esm);
@@ -587,7 +594,11 @@ public class ItemList implements Displayable {
         }
         @Override
         public Material deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-            return Material.getMaterial(p.getValueAsString());
+            Material mat = Material.getMaterial(p.getValueAsString());
+            if (mat == null) {
+                throw new RuntimeException("Material cannot be null");
+            }
+            return mat;
         }
     }
 }

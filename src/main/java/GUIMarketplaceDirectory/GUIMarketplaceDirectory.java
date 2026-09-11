@@ -56,9 +56,13 @@ public class GUIMarketplaceDirectory extends JavaPlugin implements BlockBuilder 
 
         getServer().getPluginManager().registerEvents(new ShopEvents(this),this);
         getServer().getPluginManager().registerEvents(new ItemEvents(this),this);
-        getCommand("GUIMD").setExecutor(new GUIMarketplaceCommands(this));
-    }
+        //getCommand("GUIMD").setExecutor(new GUIMarketplaceCommands(this));
 
+        org.bukkit.command.PluginCommand command = getCommand("GUIMarketplaceDirectory");    
+        if (command != null) {
+            command.setExecutor(new GUIMarketplaceCommands(this));
+        }        
+    }
 
 
     @Override

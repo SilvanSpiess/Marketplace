@@ -313,11 +313,10 @@ public class GUI {
         ShopInvHolder currentShopView = new ShopInvHolder(key, InvType.SHOP_MENU, instructions);
         //Adds this shop to a list with one entry, to open its inventory if rawSloth 4 is clicked
         currentShopView.setShops(Collections.nCopies(18, key));
-        boolean hasPendingChanges = pendingChanges!=null;
         Inventory shopEditMenuInv = Bukkit.createInventory(currentShopView,18, Component.text(title));
         //setDescription button
         ItemStack setDescription = makeDisplayItem(Material.PAPER, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Set description"));
-        if (hasPendingChanges && !shop.get("desc").equals(pendingChanges.get("desc"))) {
+        if (pendingChanges!=null && !shop.get("desc").equals(pendingChanges.get("desc"))) {
             List<Component> descriptionLore = new LinkedList<>();
             descriptionLore.add(Component.text(MyChatColor.DARK_PURPLE + "[Old]"));
             descriptionLore.addAll(Arrays.asList(ChatPaginator.wordWrap(MyChatColor.GREEN + shop.get("desc"),30)).stream().map(x -> Component.text(MyChatColor.GREEN + x)).toList());
@@ -331,7 +330,7 @@ public class GUI {
         shopEditMenuInv.setItem(1,setDescription);
         //see shop button
         ItemStack seeShop;
-        if (hasPendingChanges) seeShop = makeShopDisplayItem(pendingChanges, config, true,
+        if (pendingChanges!=null) seeShop = makeShopDisplayItem(pendingChanges, config, true,
                                                              Component.text(MyChatColor.GREEN + "§oLeft click to view this shop"),
                                                              Component.text(config.getDefaultShopDynmapColor() + "§oRight click to see this shop on " + MyChatColor.LIGHT_PURPLE + "§oDynmap"),
                                                              Component.text(config.getDefaultShopDynmapColor() + "§oShift click to get the " + MyChatColor.AQUA + "§oXaero waypoint"));
@@ -342,7 +341,7 @@ public class GUI {
         shopEditMenuInv.setItem(4,seeShop);
         //setLocation button
         ItemStack setLocation = makeDisplayItem(Material.COMPASS, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Set location"));
-        if (hasPendingChanges && !shop.get("loc").equals(pendingChanges.get("loc"))) {
+        if (pendingChanges!=null && !shop.get("loc").equals(pendingChanges.get("loc"))) {
             String[] partsOld = shop.get("loc").split(",");
             String[] partsNew = pendingChanges.get("loc").split(",");
             List<Component> locationLore = new LinkedList<>();
@@ -366,7 +365,7 @@ public class GUI {
         shopEditMenuInv.setItem(7,setLocation);
         //setDisplayItem button
         ItemStack setDisplayItem = makeDisplayItem(Material.WRITABLE_BOOK, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Set display item"));
-        if (hasPendingChanges && !shop.get("displayItem").equals(pendingChanges.get("displayItem"))) {
+        if (pendingChanges!=null && !shop.get("displayItem").equals(pendingChanges.get("displayItem"))) {
             setDisplayItem = addItemLore(setDisplayItem, Component.text(MyChatColor.DARK_PURPLE + "[Old]"),
                                                          Component.text(MyChatColor.GREEN + shop.get("displayItem")),
                                                          Component.text(MyChatColor.LIGHT_PURPLE + "[New]"),
@@ -378,7 +377,7 @@ public class GUI {
         shopEditMenuInv.setItem(10,setDisplayItem);
         //addOwner button
         ItemStack addOwner = makeDisplayItem(Material.BEACON, Component.text(MyChatColor.GOLD + "" + MyChatColor.ITALIC + "Add owner"));
-        if (hasPendingChanges && !shop.get("owners").equals(pendingChanges.get("owners"))) {
+        if (pendingChanges!=null && !shop.get("owners").equals(pendingChanges.get("owners"))) {
             addOwner = addItemLore(addOwner, Component.text(MyChatColor.DARK_PURPLE + "[Old]"),
                                              Component.text(MyChatColor.GREEN + shop.get("owners")),
                                              Component.text(MyChatColor.LIGHT_PURPLE + "[New]"),

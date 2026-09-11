@@ -55,7 +55,13 @@ public class AddOwnerProcess implements ChatProcess {
         List<OfflinePlayer> players;
         if(addingOfflinePlayerAllowed)
             try {
-                players = Arrays.stream(plugin.getServer().getOfflinePlayers()).filter(offlinePlayer -> offlinePlayer.getName().toUpperCase(Locale.ROOT).startsWith(playerName)).collect(Collectors.toList());
+                //players = Arrays.stream(plugin.getServer().getOfflinePlayers()).filter(offlinePlayer -> offlinePlayer.getName() != null).filter(offlinePlayer -> offlinePlayer.getName().toUpperCase(Locale.ROOT).startsWith(playerName)).collect(Collectors.toList());
+                players = Arrays.stream(plugin.getServer().getOfflinePlayers())
+                    .filter(offlinePlayer -> {
+                        String name = offlinePlayer.getName();
+                        return name != null && name.toUpperCase(Locale.ROOT).startsWith(playerName.toUpperCase(Locale.ROOT));
+                    })
+                    .collect(Collectors.toList());
             } catch (NullPointerException e) {
                 player.sendMessage(MyChatColor.RED + "Player data not found");
                 players = new ArrayList<>();

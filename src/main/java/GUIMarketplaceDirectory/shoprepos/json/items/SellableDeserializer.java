@@ -22,6 +22,7 @@ public class SellableDeserializer extends JsonDeserializer<Sellable> {
         try {
             return p.getCodec().treeToValue(json, SellableItemList.class);
         } catch (IOException e) {
+            System.out.println("Found another corrupted thingy");
             return new CorruptedSellable(json);
         }
     }

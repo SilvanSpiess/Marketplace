@@ -48,6 +48,7 @@ public class CorruptedSellable implements Sellable {
 
     @Override
     public Material getName() {
+        //name = Material.ACACIA_BOAT;
         return name;
     }
 

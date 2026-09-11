@@ -1,6 +1,7 @@
 package GUIMarketplaceDirectory.guimd;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 
 import GUIMarketplaceDirectory.GUIMarketplaceDirectory;
 import GUIMarketplaceDirectory.invholders.InvType;
+import GUIMarketplaceDirectory.shoprepos.ShopRepo.ShopStockSummary;
 import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
 import GUIMarketplaceDirectory.utils.Config;
 import GUIMarketplaceDirectory.utils.GUI;
@@ -159,6 +161,26 @@ public class GUIMarketplaceCommands implements TabExecutor {
                                     commandSender.sendMessage(MyChatColor.YELLOW + "Dynmap markers can be enabled in the config");
                                 }
                                 return true;
+                            case "stockCheck":
+                                List<ShopStockSummary> shopStockSummaries = plugin.getShopRepo().getSummaryOfOutOfStockShops();
+                                if (shopStockSummaries.isEmpty()) {
+                                    commandSender.sendMessage(MyChatColor.DARK_GREEN + "All shops are currently stocked");
+                                }
+                                else {
+                                    Comparator<ShopStockSummary> byRatio = (summary1, summary2) -> Double.valueOf(summary1.ratio).compareTo(summary2.ratio);
+                                    shopStockSummaries.sort(byRatio);
+                                    for (ShopStockSummary shopStockSummary : shopStockSummaries) {
+                                        commandSender.sendMessage(MyChatColor.GOLD + plugin.getShopRepo().getShopName(shopStockSummary.shopKey) +
+                                                                  MyChatColor.AQUA + " owned by " + 
+                                                                  MyChatColor.LIGHT_PURPLE + plugin.getShopRepo().getOwner(shopStockSummary.shopKey) +
+                                                                  MyChatColor.AQUA + " has " +
+                                                                  MyChatColor.YELLOW + "(" + shopStockSummary.count + "/" + shopStockSummary.total + ")" + 
+                                                                  MyChatColor.AQUA + " items out of stock, which equals " + 
+                                                                  MyChatColor.YELLOW + shopStockSummary.ratio + "%");
+                                    }
+                                }
+                                
+                                return true;
                         }
                         break;
                 }
@@ -263,6 +285,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                             hints.add("recover");
                             hints.add("review");
                             hints.add("dynmap");
+                            hints.add("stockCheck");
                         } else
                             hints.add("moderate");
                     } else if ("reload".startsWith(args[0])) {
@@ -292,6 +315,7 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         hints.add("recover");
                         hints.add("review");
                         hints.add("dynmap");
+                        hints.add("stockCheck");
                     } else {
                         if ("approvals".startsWith(args[1])) {
                             if (!args[1].equals("approvals")) {
@@ -316,6 +340,11 @@ public class GUIMarketplaceCommands implements TabExecutor {
                         if ("dynmap".startsWith(args[1])) {
                             if (!args[1].equals("dynmap")) {
                                 hints.add("dynmap");
+                            }
+                        }
+                        if ("stockCheck".startsWith(args[1])) {
+                            if (!args[1].equals("stockCheck")) {
+                                hints.add("stockCheck");
                             }
                         }
                     }

@@ -30,17 +30,12 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
-import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.BannerPatternInfo;
-import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.FireWorkEffectInfo;
-import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.ShulkerContent;
-import io.papermc.paper.datacomponent.item.BundleContents;
-
 @JsonInclude(Include.NON_NULL)
 public class ExtraInfo {
     private String name;                              // for heads
     private String profileId;                         // for heads
     private String skin;                              // for heads
-    private PotionType potionType;                    // for potions and tipped arrows TODO used to be named effect
+    private PotionType potionType;                    // for potions and tipped arrows, used to be named effect
     private Integer amplifier;                        // for ominous potions
     private Integer flight;                           // for rockets
     private List<FireWorkEffectInfo> effects;         // for rockets
@@ -57,12 +52,12 @@ public class ExtraInfo {
     private Integer id;                               // for maps
     private MusicInstrument instrument;               // for goat horns
     private PotionEffectType effect;                  // for suspicous stew
-    private DyeColor fishColor;                       // for tropical fish bucked TODO used to be called color
-    private TropicalFish.Pattern fishPattern;         // for tropical fish bucket TODO used to be called pattern
-    private DyeColor fishPatternColor;                // for tropical fish bucked TODO used to be called patternColor
-    private List<ShulkerContent> shulkerContents;            // for shulker contents
-    private List<BundleContents> bundleContents;            // for shulker contents
-
+    private DyeColor fishColor;                       // for tropical fish bucked used to be called color
+    private TropicalFish.Pattern fishPattern;         // for tropical fish bucket used to be called pattern
+    private DyeColor fishPatternColor;                // for tropical fish bucked used to be called patternColor
+    private List<ShulkerContentList> shulkerContents; // for shulker contents
+    private List<ItemList> bundleContents;            // for bundle contents
+    
     private Map<Enchantment, Integer> enchants;       // for any item
 
     public ExtraInfo() {}
@@ -113,10 +108,10 @@ public class ExtraInfo {
     public void setFishPattern(TropicalFish.Pattern fishPattern) { this.fishPattern = fishPattern; }
     public DyeColor getFishPatternColor() { return this.fishPatternColor; }
     public void setFishPatternColor(DyeColor fishPatternColor) { this.fishPatternColor = fishPatternColor; }
-    public List<ShulkerContent> getShulkerContents() { return this.shulkerContents; }
-    public void setShulkerContents(List<ShulkerContent> shulkerContents) { this.shulkerContents = shulkerContents; }
-    public List<BundleContents> getBundleContents() { return this.bundleContents; }
-    public void setBundleContents(List<BundleContents> bundleContents) { this.bundleContents = bundleContents; }
+    public List<ShulkerContentList> getShulkerContents() { return this.shulkerContents; }
+    public void setShulkerContents(List<ShulkerContentList> shulkerContents) { this.shulkerContents = shulkerContents; }
+    public List<ItemList> getBundleContents() { return this.bundleContents; }
+    public void setBundleContents(List<ItemList> bundleContents) { this.bundleContents = bundleContents; }
     public Map<Enchantment,Integer> getEnchants() { return this.enchants; }
     public void setEnchants(Map<Enchantment,Integer> enchants) { this.enchants = enchants; }
 
@@ -169,14 +164,14 @@ public class ExtraInfo {
         public void setType(PatternType type) { this.type = type; }
     }
 
-    public static class ShulkerContent extends ItemList {
+    public static class ShulkerContentList extends ItemList {
         private Integer invSlot;
 
-        public ShulkerContent() {
+        public ShulkerContentList() {
             super();
         }
 
-        public ShulkerContent(ItemStack item, int invSlot) {
+        public ShulkerContentList(ItemStack item, int invSlot) {
             super(item);
             this.invSlot = invSlot;
         }

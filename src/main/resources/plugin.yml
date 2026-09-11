@@ -11,7 +11,7 @@ load: STARTUP
 commands:
   GUIMarketplaceDirectory:
     description: Searching for shops/items and approving/removing shops
-    aliases: [gmd,guimd,guimarketplacedirectory]
+    aliases: [gmd,guimd]
     usage: do /gmd help for all use cases
 
 permissions:

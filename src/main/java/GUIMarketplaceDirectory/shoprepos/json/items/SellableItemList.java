@@ -179,5 +179,4 @@ public class SellableItemList extends ItemList implements Sellable {
     public void setOutOfStockByUuid(String outOfStockByUuid) {
         this.outOfStockByUuid = outOfStockByUuid;
     }
-
 }
