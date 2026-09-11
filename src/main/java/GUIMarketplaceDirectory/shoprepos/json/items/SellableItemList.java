@@ -1,7 +1,9 @@
 package GUIMarketplaceDirectory.shoprepos.json.items;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Color;
@@ -12,6 +14,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 
 import GUIMarketplaceDirectory.shoprepos.json.Shop;
 import GUIMarketplaceDirectory.utils.MyChatColor;
@@ -28,6 +38,10 @@ public class SellableItemList extends ItemList implements Sellable {
     private LocalDateTime outOfStockSince;
     private String outOfStockByName;
     private String outOfStockByUuid;
+
+    private TreeNode backupJson;
+    private boolean validated = false;
+    private boolean corrupted = false;
 
     public SellableItemList() {
         super();
@@ -46,8 +60,24 @@ public class SellableItemList extends ItemList implements Sellable {
         this.price = 0;
     }
 
+    public boolean isCorrupted() {
+        if (validated) return corrupted;
+        else return true; //TODO check if makes sense
+    }
+
     @Override
     protected ItemStack makeItemStack(BlockBuilder blockBuilder) {
+        try {
+            ItemStack item = makeDefaultItemStack(blockBuilder);
+            validated = true;
+            return item;
+        } catch (Exception e) {
+            corrupted = true;
+            return backupItemStack(e.getMessage());
+        }
+    }
+    
+    private ItemStack makeDefaultItemStack(BlockBuilder blockBuilder) {
         ItemStack itemStack = super.makeItemStack(blockBuilder);
         ItemMeta meta = itemStack.getItemMeta();
 
@@ -74,6 +104,14 @@ public class SellableItemList extends ItemList implements Sellable {
         meta.getCustomModelDataComponent().setColors(java.util.List.of(Color.fromRGB(80, 80, 80)));
         itemStack.setItemMeta(meta);
         return itemStack;
+    }
+
+    private ItemStack backupItemStack(String errorString) {
+        ItemStack item = new ItemStack(Material.ACACIA_BOAT);
+        ItemMeta meta = item.getItemMeta();
+        meta.setLore(Arrays.asList(errorString.split("\n")));
+        item.setItemMeta(meta);
+        return item;
     }
 
     @JsonIgnore
@@ -180,4 +218,37 @@ public class SellableItemList extends ItemList implements Sellable {
         this.outOfStockByUuid = outOfStockByUuid;
     }
 
+    public TreeNode getBackupJson() {
+        return this.backupJson;
+    }
+
+    public void setBackupJson(TreeNode backupJson) {
+        this.backupJson = backupJson;
+    }
+
+    public static class SellableDeserializer extends JsonDeserializer<Sellable> {
+
+        @Override
+        public Sellable deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            TreeNode json = p.readValueAsTree();
+
+            try {
+                SellableItemList sellable = p.getCodec().treeToValue(json, SellableItemList.class);
+                sellable.setBackupJson(json);
+                return sellable;
+            } catch (JsonProcessingException e) {
+                SellableItemList sellable = new SellableItemList();
+                sellable.setBackupJson(json);
+                return sellable;
+            }
+        }
+    }
+
+    public static class SellableSerializer extends JsonSerializer<SellableItemList> {
+        @Override
+        public void serialize(SellableItemList corruptedSellable, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            if (corruptedSellable.isCorrupted()) jgen.writeTree(corruptedSellable.getBackupJson());
+            else jgen.writeObject(corruptedSellable); //TODO check if works
+        }
+    }
 }

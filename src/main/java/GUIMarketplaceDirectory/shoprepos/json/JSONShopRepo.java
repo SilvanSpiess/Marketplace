@@ -55,7 +55,7 @@ import GUIMarketplaceDirectory.shoprepos.json.items.ExtraInfo.TrimPatternSeriali
 import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.MaterialDeserializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.ItemList.MaterialSerializer;
 import GUIMarketplaceDirectory.shoprepos.json.items.Sellable;
-import GUIMarketplaceDirectory.shoprepos.json.items.SellableDeserializer;
+import GUIMarketplaceDirectory.shoprepos.json.items.SellableItemList.SellableDeserializer;
 import GUIMarketplaceDirectory.utils.Metrics;
 import GUIMarketplaceDirectory.utils.MyChatColor;
 import net.kyori.adventure.text.TextComponent;

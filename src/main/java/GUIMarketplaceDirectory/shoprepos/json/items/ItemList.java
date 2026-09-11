@@ -514,6 +514,15 @@ public class ItemList implements Displayable {
         if (this.item != null && this.blockBuilder != null) updateItemStack(blockBuilder);
     }
 
+    // public void setName(String name) {
+    //     if (rawName == null) {
+    //         this.name = Material.STONE;
+    //         return;
+    //     }
+    //     Material mat = Material.matchMaterial(rawName);
+    //     this.name = (mat != null) ? mat : Material.STONE;
+    // }
+
     public String getCustomName() {
         return customName;
     }
@@ -574,11 +583,9 @@ public class ItemList implements Displayable {
 
     public static class MaterialDeserializer extends JsonDeserializer<Material> {
 
-        public MaterialDeserializer() {
-        }
         @Override
         public Material deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-            return Material.getMaterial(p.getValueAsString());
+            return Material.matchMaterial(p.getValueAsString());
         }
     }
 }
